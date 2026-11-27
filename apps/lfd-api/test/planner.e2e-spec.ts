@@ -9,7 +9,10 @@
  * - la version : un second onglet ne s'écrase pas, un rejeu ne monte rien ;
  * - le retrait garde la ligne en base et libère le créneau ;
  * - les favoris de la société (ceux de la boutique, par espace) en colonne de gauche ;
- * - la vérification de la passation servie avec la grille (§ 4 bis).
+ * - la vérification de la passation servie avec la grille (§ 4 bis) ;
+ * - la clé `orderPlanner` : fermée, chaque route refuse (409) après le mur ;
+ *   une adresse PROUVÉE et exemptée l'ouvre pour elle seule ; ouverte, tous
+ *   passent. Les autres cas l'ouvrent dans leur préparation.
  */
 import {
   WORKSPACE_HEADER,
@@ -20,8 +23,16 @@ import {
 } from "@lfd/contracts";
 
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
-import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_SUB,
+  jsonBody,
+  serviceDay,
+  type E2eContext,
+} from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { exemptFromFeature, openFeature } from "./feature-access-scene.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const PRO_A = "auth0|planner-pro-a";
@@ -40,7 +51,7 @@ let ctx: E2eContext;
 const companyOf = new Map<string, string>();
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e();
+  ctx = await bootstrapE2e({ overrides: [ADMIN_VERIFIER_OVERRIDE] });
 });
 
 afterAll(async () => {
@@ -57,6 +68,7 @@ beforeEach(async () => {
     companyOf.set(sub, company.id);
   }
   await createUser(ctx.prisma, { auth0Sub: PERSON });
+  await openFeature(ctx, "orderPlanner");
 });
 
 /** Une requête dans l'espace de la société de `sub` (aucun en-tête pour le particulier). */
@@ -229,5 +241,68 @@ describe("planner — les favoris et la vérification", () => {
       expect(check.blocking?.cause).toBe("order_refused");
       expect(check.quantityIndependent).toBe(true);
     }
+  });
+});
+
+describe("planner — la clé orderPlanner", () => {
+  const TESTER = "auth0|planner-testeur";
+  const TESTER_EMAIL = "testeur-planificateur@exemple.fr";
+
+  /** Ferme la clé (la préparation commune l'ouvre) et sème un pro à l'adresse PROUVÉE. */
+  async function closeAndSeedTester(emailVerified: boolean): Promise<void> {
+    await ctx.asSub(E2E_STAFF_SUB).delete("/admin/feature-access/orderPlanner").expect(204);
+    const user = await createUser(ctx.prisma, {
+      auth0Sub: TESTER,
+      email: TESTER_EMAIL,
+      emailVerified,
+    });
+    const company = await createCompany(ctx.prisma, { status: CompanyStatus.active });
+    await attachTo(ctx.prisma, user.id, company.id, CustomerRole.owner);
+    companyOf.set(TESTER, company.id);
+  }
+
+  it("fermée, refuse chaque route (409) sans rien écrire", async () => {
+    const day = serviceDay(2);
+    const { id } = await openColumn(PRO_A, day);
+    await ctx.asSub(E2E_STAFF_SUB).delete("/admin/feature-access/orderPlanner").expect(204);
+
+    const refused = await as(PRO_A).get(`/planner?from=${day}`).expect(409);
+    expect(jsonBody<{ code: string }>(refused).code).toBe("planner.closed");
+    await as(PRO_A).post("/planner/columns").send({ day, routing: NOON }).expect(409);
+    await as(PRO_A)
+      .put(`/planner/columns/${id}`)
+      .send({ version: 1, routing: MORNING, lines: lines(3) })
+      .expect(409);
+    await as(PRO_A).delete(`/planner/columns/${id}`).expect(409);
+
+    const stored = await ctx.prisma.plannedColumn.findMany({ select: { id: true, version: true } });
+    expect(stored).toEqual([{ id, version: 1 }]);
+  });
+
+  it("fermée, le particulier reste refusé par le mur (403), avant la clé", async () => {
+    await ctx.asSub(E2E_STAFF_SUB).delete("/admin/feature-access/orderPlanner").expect(204);
+    await as(PERSON)
+      .get(`/planner?from=${serviceDay(2)}`)
+      .expect(403);
+  });
+
+  it("fermée, s'ouvre pour une adresse prouvée et exemptée — elle seule", async () => {
+    await closeAndSeedTester(true);
+    await exemptFromFeature(ctx, "orderPlanner", TESTER_EMAIL);
+    const day = serviceDay(2);
+
+    await openColumn(TESTER, day);
+    const view = await plannerOf(TESTER, day);
+    expect(view.days).toHaveLength(1);
+    await as(PRO_A).get(`/planner?from=${day}`).expect(409);
+  });
+
+  /** Sans preuve, s'inscrire à l'adresse d'un testeur hériterait de son exemption. */
+  it("fermée, une exemption n'ouvre rien à une adresse non prouvée", async () => {
+    await closeAndSeedTester(false);
+    await exemptFromFeature(ctx, "orderPlanner", TESTER_EMAIL);
+    await as(TESTER)
+      .get(`/planner?from=${serviceDay(2)}`)
+      .expect(409);
   });
 });

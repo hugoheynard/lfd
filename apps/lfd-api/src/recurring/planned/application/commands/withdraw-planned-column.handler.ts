@@ -31,11 +31,16 @@ export class WithdrawPlannedColumnHandler implements ICommandHandler<
   /**
    * @throws {PlannerProOnlyError} espace personnel.
    * @throws {PlannerMembershipLostError} la personne n'est plus membre de la société.
+   * @throws {PlannerClosedError} le planificateur n'est pas ouvert à cette personne.
    * @throws {PlannedColumnNotFoundError} absente, ou d'une autre société.
    * @throws {PlannedColumnFrozenError} la colonne se commande ou s'est commandée.
    */
   async execute(command: WithdrawPlannedColumnCommand): Promise<void> {
-    const companyId = await this.wall.companyOf(command.actorUserId, command.companyId);
+    const companyId = await this.wall.companyOf(
+      command.actorUserId,
+      command.companyId,
+      command.caller,
+    );
     const now = this.clock.now();
     await this.uow.run(async () => {
       const column = await this.columns.load(companyId, command.columnId);

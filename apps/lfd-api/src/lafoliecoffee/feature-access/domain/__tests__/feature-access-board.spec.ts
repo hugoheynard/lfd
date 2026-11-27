@@ -20,7 +20,7 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
     const board = composeFeatureAccessBoard({ overrides: [], exemptions: [] });
 
     expect(board.ignored).toEqual([]);
-    // Trois clés depuis le 2026-10-27 ; aucune ne propose d'exemption.
+    // Quatre clés depuis le 2026-11-27 ; seul le planificateur propose l'exemption.
     expect(board.features).toEqual([
       expect.objectContaining({
         key: "customerMandate",
@@ -49,6 +49,16 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
         defaultLevel: "hidden",
         effectiveLevel: "hidden",
         exemptible: false,
+        override: null,
+        exemptions: [],
+      }),
+      expect.objectContaining({
+        key: "orderPlanner",
+        label: "Planificateur de commandes",
+        levels: ["closed", "open"],
+        defaultLevel: "closed",
+        effectiveLevel: "closed",
+        exemptible: true,
         override: null,
         exemptions: [],
       }),
@@ -105,6 +115,7 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
       "customerMandate",
       "facebookLogin",
       "proSignupCallback",
+      "orderPlanner",
     ]);
     expect(board.features[0]).toMatchObject({ effectiveLevel: "closed", override: null });
     expect(board.ignored).toEqual([

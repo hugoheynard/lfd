@@ -42,13 +42,15 @@ const UNKNOWN_MANDATE_LEVEL: GateLevel = 'closed';
 /** Le bouton Facebook tant qu'on ne sait pas : masqué, comme le défaut du catalogue. */
 const UNKNOWN_FACEBOOK_LEVEL: VisibilityLevel = 'hidden';
 
+/** Le planificateur tant qu'on ne sait pas : fermé, comme le défaut du catalogue. */
+const UNKNOWN_PLANNER_LEVEL: GateLevel = 'closed';
+
 /**
  * **Les niveaux de l'accès aux fonctionnalités**, tels que le serveur les dit.
  *
  * Plan : `documentation/auth-inscription/plan-inscription-pro-seule.md` §4.
  *
- * Il ne reste que le mandat client et la connexion par Facebook depuis le
- * 2026-10-09 : la boutique, « Mes commandes », « Mes factures », le menu au
+ * Les clés retirées le 2026-10-09 ne reviennent pas : la boutique, « Mes commandes », « Mes factures », le menu au
  * bureau et la livraison aux particuliers ne sont plus des clés (la dernière
  * dépend du réglage admin « Livraison », que le serveur applique).
  *
@@ -112,6 +114,16 @@ export class ClientFeatureAccess {
    */
   readonly proSignupCallbackShown = computed<boolean>(() =>
     isAtLeast('proSignupCallback', this.levels()?.proSignupCallback ?? 'hidden', 'visible'),
+  );
+
+  /**
+   * Vrai si le planificateur de commandes s'ouvre à cette personne
+   * (`orderPlanner`, exemption comprise : `/me` porte ses niveaux à elle).
+   * Faux tant qu'on ne sait pas : fermé est son défaut, et l'API refuse ses
+   * routes en 409 quand il l'est.
+   */
+  readonly orderPlannerOpen = computed<boolean>(() =>
+    isAtLeast('orderPlanner', this.levels()?.orderPlanner ?? UNKNOWN_PLANNER_LEVEL, 'open'),
   );
 
   /** Résout quand l'état a quitté `loading` — succès ou échec. */

@@ -2,10 +2,15 @@ import type { PlannedColumnView } from "@lfd/contracts";
 
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { FixedStanding } from "../../../../occurrence/application/__tests__/recurring-doubles.js";
-import { PlannerProOnlyError } from "../../../domain/errors/planned-column-errors.js";
+import {
+  PlannerClosedError,
+  PlannerProOnlyError,
+} from "../../../domain/errors/planned-column-errors.js";
 import { PlannerWall } from "../../services/planner-wall.js";
 import {
+  CALLER,
   FixedPlannedColumnsReader,
+  FixedPlannerAccess,
   FixedFavoriteSkus,
   RecordingBasketCheck,
   type OwnedColumn,
@@ -37,12 +42,12 @@ function column(id: string, day: string, overrides: Partial<PlannedColumnView> =
   };
 }
 
-function scene(columns: readonly OwnedColumn[]) {
+function scene(columns: readonly OwnedColumn[], access = new FixedPlannerAccess()) {
   const favorites = new FixedFavoriteSkus({ chalet: ["BAG-01"], autre: ["AUTRE-01"] });
   const check = new RecordingBasketCheck();
   const reader = new FixedPlannedColumnsReader(columns);
   const handler = new GetPlannerHandler(
-    new PlannerWall(new FixedStanding(new Set(["user_1/chalet"]))),
+    new PlannerWall(new FixedStanding(new Set(["user_1/chalet"])), access),
     reader,
     favorites,
     check,
@@ -60,7 +65,9 @@ describe("GetPlannerHandler", () => {
       }),
       column("c", "2026-12-14"),
     ]);
-    const view = await handler.execute(new GetPlannerQuery("user_1", "chalet", "2026-12-11"));
+    const view = await handler.execute(
+      new GetPlannerQuery("user_1", "chalet", "2026-12-11", CALLER),
+    );
     expect(view.lastPlannableDay).toBe("2027-01-07");
     expect(reader.asked[0]?.to.value).toBe("2027-01-07");
     expect(view.shownDays).toEqual(["2026-12-11", "2026-12-12", "2026-12-14"]);
@@ -73,7 +80,9 @@ describe("GetPlannerHandler", () => {
 
   it("vérifie la grille en UNE question : lignes par colonne, favoris par jour", async () => {
     const { handler, check } = scene([column("a", "2026-12-12"), column("b", "2026-12-12")]);
-    const view = await handler.execute(new GetPlannerQuery("user_1", "chalet", "2026-12-12"));
+    const view = await handler.execute(
+      new GetPlannerQuery("user_1", "chalet", "2026-12-12", CALLER),
+    );
     expect(check.asked).toHaveLength(1);
     expect(check.asked[0]?.items).toEqual([
       { sku: "CRO-01", day: "2026-12-12", columnId: "a", quantity: 40 },
@@ -89,7 +98,9 @@ describe("GetPlannerHandler", () => {
       column("old-draft", "2026-12-08"),
       column("old-placed", "2026-12-08", { status: "placed", orderId: "order_1" }),
     ]);
-    const view = await handler.execute(new GetPlannerQuery("user_1", "chalet", "2026-12-01"));
+    const view = await handler.execute(
+      new GetPlannerQuery("user_1", "chalet", "2026-12-01", CALLER),
+    );
     expect(view.days.flatMap((day) => day.columns.map((c) => c.id))).toEqual(["old-placed"]);
     expect(view.shownDays).toEqual(["2026-12-10"]);
   });
@@ -99,7 +110,9 @@ describe("GetPlannerHandler", () => {
       column("theirs", "2026-12-12", {}),
       { ...column("other", "2026-12-12"), companyId: "autre" },
     ]);
-    const view = await handler.execute(new GetPlannerQuery("user_1", "chalet", "2026-12-12"));
+    const view = await handler.execute(
+      new GetPlannerQuery("user_1", "chalet", "2026-12-12", CALLER),
+    );
     expect(view.days.flatMap((day) => day.columns.map((c) => c.id))).toEqual(["theirs"]);
     expect(favorites.asked).toEqual(["chalet"]);
     expect(view.favorites).toEqual(["BAG-01"]);
@@ -108,7 +121,26 @@ describe("GetPlannerHandler", () => {
   it("refuse l'espace personnel (403)", async () => {
     const { handler } = scene([]);
     await expect(
-      handler.execute(new GetPlannerQuery("user_1", null, "2026-12-12")),
+      handler.execute(new GetPlannerQuery("user_1", null, "2026-12-12", CALLER)),
     ).rejects.toThrow(PlannerProOnlyError);
+  });
+
+  it("refuse quand le planificateur est fermé à la personne (409), sans rien lire", async () => {
+    const access = new FixedPlannerAccess(false);
+    const { handler, reader } = scene([column("a", "2026-12-12")], access);
+    await expect(
+      handler.execute(new GetPlannerQuery("user_1", "chalet", "2026-12-12", CALLER)),
+    ).rejects.toThrow(PlannerClosedError);
+    expect(access.asked).toEqual([CALLER]);
+    expect(reader.asked).toEqual([]);
+  });
+
+  it("refuse l'espace personnel avant de juger la clé", async () => {
+    const access = new FixedPlannerAccess(false);
+    const { handler } = scene([], access);
+    await expect(
+      handler.execute(new GetPlannerQuery("user_1", null, "2026-12-12", CALLER)),
+    ).rejects.toThrow(PlannerProOnlyError);
+    expect(access.asked).toEqual([]);
   });
 });

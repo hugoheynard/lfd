@@ -45,8 +45,8 @@ export class FeatureLevelResolver {
    * d'une par clé — ce que lisent `GET /feature-access` et `GET /me`.
    *
    * Même résolution que {@link levelFor}, clé par clé : seules les clés
-   * exemptibles cherchent l'adresse (aucune depuis le 2026-10-09, donc aucune
-   * lecture d'exemption aujourd'hui). La dérogation d'une clé exemptée est lue
+   * exemptibles cherchent l'adresse (`orderPlanner` seule, vérifié le
+   * 2026-11-27). La dérogation d'une clé exemptée est lue
    * quand même, dans le même `IN` : elle n'y change rien.
    */
   async levelsFor(subject: FeatureSubject): Promise<FeatureLevelsView> {
@@ -65,6 +65,7 @@ export class FeatureLevelResolver {
       customerMandate: resolveFeatureLevel("customerMandate", facts("customerMandate")),
       facebookLogin: resolveFeatureLevel("facebookLogin", facts("facebookLogin")),
       proSignupCallback: resolveFeatureLevel("proSignupCallback", facts("proSignupCallback")),
+      orderPlanner: resolveFeatureLevel("orderPlanner", facts("orderPlanner")),
     };
   }
 
@@ -87,7 +88,7 @@ export class FeatureLevelResolver {
    * Existe pour les handlers qui gardent une surface fermée par le serveur
    * (`customerMandate`) : ils n'ont pas de `FeatureSubject` sous la main, et
    * leur en fabriquer un ferait croire qu'une adresse pouvait compter. Le TYPE
-   * refuse une clé exemptible — il n'en reste aucune depuis le 2026-10-09.
+   * refuse une clé exemptible : celles-là passent par {@link levelFor}.
    */
   async unexemptibleLevelOf<Key extends UnexemptibleFeatureKey>(
     key: Key,

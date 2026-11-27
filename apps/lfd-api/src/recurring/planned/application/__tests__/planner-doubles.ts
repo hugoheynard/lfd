@@ -5,6 +5,7 @@ import {
   type PlannedBasketCheckRequest,
   type PlannedLineCheck,
 } from "../../../channels/commerce/planned-basket-check.js";
+import { PlannerAccess, type PlannerCaller } from "../../../channels/commerce/planner-access.js";
 import { PlannerFavoriteSkus } from "../../../channels/commerce/planner-favorite-skus.js";
 import { PlannedColumn } from "../../domain/entities/planned-column.js";
 import {
@@ -158,5 +159,22 @@ export class RecordingBasketCheck extends PlannedBasketCheck {
         quantityIndependent: true,
       })),
     );
+  }
+}
+
+/** Le client des scènes : une adresse prouvée. */
+export const CALLER: PlannerCaller = { email: "chef@chalet.test", emailProven: true };
+
+/** La clé `orderPlanner` doublée : ouverte ou fermée pour tous ; garde qui a été jugé. */
+export class FixedPlannerAccess extends PlannerAccess {
+  readonly asked: PlannerCaller[] = [];
+
+  constructor(private readonly open = true) {
+    super();
+  }
+
+  isOpenFor(caller: PlannerCaller): Promise<boolean> {
+    this.asked.push(caller);
+    return Promise.resolve(this.open);
   }
 }

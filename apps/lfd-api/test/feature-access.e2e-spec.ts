@@ -66,14 +66,14 @@ async function board(): Promise<AdminFeatureAccessView> {
 }
 
 /**
- * Le catalogue ne porte plus que le mandat client et la connexion par Facebook
- * depuis le 2026-10-09 : `shop`, `orders`, `invoices`, `desktopMenu` et
- * `publicDelivery` sont retirées.
+ * Les défauts du catalogue (vérifié le 2026-11-27) : `shop`, `orders`,
+ * `invoices`, `desktopMenu` et `publicDelivery` en sont retirées.
  */
 const DEFAULTS = {
   customerMandate: "closed",
   facebookLogin: "hidden",
   proSignupCallback: "hidden",
+  orderPlanner: "closed",
 } as const;
 
 async function publicLevels(): Promise<FeatureLevelsView> {
@@ -102,6 +102,12 @@ describe("la dérogation — posée, puis retirée", () => {
         key: "proSignupCallback",
         effectiveLevel: "hidden",
         exemptible: false,
+        override: null,
+      }),
+      expect.objectContaining({
+        key: "orderPlanner",
+        effectiveLevel: "closed",
+        exemptible: true,
         override: null,
       }),
     ]);
@@ -195,6 +201,7 @@ describe("la dérogation — posée, puis retirée", () => {
       KEY,
       "facebookLogin",
       "proSignupCallback",
+      "orderPlanner",
     ]);
     expect(view.ignored).toEqual(
       expect.arrayContaining([

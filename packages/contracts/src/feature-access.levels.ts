@@ -112,6 +112,18 @@ export const FEATURE_CATALOGUE = {
     // Facebook — seul le niveau global a du sens.
     exemptible: false,
   },
+  orderPlanner: {
+    label: "Planificateur de commandes",
+    description:
+      "L'onglet « Planificateur » de la boutique pro : préparer ses commandes jour par jour, qui se passent seules au moment convenu. Fermé, l'entrée disparaît et les routes du planificateur refusent ; les cases déjà remplies se convertissent quand même en commandes à leur heure.",
+    levels: GATE_LEVELS,
+    // Fermé par défaut (Hugo, 2026-11-27) : on l'ouvre d'abord à quelques
+    // clients par exemption, puis à tous.
+    defaultLevel: "closed",
+    // Exemptible : ouvrir le planificateur à une adresse prouvée ne produit
+    // que des brouillons de commande pour sa société — rien d'opposable.
+    exemptible: true,
+  },
 } as const satisfies Readonly<Record<string, FeatureDefinition<string>>>;
 
 export type FeatureKey = keyof typeof FEATURE_CATALOGUE;
@@ -124,6 +136,7 @@ export const FEATURE_KEYS: readonly FeatureKey[] = [
   "customerMandate",
   "facebookLogin",
   "proSignupCallback",
+  "orderPlanner",
 ];
 
 /**

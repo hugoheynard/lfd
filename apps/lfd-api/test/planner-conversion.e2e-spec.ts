@@ -25,6 +25,7 @@ import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { openFeature } from "./feature-access-scene.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { pickupSite } from "./order-factory.js";
 import { publishSalesTerms } from "./recurring-scene.js";
@@ -76,6 +77,7 @@ beforeEach(async () => {
   await ctx.prisma.orderCutoff.create({
     data: { pickupAddressId: null, weekday: null, daysBefore: 1, time: "12:00", graceMinutes: 0 },
   });
+  await openFeature(ctx, "orderPlanner");
 });
 
 const routing = (start = "07:00", end = "08:00"): PlannedRoutingPayload => ({
@@ -131,6 +133,17 @@ async function relayOutbox(): Promise<void> {
 }
 
 describe("planner — la conversion", () => {
+  /** Fermer la clé ferme l'écran, pas le balayage : une case déjà remplie se commande. */
+  it("se commande même quand la clé orderPlanner est refermée entre-temps", async () => {
+    const id = await column(["VIE-001-1"]);
+    await ctx.asSub("staff-e2e").delete("/admin/feature-access/orderPlanner").expect(204);
+    await ctx.asSub(BUYER).get(`/planner?from=${DAY}`).set(WORKSPACE_HEADER, companyId).expect(409);
+
+    clock.set(beforeDay(1, "11:50"));
+    expect(await sweep()).toMatchObject({ due: 1, placed: 1 });
+    expect(await stored(id)).toMatchObject({ status: "placed" });
+  });
+
   it("se commande quinze minutes avant la fermeture, une seule fois, avec sa provenance", async () => {
     const id = await column(["VIE-001-1"]);
     expect((await stored(id)).convertsAt).toEqual(

@@ -102,6 +102,41 @@ describe("FeatureLevelResolver — une clé qu'aucune exemption n'ouvre", () => 
   });
 });
 
+describe("FeatureLevelResolver.levelFor — le planificateur, exemptible", () => {
+  it("reste fermé pour une adresse non exemptée", async () => {
+    const lookup = new StubLookup({}, ["autre@exemple.fr"]);
+    await expect(
+      new FeatureLevelResolver(lookup).levelFor("orderPlanner", {
+        email: "chef@exemple.fr",
+        emailProven: true,
+      }),
+    ).resolves.toBe("closed");
+  });
+
+  it("s'ouvre pour une adresse prouvée et exemptée, sans lire la dérogation", async () => {
+    const lookup = new StubLookup({ orderPlanner: "closed" }, ["chef@exemple.fr"]);
+    await expect(
+      new FeatureLevelResolver(lookup).levelFor("orderPlanner", {
+        email: " Chef@Exemple.fr ",
+        emailProven: true,
+      }),
+    ).resolves.toBe("open");
+    expect(lookup.asked).toEqual(["exempt:orderPlanner:chef@exemple.fr"]);
+  });
+
+  /** Sans preuve, une inscription à l'adresse d'un testeur hériterait de son exemption. */
+  it("ne cherche pas l'exemption d'une adresse non prouvée", async () => {
+    const lookup = new StubLookup({}, ["chef@exemple.fr"]);
+    await expect(
+      new FeatureLevelResolver(lookup).levelFor("orderPlanner", {
+        email: "chef@exemple.fr",
+        emailProven: false,
+      }),
+    ).resolves.toBe("closed");
+    expect(lookup.asked).toEqual(["override:orderPlanner"]);
+  });
+});
+
 describe("FeatureLevelResolver.levelsFor — tous les niveaux d'un coup", () => {
   it("rend les défauts du code quand la base est vide", async () => {
     await expect(new FeatureLevelResolver(new StubLookup({}, [])).levelsFor(null)).resolves.toEqual(
@@ -109,12 +144,13 @@ describe("FeatureLevelResolver.levelsFor — tous les niveaux d'un coup", () => 
         customerMandate: "closed",
         facebookLogin: "hidden",
         proSignupCallback: "hidden",
+        orderPlanner: "closed",
       },
     );
   });
 
   /** Trois `findUnique` à chaque `/me` et `/feature-access` : une lecture suffit. */
-  it("lit les dérogations en UNE fois, et aucune exemption tant qu'aucune clé n'est exemptible", async () => {
+  it("lit les dérogations en UNE fois, et l'exemption des seules clés exemptibles", async () => {
     const lookup = new StubLookup({ facebookLogin: "visible", customerMandate: "open" }, [
       "testeur@exemple.fr",
     ]);
@@ -124,8 +160,15 @@ describe("FeatureLevelResolver.levelsFor — tous les niveaux d'un coup", () => 
       emailProven: true,
     });
 
-    expect(levels).toMatchObject({ customerMandate: "open", facebookLogin: "visible" });
-    expect(lookup.asked).toEqual(["overrides:customerMandate,facebookLogin,proSignupCallback"]);
+    expect(levels).toMatchObject({
+      customerMandate: "open",
+      facebookLogin: "visible",
+      orderPlanner: "open",
+    });
+    expect(lookup.asked).toEqual([
+      "overrides:customerMandate,facebookLogin,proSignupCallback,orderPlanner",
+      "exempt:orderPlanner:testeur@exemple.fr",
+    ]);
   });
 
   it("rend le défaut d'une clé quand sa dérogation n'est pas un niveau de la clé", async () => {

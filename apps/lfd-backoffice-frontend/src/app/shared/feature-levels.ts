@@ -20,6 +20,7 @@ const LEVEL_LABELS: { readonly [Key in FeatureKey]: Readonly<Record<FeatureLevel
     customerMandate: { closed: 'Fermé', open: 'Ouvert' },
     facebookLogin: { hidden: 'Masquée', visible: 'Visible' },
     proSignupCallback: { hidden: 'Masqué', visible: 'Visible' },
+    orderPlanner: { closed: 'Fermé', open: 'Ouvert' },
   };
 
 /**

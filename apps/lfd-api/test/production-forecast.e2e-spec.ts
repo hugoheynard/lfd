@@ -33,6 +33,7 @@ import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harne
 import { grantAccount, placeByStaff } from "./staff-late-order.js";
 import { cardProvidersDouble, settleCardPayments } from "./card-payments.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { openFeature } from "./feature-access-scene.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const MEMBER = "auth0|member";
@@ -365,6 +366,8 @@ describe("le prévisionnel du fournil", () => {
    * paniers, et ne se fabriquent qu'en devenant des commandes.
    */
   describe("les brouillons du planificateur", () => {
+    beforeEach(() => openFeature(ctx, "orderPlanner"));
+
     const ROUTING: PlannedRoutingPayload = {
       method: "pickup",
       deliveryAddress: null,

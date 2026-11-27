@@ -16,6 +16,7 @@ const LEVELS: FeatureLevelsView = {
   customerMandate: "open",
   facebookLogin: "hidden",
   proSignupCallback: "hidden",
+  orderPlanner: "closed",
 };
 
 const stored: StoredAccountView = {

@@ -108,6 +108,20 @@ export class PlannedColumnAlreadySettledError extends BusinessError {
   }
 }
 
+/**
+ * Le planificateur n'est pas ouvert à cette personne (clé `orderPlanner`
+ * fermée, et son adresse n'est pas exemptée) — **409**. Refus d'état, pas
+ * d'autorisation : il tombe APRÈS le mur, pour ne rien dire à un non-membre.
+ */
+export class PlannerClosedError extends BusinessError {
+  constructor() {
+    super(
+      "planner.closed",
+      "Le planificateur de commandes n'est pas encore ouvert sur votre compte. Passez vos commandes depuis la boutique, ou contactez-nous pour l'essayer.",
+    );
+  }
+}
+
 // ─── Le mur ──────────────────────────────────────────────────────────────────
 
 /** La colonne n'existe pas, est retirée, ou n'est pas à cette société (404 non divulguant). */

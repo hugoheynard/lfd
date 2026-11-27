@@ -12,7 +12,7 @@ import { AccountService } from '../../account/account.service';
 import { companyScreensClosed } from '../company-screens';
 import { ProOnboarding } from '../pro-onboarding.service';
 import { ManageableSites } from '../site-menu/manageable-sites';
-import { FEATURE_PLANNER } from '../../feature-flags';
+import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
 
 /** Une destination du menu, telle qu'elle est DÉCLARÉE — sans compteur ni libellé. */
 interface Destination {
@@ -46,6 +46,11 @@ interface Destination {
    * (`carte-des-sites.md`, § 2). En dernier : les autres ne bougent pas.
    */
   readonly sitesOnly?: true;
+  /**
+   * Un écran derrière la clé `orderPlanner` : le planificateur ne paraît que
+   * si le serveur le dit ouvert à cette personne (exemption comprise).
+   */
+  readonly plannerOnly?: true;
 }
 
 /**
@@ -81,10 +86,8 @@ const DESTINATIONS: readonly Destination[] = [
   { id: 'loyalty', route: '/ma-fidelite', ready: true, loyaltyOnly: true },
   { id: 'invoices', route: '/mes-factures', ready: true, companyOnly: true },
   { id: 'baskets', route: '/paniers-recurrents', ready: true, companyOnly: true },
-  // Derrière son drapeau (Q7 du plan du planificateur) : absent, il ne décale rien.
-  ...(FEATURE_PLANNER
-    ? [{ id: 'planner', route: '/planificateur', ready: true, companyOnly: true } as const]
-    : []),
+  // Derrière la clé `orderPlanner` (Q7 du plan du planificateur) : absent, il ne décale rien.
+  { id: 'planner', route: '/planificateur', ready: true, companyOnly: true, plannerOnly: true },
   { id: 'account', route: '/mon-compte', ready: true, companyOnly: true },
   { id: 'sites', route: '/mes-sites', ready: true, companyOnly: true, sitesOnly: true },
 ];
@@ -147,6 +150,7 @@ export class ClientNav {
   private readonly router = inject(Router);
   private readonly loyalty = inject(ClientLoyalty);
   private readonly sites = inject(ManageableSites);
+  private readonly features = inject(ClientFeatureAccess);
 
   /**
    * L'adresse courante, en SIGNAL.
@@ -175,7 +179,8 @@ export class ClientNav {
         // `isOpen` n'est vrai qu'en espace personnel connecté : le service rend
         // `{ open: false }` ailleurs sans appel, et lit une seule fois sinon.
         (d.loyaltyOnly !== true || this.loyalty.isOpen()) &&
-        (d.sitesOnly !== true || this.sites.sites().length > 0),
+        (d.sitesOnly !== true || this.sites.sites().length > 0) &&
+        (d.plannerOnly !== true || this.features.orderPlannerOpen()),
     ).map((d) => ({
       id: d.id,
       route: d.route,

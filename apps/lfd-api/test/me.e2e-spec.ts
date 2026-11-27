@@ -276,6 +276,7 @@ describe("GET /me — le cycle se joue en base", () => {
         customerMandate: "closed",
         facebookLogin: "hidden",
         proSignupCallback: "hidden",
+        orderPlanner: "closed",
       },
     });
   });

@@ -25,13 +25,3 @@ export const FEATURE_DASHBOARD = false;
  * d'authentification et le mur de la société côté API.
  */
 export const FEATURE_PRO_SPACE = false;
-
-/**
- * Le **planificateur de commandes** des pros (`/planificateur`, plan
- * `documentation/commandes/planificateur/plan-planificateur-de-commandes.md`,
- * Q7) : sa route et son entrée de menu. Fermé tant que le client demandeur
- * n'a pas été ouvert — un drapeau de PRODUIT pour tous, faute d'un drapeau par
- * société dans la boutique (les niveaux d'accès du serveur sont globaux). Le
- * serveur, lui, sert déjà les routes `/planner` à tout pro.
- */
-export const FEATURE_PLANNER = false;

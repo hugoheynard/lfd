@@ -106,6 +106,7 @@ describe('ClientFeatureAccess', () => {
         customerMandate: 'open',
         facebookLogin: 'hidden',
         proSignupCallback: 'hidden',
+        orderPlanner: 'closed',
       });
       expect(access.customerMandate()).toBe('open');
     });
@@ -123,6 +124,7 @@ describe('ClientFeatureAccess', () => {
         customerMandate: 'closed',
         facebookLogin: 'visible',
         proSignupCallback: 'hidden',
+        orderPlanner: 'closed',
       });
       expect(access.facebookLoginShown()).toBe(true);
     });
@@ -179,6 +181,7 @@ describe('ClientFeatureAccess', () => {
       customerMandate: 'open',
       facebookLogin: 'visible',
       proSignupCallback: 'hidden',
+      orderPlanner: 'closed',
     } as const;
 
     /** 2026-11-05 : les niveaux voyagent dans `GET /me` ; plus de requête à part. */

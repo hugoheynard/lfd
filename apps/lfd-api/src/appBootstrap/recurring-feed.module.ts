@@ -5,6 +5,8 @@ import { AccountBasketBuyerContacts } from "../lafoliecoffee/account/infrastruct
 import { AccountBasketBuyerStanding } from "../lafoliecoffee/account/infrastructure/account-basket-buyer-standing.js";
 import { CatalogBasketArticles } from "../lafoliecoffee/catalog/application/catalog-basket-articles.js";
 import { CatalogModule } from "../lafoliecoffee/catalog/catalog.module.js";
+import { FeatureAccessModule } from "../lafoliecoffee/feature-access/feature-access.module.js";
+import { FeatureAccessPlannerAccess } from "../lafoliecoffee/feature-access/infrastructure/feature-access-planner-access.js";
 import { OrdersBasketSalesTerms } from "../lafoliecoffee/orders/application/services/orders-basket-sales-terms.js";
 import { CommercePlannedBasketCheck } from "../lafoliecoffee/orders/application/services/commerce-planned-basket-check.js";
 import { CommercePlannedColumnPlacement } from "../lafoliecoffee/orders/application/services/commerce-planned-column-placement.js";
@@ -22,6 +24,7 @@ import {
   BasketSalesTerms,
   OccurrencePlacement,
   PlannedBasketCheck,
+  PlannerAccess,
   PlannedColumnPlacement,
   PlannerFavoriteSkus,
 } from "../recurring/channels/commerce/index.js";
@@ -31,14 +34,22 @@ import {
  * § 6.1) : les ports que `recurring/channels/commerce/` déclare, branchés sur
  * leurs implémentations du commerce — la passation d'une échéance, les CGV et
  * ce que dirait la passation d'un panier planifié et sa passation (`orders`), l'acheteur et son adresse (`account`), les articles (`catalog`), les points de
- * retrait (`pickup-addresses`), les favoris de la société (`shop-favorites`).
+ * retrait (`pickup-addresses`), les favoris de la société (`shop-favorites`),
+ * et l'ouverture du planificateur (clé `orderPlanner`, `feature-access`).
  *
  * `@Global` pour la raison des autres fils : `recurring` ne peut pas importer
  * le commerce, et le commerce n'importe de lui que son canal.
  */
 @Global()
 @Module({
-  imports: [OrdersModule, AccountModule, CatalogModule, PickupAddressesModule, ShopFavoritesModule],
+  imports: [
+    OrdersModule,
+    AccountModule,
+    CatalogModule,
+    PickupAddressesModule,
+    ShopFavoritesModule,
+    FeatureAccessModule,
+  ],
   providers: [
     { provide: OccurrencePlacement, useExisting: RecurringOccurrencePlacement },
     { provide: BasketSalesTerms, useExisting: OrdersBasketSalesTerms },
@@ -49,6 +60,7 @@ import {
     { provide: BasketArticles, useClass: CatalogBasketArticles },
     { provide: BasketPickupPoints, useClass: SiteBasketPickupPoints },
     { provide: PlannerFavoriteSkus, useExisting: ShopFavoritesPlannerFavoriteSkus },
+    { provide: PlannerAccess, useClass: FeatureAccessPlannerAccess },
   ],
   exports: [
     OccurrencePlacement,
@@ -60,6 +72,7 @@ import {
     BasketArticles,
     BasketPickupPoints,
     PlannerFavoriteSkus,
+    PlannerAccess,
   ],
 })
 export class RecurringFeedModule {}

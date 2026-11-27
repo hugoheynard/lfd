@@ -13,10 +13,20 @@ describe("le catalogue de l'accès aux fonctionnalités", () => {
    * `shop`, `orders`, `invoices`, `desktopMenu` et `publicDelivery` ont été
    * retirées le 2026-10-09 (Hugo) ; `facebookLogin` est entrée le même jour.
    */
-  it("porte le mandat client, la connexion par Facebook et le rappel de l'inscription pro", () => {
-    const keys = ["customerMandate", "facebookLogin", "proSignupCallback"];
+  it("porte le mandat client, la connexion par Facebook, le rappel de l'inscription pro et le planificateur", () => {
+    const keys = ["customerMandate", "facebookLogin", "proSignupCallback", "orderPlanner"];
     expect(FEATURE_KEYS).toEqual(keys);
     expect(Object.keys(FEATURE_CATALOGUE)).toEqual(keys);
+  });
+
+  /** Ajoutée le 2026-11-27 (Hugo) : une porte que le serveur ferme, ouverte d'abord par exemption. */
+  it("porte le planificateur de commandes, fermé par défaut et exemptible", () => {
+    expect(FEATURE_CATALOGUE.orderPlanner.label).toBe("Planificateur de commandes");
+    expect(FEATURE_CATALOGUE.orderPlanner.description).toContain("se convertissent quand même");
+    expect(FEATURE_CATALOGUE.orderPlanner.levels).toEqual(["closed", "open"]);
+    expect(FEATURE_CATALOGUE.orderPlanner.defaultLevel).toBe("closed");
+    expect(isExemptible("orderPlanner")).toBe(true);
+    expect(mostOpenLevel("orderPlanner")).toBe("open");
   });
 
   /** Ajoutée le 2026-10-27 (Hugo) : l'encart de rappel, masqué tant qu'on ne l'ouvre pas. */

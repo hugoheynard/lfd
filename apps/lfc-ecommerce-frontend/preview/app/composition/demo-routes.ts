@@ -76,6 +76,7 @@ const FEATURE_LEVELS: FeatureLevelsView = {
   customerMandate: 'closed',
   facebookLogin: 'hidden',
   proSignupCallback: 'hidden',
+  orderPlanner: 'closed',
 };
 const EMPTY_STOREFRONT: PublicStorefrontPageView = { rows: 0, objects: [] };
 const EMPTY_TEXT = { fr: '', en: '', it: '' } as const;

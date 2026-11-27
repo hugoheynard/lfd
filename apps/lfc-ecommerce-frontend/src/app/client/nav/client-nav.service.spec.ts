@@ -19,6 +19,8 @@ import { ClientNav } from './client-nav.service';
 import { ManageableSites } from '../site-menu/manageable-sites';
 import { provideWorkspace, workspaceDouble } from '../client-workspace.fixture';
 import { TOMMEUSES } from '../mon-compte/account.fixture';
+import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
+import { DEFAULT_LEVELS } from '../feature-access/feature-access.fixture';
 
 /** De quoi naviguer : le routeur refuse une adresse qu'aucune route ne couvre. */
 const ROUTES = [
@@ -155,6 +157,7 @@ describe('Les destinations du menu, selon l’espace', () => {
     current: string,
     companies: readonly CompanyView[],
     sites: readonly CompanyView[] = [],
+    plannerOpen = false,
   ): readonly string[] => {
     localStorage.clear();
     TestBed.resetTestingModule();
@@ -179,6 +182,10 @@ describe('Les destinations du menu, selon l’espace', () => {
         { provide: ManageableSites, useValue: { sites: signal(sites) } },
       ],
     });
+    TestBed.inject(ClientFeatureAccess).receive({
+      ...DEFAULT_LEVELS,
+      orderPlanner: plannerOpen ? 'open' : 'closed',
+    });
     return TestBed.inject(ClientNav)
       .items()
       .map((i) => i.id);
@@ -196,6 +203,22 @@ describe('Les destinations du menu, selon l’espace', () => {
   it('ajoute Mes sites, en dernier, au principal qui règle la carte d’un site', () => {
     const chalet = { ...TOMMEUSES, id: 'cmp_chalet' };
     expect(idsIn(TOMMEUSES.id, [TOMMEUSES], [chalet])).toEqual([...ORDER, 'sites']);
+  });
+
+  /** Q7 du plan du planificateur : la clé `orderPlanner`, exemption comprise. */
+  it('ajoute le planificateur après les paniers quand la clé est ouverte', () => {
+    expect(idsIn(TOMMEUSES.id, [TOMMEUSES], [], true)).toEqual([
+      'shop',
+      'orders',
+      'invoices',
+      'baskets',
+      'planner',
+      'account',
+    ]);
+  });
+
+  it('retire le planificateur en perso, même clé ouverte', () => {
+    expect(idsIn(PERSONAL_WORKSPACE, [TOMMEUSES], [], true)).toEqual(['shop', 'orders']);
   });
 
   /**

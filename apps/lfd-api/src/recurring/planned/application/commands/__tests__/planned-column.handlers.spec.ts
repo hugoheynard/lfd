@@ -12,12 +12,18 @@ import {
   PlannedColumnInPastError,
   PlannedColumnVersionConflictError,
   PlannedWindowTakenError,
+  PlannerClosedError,
   PlannerMembershipLostError,
   PlannerProOnlyError,
 } from "../../../domain/errors/planned-column-errors.js";
 import { ConversionSchedule } from "../../services/conversion-schedule.js";
 import { PlannerWall } from "../../services/planner-wall.js";
-import { InMemoryPlannedColumns, RecordingBasketCheck } from "../../__tests__/planner-doubles.js";
+import {
+  CALLER,
+  FixedPlannerAccess,
+  InMemoryPlannedColumns,
+  RecordingBasketCheck,
+} from "../../__tests__/planner-doubles.js";
 import { OpenPlannedColumnCommand } from "../open-planned-column.command.js";
 import { OpenPlannedColumnHandler } from "../open-planned-column.handler.js";
 import { PutPlannedColumnCommand } from "../put-planned-column.command.js";
@@ -38,9 +44,12 @@ const NOON: PlannedRoutingPayload = { ...MORNING, window: { start: "11:00", end:
 /** Le seigle ferme la veille à 10 h (Paris, UTC+1) ; le croissant n'a rien à opposer. */
 const RYE_CLOSES = new Date("2026-12-02T09:00:00.000Z");
 
-function scene() {
+function scene(access = new FixedPlannerAccess()) {
   const columns = new InMemoryPlannedColumns();
-  const wall = new PlannerWall(new FixedStanding(new Set(["user_1/chalet", "user_1/autre"])));
+  const wall = new PlannerWall(
+    new FixedStanding(new Set(["user_1/chalet", "user_1/autre"])),
+    access,
+  );
   const clock = new FixedClock(NOW);
   const uow = new DirectUnitOfWork();
   const check = new RecordingBasketCheck({ SEIGLE: { closesAt: RYE_CLOSES } });
@@ -69,7 +78,7 @@ const openCommand = (
   user = "user_1",
   company: string | null = "chalet",
   intentKey = `intent-${String((intents += 1))}`,
-) => new OpenPlannedColumnCommand(user, company, { day, routing }, intentKey);
+) => new OpenPlannedColumnCommand(user, company, { day, routing }, intentKey, CALLER);
 
 const putCommand = (
   id: string,
@@ -78,11 +87,17 @@ const putCommand = (
   routing = MORNING,
   skus: readonly string[] = ["CRO-01"],
 ) =>
-  new PutPlannedColumnCommand("user_1", "chalet", id, {
-    version,
-    routing,
-    lines: skus.map((sku) => ({ sku, quantity })),
-  });
+  new PutPlannedColumnCommand(
+    "user_1",
+    "chalet",
+    id,
+    {
+      version,
+      routing,
+      lines: skus.map((sku) => ({ sku, quantity })),
+    },
+    CALLER,
+  );
 
 describe("OpenPlannedColumnHandler", () => {
   it("ouvre une colonne par créneau : deux créneaux du même jour font deux colonnes", async () => {
@@ -104,7 +119,7 @@ describe("OpenPlannedColumnHandler", () => {
   it("la même intention rejouée rend la même colonne, même retirée entre-temps", async () => {
     const { open, withdraw } = scene();
     const first = await open.execute(openCommand(MORNING, DAY, "user_1", "chalet", "same"));
-    await withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", first.id));
+    await withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", first.id, CALLER));
     const replay = await open.execute(openCommand(MORNING, DAY, "user_1", "chalet", "same"));
     expect(replay).toEqual(first);
   });
@@ -165,11 +180,17 @@ describe("PutPlannedColumnHandler", () => {
   it("ne trouve pas la colonne d'une autre société, même pour un membre des deux (404)", async () => {
     const { open, put } = scene();
     const { id } = await open.execute(openCommand());
-    const fromOther = new PutPlannedColumnCommand("user_1", "autre", id, {
-      version: 1,
-      routing: MORNING,
-      lines: [],
-    });
+    const fromOther = new PutPlannedColumnCommand(
+      "user_1",
+      "autre",
+      id,
+      {
+        version: 1,
+        routing: MORNING,
+        lines: [],
+      },
+      CALLER,
+    );
     await expect(put.execute(fromOther)).rejects.toThrow(PlannedColumnNotFoundError);
   });
 
@@ -232,8 +253,8 @@ describe("WithdrawPlannedColumnHandler", () => {
   it("retire la colonne, libère son créneau, et ne refait rien au rejeu", async () => {
     const { open, withdraw, columns } = scene();
     const { id } = await open.execute(openCommand());
-    await withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", id));
-    await withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", id));
+    await withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", id, CALLER));
+    await withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", id, CALLER));
     expect(columns.saves).toBe(2);
     const reopened = await open.execute(openCommand());
     expect(reopened.id).not.toBe(id);
@@ -242,7 +263,30 @@ describe("WithdrawPlannedColumnHandler", () => {
   it("refuse d'écrire une colonne retirée (404)", async () => {
     const { open, withdraw, put } = scene();
     const { id } = await open.execute(openCommand());
-    await withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", id));
+    await withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", id, CALLER));
     await expect(put.execute(putCommand(id, 2))).rejects.toThrow(PlannedColumnNotFoundError);
+  });
+});
+
+describe("la clé orderPlanner", () => {
+  it("fermée, refuse d'ouvrir, d'écrire et de retirer (409), sans rien écrire", async () => {
+    const access = new FixedPlannerAccess(false);
+    const { open, put, withdraw, columns } = scene(access);
+    await expect(open.execute(openCommand())).rejects.toThrow(PlannerClosedError);
+    await expect(put.execute(putCommand("col_000001", 1))).rejects.toThrow(PlannerClosedError);
+    await expect(
+      withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", "col_000001", CALLER)),
+    ).rejects.toThrow(PlannerClosedError);
+    expect(columns.saves).toBe(0);
+    expect(access.asked).toEqual([CALLER, CALLER, CALLER]);
+  });
+
+  it("n'est jugée qu'après le mur : l'espace personnel reste un 403", async () => {
+    const access = new FixedPlannerAccess(false);
+    const { open } = scene(access);
+    await expect(open.execute(openCommand(MORNING, DAY, "user_1", null))).rejects.toThrow(
+      PlannerProOnlyError,
+    );
+    expect(access.asked).toEqual([]);
   });
 });

@@ -11,6 +11,7 @@ const FEATURE_LEVELS: FeatureLevelsView = {
   customerMandate: 'closed',
   facebookLogin: 'hidden',
   proSignupCallback: 'hidden',
+  orderPlanner: 'closed',
 };
 
 const PROFILE = {

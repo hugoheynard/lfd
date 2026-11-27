@@ -37,10 +37,11 @@ export class GetPlannerHandler implements IQueryHandler<GetPlannerQuery, Planner
   /**
    * @throws {PlannerProOnlyError} espace personnel.
    * @throws {PlannerMembershipLostError} la personne n'est plus membre de la société.
+   * @throws {PlannerClosedError} le planificateur n'est pas ouvert à cette personne.
    * @throws {InvalidOccurrenceDateError} une date de départ qui n'existe pas.
    */
   async execute(query: GetPlannerQuery): Promise<PlannerView> {
-    const companyId = await this.wall.companyOf(query.actorUserId, query.companyId);
+    const companyId = await this.wall.companyOf(query.actorUserId, query.companyId, query.caller);
     const from = IsoDate.fromString(query.from);
     const today = parisDay(this.clock.now());
     const last = lastPlannableDay(today);

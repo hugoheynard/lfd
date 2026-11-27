@@ -28,7 +28,9 @@ import { PrismaFeatureOverrideRepository } from "./infrastructure/prisma-feature
  *
  * Exporte `FeatureLevelResolver` : la porte du mandat client
  * (`payments/infrastructure/feature-access-customer-mandate-gate.ts`) le
- * consomme. Rien d'autre n'en sort.
+ * consomme, comme l'ouverture du planificateur
+ * (`infrastructure/feature-access-planner-access.ts`, reliée par
+ * `appBootstrap/recurring-feed.module.ts`). Rien d'autre n'en sort.
  */
 @Module({
   imports: [AccountModule],
