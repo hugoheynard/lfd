@@ -120,6 +120,9 @@ const ALLOWED = new Set([
   // L1a, 2026-10-30) : il PORTE le filtre (`...STILL_SOLD`) sur ses deux
   // lectures d'articles — on ne règle pas un article retiré.
   "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-made-to-order-admin.reader.ts",
+  // Le rapprochement des attributions (`plan-fin-du-sur-mesure.md`, D5) :
+  // exempte et écrite — il lit les retirés pour retirer leurs attributions.
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/custom-recipe-reconciliation.operation.ts",
   // La traduction des références du semis (bascule L3) : exempte et écrite
   // (`withdrawn-filter: exempt`) — un nom traduit, pas une mise en vente ;
   // le handler refuse ensuite un article retiré.

@@ -81,6 +81,10 @@ export const ADMITTED = {
     "administration : le catalogue du personnel, retirés et en revue compris",
   "lafoliecoffee/catalog/infrastructure/prisma-made-to-order-admin.reader.ts":
     "administration : l'écran du sur mesure",
+  "lafoliecoffee/catalog/infrastructure/prisma-catalog-reservations.ts":
+    "écriture des attributions : `DELETE … RETURNING` dans l'abonné de la fiche, hors du devis et du rayon",
+  "lafoliecoffee/catalog/infrastructure/custom-recipe-reconciliation.operation.ts":
+    "opération d'après déploiement (ops) : les articles ordinaires attribués, retirés compris — hors du devis et du rayon",
   "lafoliecoffee/catalog/infrastructure/prisma-published-catalog.reader.ts":
     "administration : le catalogue publié (`admin-catalog.controller.ts`)",
   "lafoliecoffee/catalog/infrastructure/prisma-catalog-screen.reader.ts":
@@ -101,6 +105,8 @@ export const ADMITTED = {
     "réassort des boutiques : les articles d'audience `resupply`, qu'aucun acheteur ne voit — absents du devis et du rayon (plan-articles-de-reassort.md, lot A)",
   "lafoliecoffee/catalog/infrastructure/catalog-production-articles.reader.ts":
     "fournil : le produit et le rayon de chaque article, sans les filtres de vente (postes du fournil, § 3.4) — fiche d'atelier et page Postes, hors du devis et du rayon",
+  "lafoliecoffee/catalog/infrastructure/production-planned-quantities.ts":
+    "fournil : le nom et l'unité des articles planifiés, non commandés, du prévisionnel (le-previsionnel.md) — hors du devis et du rayon",
   "lafoliecoffee/catalog/infrastructure/prisma-catalog-item.repository.ts":
     "écriture : charge l'agrégat qu'elle enregistre",
   "lafoliecoffee/catalog/infrastructure/prisma-catalog-order-limits.ts":

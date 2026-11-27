@@ -28,7 +28,8 @@
     },
     "catalog_item_reservations": {
       "reserved_at": "date de la réservation, ni comptée ni servie",
-      "reserved_by": "auteur de la réservation, ni compté ni servi"
+      "reserved_by": "auteur de la réservation, ni compté ni servi",
+      "custom_recipe": "toujours vrai (CHECK) : cible de la clé (sku, custom_recipe), jamais lue ni servie"
     },
     "catalog_operations": {
       "image_gesture_id": "trace du geste de la médiathèque ; l'image elle-même est lue",

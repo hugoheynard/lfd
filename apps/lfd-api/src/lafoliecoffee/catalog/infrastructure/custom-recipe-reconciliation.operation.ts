@@ -139,6 +139,8 @@ export class PrismaAttributedOrdinaryArticles extends AttributedOrdinaryArticles
   }
 
   async list(): Promise<readonly Candidate[]> {
+    // withdrawn-filter: exempt — les retirés sont lus EXPRÈS, pour retirer
+    // leurs attributions ; rien n'est remis en vente.
     const rows = await this.prisma.catalogItem.findMany({
       where: { customRecipe: false, reservations: { some: {} } },
       select: {
