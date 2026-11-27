@@ -1,7 +1,7 @@
 # Nos restaurants — des commandes internes, un récapitulatif des BL
 
 > ✅ **Implémenté** (2026-11-26, commits `f0100b8db`, `606eadaac`, `5fd97cc10`,
-> `02737ef0c`, `b67219c3e`, `9a1a9d355`), sur `dev`, pas en production.
+> `02737ef0c`, `b67219c3e`, `9a1a9d355`), **en production le 2026-11-27**.
 
 # Partie 1 — En simple
 
