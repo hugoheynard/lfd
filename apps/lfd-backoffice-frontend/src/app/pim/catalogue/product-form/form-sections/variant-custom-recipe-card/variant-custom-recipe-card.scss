@@ -1,0 +1,19 @@
+.custom-recipe-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--fold-space-sm);
+  }
+}
+
+.custom-recipe-name {
+  font-size: var(--fold-text-sm);
+}

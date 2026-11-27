@@ -35,7 +35,7 @@ import { CommunicationForm } from './form-sections/communication/communication-f
 import { CreatedMediaCallout } from './created-media-callout/created-media-callout';
 import { IdentityForm } from './form-sections/identity/identity-form';
 import { PricingForm } from './form-sections/pricing/pricing-form';
-import { VariantCustomRecipeForm } from './form-sections/variant-custom-recipe/variant-custom-recipe-form';
+import { VariantCustomRecipeCard } from './form-sections/variant-custom-recipe-card/variant-custom-recipe-card';
 import { VariantAudienceForm } from './form-sections/variant-audience/variant-audience-form';
 import { OperationOnlyForm } from './form-sections/operation-only/operation-only-form';
 import { ColdRequirementForm } from './form-sections/cold-requirement/cold-requirement-form';
@@ -149,7 +149,7 @@ interface PageSection {
     IdentityForm,
     PricingForm,
     OperationOnlyForm,
-    VariantCustomRecipeForm,
+    VariantCustomRecipeCard,
     VariantAudienceForm,
     AudienceForm,
     VariantIdentityForm,

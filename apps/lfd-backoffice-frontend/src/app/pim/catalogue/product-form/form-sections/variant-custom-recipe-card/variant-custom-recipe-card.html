@@ -1,0 +1,20 @@
+<ul class="custom-recipe-rows">
+  @for (row of rows(); track row.id) {
+    <li data-custom-recipe-row>
+      <span class="custom-recipe-name">{{ row.label }}</span>
+      <fold-badge
+        [content]="row.customRecipe ? 'Sur mesure' : 'Ouverte'"
+        [variant]="row.customRecipe ? 'accent' : 'neutral'"
+      />
+      <fold-inline-confirm
+        [intent]="row.customRecipe ? 'primary' : 'danger'"
+        [message]="row.message"
+        [labels]="confirmLabels"
+        [loading]="busy()"
+        (confirmed)="apply(row.id, !row.customRecipe)"
+      >
+        <button foldButton size="sm" emphasis="soft" [disabled]="busy()">{{ row.action }}</button>
+      </fold-inline-confirm>
+    </li>
+  }
+</ul>

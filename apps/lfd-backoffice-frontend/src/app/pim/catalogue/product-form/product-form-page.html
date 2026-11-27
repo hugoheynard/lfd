@@ -239,11 +239,26 @@
                   tout de suite, à part du reste de la fiche.
                 </span>
                 <app-variant-identity-form />
-                <!-- Sur mesure : un fait de la déclinaison ; l'attribuer à des comptes
-                     se fait dans Catalogue publié. Écrite tout de suite. -->
-                <app-variant-custom-recipe-form />
                 <!-- Audience : la déclinaison suit sa fiche, ou y déroge. Écrite tout de suite. -->
                 <app-variant-audience-form />
+              </fold-page-section>
+            </fold-card>
+            <!-- SUR MESURE — une carte à part, une ligne par déclinaison : le geste
+                 change qui voit l'article, il se confirme avant de partir.
+                 Écrit tout de suite, hors de « Tout enregistrer ». -->
+            <fold-card>
+              <fold-page-section
+                title="Produit sur mesure (clientèle restreinte)"
+                separator
+                collapsible
+                [open]="sectionOpen('sur-mesure')()"
+                (openChange)="setSectionOpen('sur-mesure', $event)"
+              >
+                <span sectionSubtitle>
+                  Une recette faite pour des comptes précis, qu'on lui attribue dans Catalogue
+                  publié.
+                </span>
+                <app-variant-custom-recipe-card />
               </fold-page-section>
             </fold-card>
           }
