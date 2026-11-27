@@ -1,202 +1,315 @@
-# L'historique des tirages du plan — plan
+# Les versions du plan de production — plan
 
-> 📝 **Plan à bâtir**, écrit le 2026-11-27 à la demande de Hugo, contredit par
-> vitruve le même jour (§ 7). Rien de ce qui suit n'est construit, sauf ce que
-> le § 0 décrit comme existant.
+> 📝 **Plan à bâtir**, écrit le 2026-11-27 à la demande de Hugo, contredit
+> deux fois par vitruve le même jour (§ 8). Rien de ce qui suit n'est
+> construit, sauf ce que le § 0 décrit comme existant.
 
 ## En bref
 
 Chaque fois que le plan de production d'une journée **change après son
-arrêt** — l'arrêt lui-même, un retirage, une commande révisée, un réassort
-lancé, un nouvel arrêt après réouverture — on garde une **copie en données**
-du plan figé : les commandes, leurs lignes, le compte à produire, qui et
-quand. Le Prod manager voit la **liste des versions** de la journée, rouvre le
-papier quand il a été rangé, et **compare deux versions** à l'écran :
-commandes entrées, sorties, quantités qui ont changé.
+arrêt** — l'arrêt, un retirage, une commande révisée, une commande annulée,
+un réassort lancé, un nouvel arrêt après réouverture — on garde une **version**
+en données : les commandes, leurs lignes, le compte à produire, qui et quand,
+et pourquoi chaque commande est là. Chaque version a **son papier** (PDF),
+rangé dès qu'il a pu être fabriqué fidèlement.
+
+Le Prod manager voit la **liste des versions** de la journée, rouvre le papier
+de chacune, et **compare deux versions** : d'abord l'effet sur la production
+(produit par produit), puis chaque changement **expliqué** — « hors plan,
+intégrée au retirage de 19 h 10 », « révisée : croissant 10 → 15 »,
+« annulée après l'arrêt, toujours produite ».
 
 ```mermaid
 flowchart LR
-  A[Arrêt] --> V1[Version 1<br/>tirage 1]
-  V1 --> M[Commande révisée] --> V2[Version 2<br/>tirage 1, révisé]
-  V2 --> R[Retirage] --> V3[Version 3<br/>tirage 2]
-  V3 --> O[Réouverture] --> A2[Nouvel arrêt] --> V4[Version 4<br/>tirage 1 du nouvel arrêt]
-  V1 -. diff .-> V4
+  A[Arrêt] --> V1[Version 1]
+  V1 --> M[Commande révisée] --> V2[Version 2]
+  V2 --> R[Retirage] --> V3[Version 3]
+  V3 --> O[Réouverture] --> A2[Nouvel arrêt] --> V4[Version 4]
+  V1 -. comparer .-> V4
 ```
 
-La donnée est la trace : elle existe pour chaque version, toujours. Le papier
-(PDF) n'est qu'un complément, présent quand il a pu être rangé.
+La donnée est la trace et elle existe pour chaque version. Le papier vient
+en plus, et l'écran dit quand il manque.
 
 ---
 
 ## 0. Ce qui existe (ouvert le 2026-11-27)
 
-- **Le PDF d'un tirage a sa clé** depuis `1ef18c73e` : le dossier
-  (`dayDossierPdfKey`, `plan/domain/services/day-dossier-pdf.ts`) et le compte
-  à produire (`productionCountPdfKey`, `shared/print/domain/services/atelier-sheet-pdf.ts`)
-  portent l'instant de l'arrêt et du dernier retirage (`printRunStamp`, même
-  fichier que le compte).
-- **Mais le PDF n'est fabriqué qu'à la première lecture**, depuis la journée
-  COURANTE (`ProductionPaperArchive.storedOr`, `GetDayDossierPdfHandler`), et
-  n'est rangé que si toutes ses lectures ont répondu (`archivable` : bons de
-  livraison, rayons, tranches, postes, fiches de fonction). Un tirage que
-  personne n'a ouvert avant le geste suivant n'a donc **jamais** eu de papier,
-  et ne peut plus en avoir.
-- **Rien ne liste ces PDF** : l'archive ne sait que lire une clé connue ou la
-  fabriquer.
-- **La réouverture efface le plan figé** (`ProductionDay.reopen`,
-  `day/domain/entities/production-day.ts`) : arrêt, retirage et compteur
-  remis à zéro, plan vidé. Le PDF imprime « tirage `retakeCount + 1` », donc
-  il recommence à 1 après un nouvel arrêt.
-- **Les gestes qui changent un plan figé** :
+### Le papier
 
-  | geste                                                                                           | où il écrit                                                             | auteur disponible                                                                |
-  | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-  | arrêt manuel et automatique (le tour repasse par `CloseProductionDayCommand(day, "automatic")`) | `plan/…/plan-arrest-recording.ts`                                       | `current.closedBy` (`PlanSigner`, `name` peut être nul ; nul pour l'automatique) |
-  | retirage                                                                                        | `plan/…/retake-recording.ts`                                            | `staffUserId`, `byName`                                                          |
-  | commande révisée (journée arrêtée)                                                              | `day/…/production-order-revision.desk.ts` (`ProductionDay.reviseOrder`) | à vérifier en H1                                                                 |
-  | réassort lancé, qui arrête la journée ou non                                                    | `resupply/…/resupply-launch-recording.ts`                               | `gesture.staffUserId`, `gesture` nom                                             |
+- La clé du dossier (`dayDossierPdfKey`, `plan/domain/services/day-dossier-pdf.ts`)
+  et celle du compte à produire (`productionCountPdfKey`,
+  `shared/print/domain/services/atelier-sheet-pdf.ts`) portent l'instant de
+  l'arrêt et du dernier retirage (`printRunStamp`, même fichier que le compte)
+  depuis `1ef18c73e`.
+- Le papier n'est fabriqué qu'**à la lecture**, depuis la journée COURANTE,
+  et rangé par `ProductionPaperArchive.storedOr` seulement s'il est
+  `archivable` (bons de livraison, rayons, tranches, postes, fiches de
+  fonction ont répondu). Trois lecteurs : `get-day-dossier-pdf.handler.ts`,
+  `get-production-count-pdf.handler.ts`, `dossier-dispatch.service.ts`.
+- Une révision ou un réassort lancé change le plan sans changer la clé : le
+  premier lecteur range alors l'état révisé sous la clé du tirage d'avant.
+- Rien ne liste les papiers rangés.
 
-  La ré-annonce d'une journée déjà arrêtée (`close-production-day.handler.ts`,
-  branche `isClosed`) ne change rien et n'écrit pas de version.
+### Le plan figé et ce qui le change
 
-- **Ce que la journée connaît d'un plan figé** : `ProductionDaySnapshot`
-  (`day/domain/entities/production-day.snapshot.ts`). Le dossier imprime en
-  plus des lectures faites au tirage chez d'autres (bons de livraison,
-  rayons, postes, fiches de fonction, couleurs, réglages) : la donnée gardée
-  ne refera jamais le papier.
+- La réouverture (`ProductionDay.reopen`) efface le plan figé, l'arrêt, le
+  retirage et le compteur. Le papier imprime « tirage `retakeCount + 1` ».
+- Les gestes qui changent un plan figé :
+
+  | geste                                                                                                                                                                                                                         | où il écrit                                                                             | auteur                                                                                                                              |
+  | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+  | arrêt manuel et automatique (le tour repasse par `CloseProductionDayCommand(day, "automatic")`)                                                                                                                               | `plan/…/plan-arrest-recording.ts`                                                       | `current.closedBy` — `PlanSigner`, `name` nullable ; nul pour l'automatique                                                         |
+  | retirage — n'**ajoute** que (`planValue.absorbed`), en écartant les retirées                                                                                                                                                  | `plan/…/retake-recording.ts`                                                            | `staffUserId`, `byName`                                                                                                             |
+  | commande révisée — ne baisse jamais le compte du jour (`reviseOrder`)                                                                                                                                                         | `day/…/production-order-revision.desk.ts`                                               | à lire en H1                                                                                                                        |
+  | réassort lancé, qui arrête la journée ou non                                                                                                                                                                                  | `resupply/…/resupply-launch-recording.ts`                                               | `gesture`                                                                                                                           |
+  | commande annulée après l'arrêt — **ne retire pas** la commande du plan figé, ne change **ni le compte ni les fournées** : elle est inscrite au registre des retraits (`OrderWithdrawalLedger`) et le colisage libère ses bacs | `day/…/production-order-withdrawal.desk.ts` (ne fait ni `load` ni `save` de la journée) | **ne traverse pas le port** : le commerce a `intent.actor`, `OrderWithdrawalDesk.withdraw(day, orderId, allowance)` ne le passe pas |
+
+  La ré-annonce d'une journée déjà arrêtée n'écrit rien. Une annulation
+  d'une commande prise sur la vitrine ne passe pas par le guichet et ne
+  touche pas le plan.
+
+- Le plan est indexé par `(service_day, order_id, rank)` : une commande peut
+  y figurer par plusieurs envois.
+
+### Ce qui sort d'un plan d'une version à l'autre sans passer par le registre
+
+- À la réouverture, le commerce ne remet en `placed` que les commandes
+  confirmées à l'instant de l'arrêt défait, ni prêtes, ni avec un manque
+  décidé (`prisma-order-plan-release.ts`). Les autres restent `confirmed`, et
+  le nouvel arrêt, qui ne lit que `placed` (`STATUS_IN_PLAN`), ne les reprend
+  pas — volontairement pour un manque décidé.
+- Cette remise passe par un **abonné durable** qui ne fait rien si la journée
+  est de nouveau arrêtée quand il reçoit le fait
+  (`on-production-day-reopened.handler.ts`). Un nouvel arrêt fait avant que
+  l'abonné ait tout traité laisse des commandes hors de tout plan : c'est la
+  cause du 8 → 7 du 2026-11-27 (§ 5).
+- Pendant la réouverture, une commande peut aussi sortir légitimement :
+  paiement refusé ou remboursé (`settlementWhere`), passage à la vitrine
+  (`notFromStock`), date changée par le client.
+
+Le fournil ne connaît aucune de ces raisons : elles sont au commerce.
+
+### Ce que le fournil sait d'une commande
+
+`ProducibleOrder` (`channels/commerce/day-orders.reader.ts`, implémenté par
+`PrismaDayOrdersSource`) ne porte pas « hors plan ». Le commerce le sait
+(`placedOffPlan`, posé par `Order.receiveOffPlan`, staff seulement,
+définitif). Une commande absorbée par un retirage reste `placed` au
+commerce : aucun abonné n'écoute le retirage (le commentaire contraire de
+`prisma-admin-order-list.reader.ts`, « le retirage la passe `confirmed` »,
+est faux — à corriger au premier passage).
 
 ## 1. Ce qu'on décide
 
+### La version
+
 1. **Une version = une ligne**, écrite dans la **même transaction** et sous
-   le **même verrou** que le geste. Pas d'abonné : une version écrite après
-   coup pourrait manquer ou décrire un autre état.
-2. **Propriétaire : le noyau `day/`.** C'est le seul sous-contexte que les
-   trois écrivains (`plan/`, `resupply/`, `day/` lui-même) ont le droit
-   d'atteindre (`dev-toolbox/gates/lib/production-subcontexts-graph.mjs`,
-   `ALLOWED`). Il déclare le port dans `day/index.ts`, sous « ce que la
-   journée sait garder ». La version se construit par une méthode de
-   l'agrégat (`ProductionDay.version(cause, at, by)`), pas par l'appelant.
-3. **Ajout seul, par discipline** : le port n'a ni `update` ni `delete`, et
-   rien d'autre ne le tient (ni trigger, ni droit). La réouverture n'y touche
-   pas.
-4. **Le contenu est le plan, pas le papier** : commandes (référence, client,
-   acheminement, échéance, lignes), compte à produire, réassorts du soir
-   (`resupplies`) et réassorts lancés (`launchedResupplies`), chacun nommé à
-   part. **Pas** de `sheetDetails` ni de `destination` complète : le diff n'en
-   a pas besoin, et ce sont des données personnelles du client. Pas de
-   fournées ni de marques de colisage. Forme versionnée (`content_version`).
-5. **Deux numéros, dits tous les deux** : `version` court sur toute la
-   journée (1, 2, 3, 4…) et fait foi dans la liste ; `print_run` recopie le
-   « tirage n » que le papier imprime (`retakeCount + 1`). La liste affiche
-   « Version 4 · tirage 1 du nouvel arrêt » : on ne renumérote pas le papier.
-6. **Le papier, rangé au geste, après validation.** Après le `COMMIT` d'un
-   arrêt ou d'un retirage (`AfterCommit`, hors transaction :
-   `network-outside-transaction`), on demande la fabrication et le rangement
-   du dossier sous la clé du tirage. S'il n'est pas `archivable`, il n'est pas
-   rangé, et l'écran dit « papier non rangé (lectures incomplètes au
-   tirage) » — sans jamais le refaire depuis la journée courante sous une
-   ancienne clé. Une version de révision ou de réassort lancé n'a **pas** de
-   papier propre : la clé ne change pas, et le papier rangé au tirage dit
-   l'état d'avant. L'écran le dit.
-7. **Le diff se calcule à la lecture**, par une fonction pure du domaine.
+   le **même verrou** que le geste.
+2. **Propriétaire : le noyau `day/`**, seul sous-contexte que `plan/`,
+   `resupply/` et `day/` peuvent atteindre (`ALLOWED`,
+   `dev-toolbox/gates/lib/production-subcontexts-graph.mjs`). Le port est
+   rangé dans `day/index.ts`.
+3. **Construite par une fonction du domaine qui reçoit la version
+   précédente** : `PlanVersion.next(previous, snapshot, cause, withdrawn, by)`.
+   C'est elle qui déduit pourquoi chaque commande est là (§ 1.6) : l'agrégat
+   ne le sait pas, et l'apprendre à `production_order` coûterait une colonne
+   pour une information que la version précédente donne.
+4. **Ajout seul, par discipline** : le port n'a ni `update` ni `delete`
+   (seul `paper_key` se remplit, une fois, § 1.9). Rien d'autre ne le tient.
+5. **Une version n'est écrite que si le plan change** : une annulation d'une
+   commande absente du plan, une ré-annonce, n'en écrivent pas.
 
-## 2. La table — schéma `production`
+### Le contenu
 
-`production.plan_versions` (migration additive, aucune donnée déplacée) :
+6. **Par envoi `(orderId, rank)`** : référence, client (libellé seul),
+   acheminement, échéance, lignes, `offPlan` (§ 1.7), et `entry`, déduit en
+   comparant à la version précédente :
+   - `arrested` — présente au premier arrêt de la journée ;
+   - `retaken` — entrée par un retirage ;
+   - `arrested_after_reopen` — refigée par l'arrêt qui suit une réouverture ;
+   - `unchanged` — déjà là à la version précédente.
 
-| colonne            | type             | sens                                                                                           |
-| ------------------ | ---------------- | ---------------------------------------------------------------------------------------------- |
-| `id`               | text (ULID)      | `IdGenerator`                                                                                  |
-| `service_day`      | text             | comme ailleurs dans le schéma                                                                  |
-| `version`          | int              | unique avec `service_day`                                                                      |
-| `cause`            | text + CHECK     | `closed`, `auto_closed`, `retaken`, `order_revised`, `resupply_launched`, `opened_by_resupply` |
-| `recorded_at`      | timestamptz      | l'instant du geste (`Clock`)                                                                   |
-| `recorded_by_id`   | text null        | le staff ; nul pour l'arrêt automatique                                                        |
-| `recorded_by_name` | text null        | le nom figé ; peut être nul même pour un humain                                                |
-| `closed_at`        | timestamptz      | l'arrêt auquel elle appartient                                                                 |
-| `retaken_at`       | timestamptz null |                                                                                                |
-| `print_run`        | int              | le « tirage n » du papier                                                                      |
-| `paper_key`        | text null        | la clé du dossier rangé ; nulle tant qu'il ne l'est pas                                        |
-| `content_version`  | int              |                                                                                                |
-| `content`          | jsonb            | § 1.4                                                                                          |
+   Un envoi entré par un retirage avec `offPlan = true` se dit « hors plan,
+   intégrée au retirage ». Après une réouverture, `entry` l'emporte sur
+   `offPlan` dans la phrase : « refigée après réouverture (reçue hors plan) ».
 
-`version` est attribué sous le verrou de la journée que tous ces gestes
-prennent déjà.
+7. **`offPlan: boolean | null`** sur la commande figée : `null` pour les
+   commandes figées avant la colonne — on ne savait pas, on n'invente pas
+   `false`.
+8. **Le compte à produire est celui de la journée (`counts`)**, recopié tel
+   quel. Les **retirées** sont gardées à part (`withdrawn` : envoi, instant,
+   auteur), lues au registre par l'écrivain sous le verrou, parce que le
+   nouvel arrêt les écarte et que le diff doit encore pouvoir les nommer. Pas
+   de `sheetDetails` ni de `destination` complète (données personnelles,
+   inutiles au diff), pas de fournées ni de marques de colisage.
+   `content_version` versionne la forme.
 
-Portes : `lint:prisma-model-ownership` et `lint:production-subcontexts`
-(ajouter le modèle à `dev-toolbox/gates/production-subcontexts.map.json`,
-propriétaire `day`), `schema-drift`. `content` porte le libellé du client et
-`recorded_by_name` un nom du staff : la colonne staff entre au registre
-`documentation/legal/rgpd-registre.json` (`lint:rgpd-staff`) ; **aucune porte
-ne tient le libellé client**, c'est une décision écrite ici et à Q1.
+### Le papier
+
+9. **La clé du papier est celle de la version** :
+   `<jour>/dossier-du-jour-<mise en page>-version-<n>.pdf` (de même pour le
+   compte à produire). Elle remplace la clé par tirage de `1ef18c73e`.
+   Chaque lecteur (les trois du § 0) range sous la clé de la **version
+   courante** : la journée qu'il lit EST cette version, le papier est donc
+   fidèle, révision comprise. Une version dépassée n'est plus jamais rangée.
+   Le premier qui range remplit `paper_key`.
+10. **Rangé au geste** : après le `COMMIT` d'un geste qui écrit une version
+    (`AfterCommit`, hors transaction, `network-outside-transaction`), on
+    demande le papier. S'il n'est pas `archivable`, la **reprise est la
+    lecture suivante** (§ 1.9) — pas de tour de cron : le tour d'arrêt
+    automatique est « une tentative, pas une boucle » et ne traite que deux
+    jours. Si une autre version arrive avant, l'écran dit « papier non rangé
+    (lectures incomplètes) ».
+11. **Le papier dit sa version** : « Version n · tirage m », en en-tête.
+    `print_run` reste le « tirage m » imprimé ; `version` fait foi dans la
+    liste.
+
+### Le diff
+
+12. **Calculé à la lecture par une fonction pure** (`diffPlanVersions`), qui
+    ne reçoit que les versions : tout ce dont elle a besoin est dans leur
+    contenu (§ 1.6 à 1.8).
+13. **L'effet sur la production d'abord**, lu sur `counts` — le chiffre du
+    fournil, pas un recalcul sur les lignes : une annulation après l'arrêt
+    ne baisse pas le compte, une révision ne le baisse jamais. Une retirée
+    s'affiche « annulée après l'arrêt — toujours produite ».
+14. **Chaque changement avec sa raison**, par envoi : entrée (`entry`,
+    `offPlan`), lignes changées par une révision (version `order_revised`),
+    retirée (`withdrawn`), réassort lancé.
+15. **Une sortie dont le fournil ne connaît pas la raison est dite sans
+    accuser** : « sortie du plan — raison au commerce » (paiement, vitrine,
+    date, manque décidé, remise pas encore faite), **en orange**, pas en
+    rouge. Le fournil ne peut pas distinguer une sortie voulue d'une perte ;
+    le rouge pour toutes serait faux et vite ignoré. La perte réelle, la
+    course du § 0, se corrige à la source (§ 5).
+16. **Les changements faits pendant une réouverture** (commande `placed`
+    modifiée par le client, puis refigée) n'ont pas de version
+    `order_revised` : le diff les dit « modifiée pendant la réouverture ».
+17. **Comparer deux versions éloignées enchaîne** les explications des
+    versions intermédiaires.
+
+## 2. Les tables — schéma `production`
+
+`production.plan_versions` (migration additive) :
+
+| colonne            | type         | sens                                                                                                              |
+| ------------------ | ------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `id`               | text (ULID)  | `IdGenerator`                                                                                                     |
+| `service_day`      | text         |                                                                                                                   |
+| `version`          | int          | unique avec `service_day`, attribué sous le verrou                                                                |
+| `cause`            | text + CHECK | `closed`, `auto_closed`, `retaken`, `order_revised`, `order_withdrawn`, `resupply_launched`, `opened_by_resupply` |
+| `recorded_at`      | timestamptz  | `Clock`                                                                                                           |
+| `recorded_by_id`   | text null    | nul pour l'arrêt automatique                                                                                      |
+| `recorded_by_name` | text null    | peut être nul même pour un humain                                                                                 |
+| `closed_at`        | timestamptz  | l'arrêt auquel elle appartient                                                                                    |
+| `print_run`        | int          | le « tirage m » du papier                                                                                         |
+| `paper_key`        | text null    | rempli une fois, au premier rangement                                                                             |
+| `content_version`  | int          |                                                                                                                   |
+| `content`          | jsonb        | § 1.6 à 1.8                                                                                                       |
+
+`production.production_order` gagne `off_plan boolean NULL` (§ 1.7).
+
+Portes : `lint:prisma-model-ownership`, `lint:production-subcontexts`
+(modèle à `dev-toolbox/gates/production-subcontexts.map.json`, propriétaire
+`day`), `schema-drift`. `recorded_by_name` entre au registre
+`documentation/legal/rgpd-registre.json` (`lint:rgpd-staff`). Le libellé
+client de `content` n'est tenu par **aucune porte** : décision écrite ici et
+à Q1. `context-version-columns` ne s'applique pas (elle ne lit que les tables
+de l'instantané du catalogue).
 
 ## 3. Les lots
 
-**H1 — garder les versions.** Le port et son adaptateur Prisma dans `day/`,
-la méthode de l'agrégat, les quatre écrivains du § 0 l'appellent après
-`days.save`. Vérifier d'abord que la révision tient le verrou et la
-transaction de la journée, et où est son auteur. Tests : domaine (contenu,
-causes), application (chaque geste écrit une version, la ré-annonce et la
-réouverture n'en écrivent pas), e2e (arrêt → révision → retirage →
-réouverture → arrêt = 5 versions, numéros et `print_run` attendus).
+**H0 — « hors plan » jusqu'au fournil.** `offPlan: boolean | null` sur
+`ProducibleOrder` (13 fichiers hors tests, et les faux du port), rempli par
+`PrismaDayOrdersSource` depuis `placedOffPlan` ; la colonne `off_plan` de
+`production_order`, `production-day.row.ts` et
+`production-day-children.writer.ts`. Corriger le commentaire faux de
+`prisma-admin-order-list.reader.ts`.
 
-**H2 — ranger le papier au tirage.** L'abonné `AfterCommit` d'un arrêt ou
-d'un retirage fabrique le dossier, le range s'il est `archivable` et remplit
-`paper_key`. Tests : rangé, non rangé (commerce muet), retirage arrivé avant
-la fabrication (la version précédente reste sans papier, rien n'est
-réattribué).
+**H1 — garder les versions.** Le port, l'adaptateur et `PlanVersion.next`
+dans `day/` ; les écrivains : arrêt, retirage, révision, réassort lancé
+(après `days.save`), et le guichet du retrait, qui doit **charger** la
+journée sous son verrou, lire le registre, et recevoir l'auteur —
+`OrderWithdrawalDesk.withdraw` prend l'acteur, que
+`order-workshop-withdrawal.ts` lui passe. Tests : domaine (`entry`, `offPlan`,
+retirées, rangs), application (chaque geste écrit une version, ceux du § 1.5
+n'en écrivent pas), e2e (arrêt → révision → annulation → retirage →
+réouverture → arrêt).
 
-**H3 — comparer.** `diffPlanVersions(a, b)` pur : commandes ajoutées,
-retirées, lignes changées (par commande et sku), compte par sku (avant,
-après, écart, poids et pièces), réassorts entrés ou sortis.
+**H2 — le papier par version.** La clé par version (§ 1.9) pour le dossier et
+le compte, les trois lecteurs rangent sous la version courante et
+remplissent `paper_key`, la demande `AfterCommit`, l'en-tête « Version n ».
+Tests : rangé au geste, non rangé puis rangé à la lecture, version dépassée
+jamais rangée, révision rangée sous sa propre version.
 
-**H4 — lire.** Deux requêtes nommées et leurs routes sous le contrôleur de
-la journée : la liste des versions, la comparaison de deux versions. Droit :
-celui qui lit déjà le dossier du jour.
+**H3 — comparer et expliquer.** `diffPlanVersions` (§ 1.12 à 1.17), tests
+unitaires exhaustifs, dont le cas du 2026-11-27 rejoué.
 
-**H5 — l'écran.** Dans `prod-manager` du back-office : un panneau
-« Versions du plan » (liste, cause, qui, quand, papier rangé ou non, cocher
-deux versions → comparer, par défaut la courante contre la précédente),
-fold-ng d'abord.
+**H4 — lire.** La liste des versions et la comparaison, deux requêtes et
+leurs routes sous le contrôleur de la journée ; droit de lecture du dossier.
+
+**H5 — l'écran.** Dans `prod-manager` : « Versions du plan » — liste (cause,
+qui, quand, papier rangé ou non), comparer deux versions (par défaut la
+courante contre la précédente) : l'effet par produit en tête, les sorties
+inexpliquées en orange, puis les changements expliqués. fold-ng d'abord.
 
 ## 4. Ce que ce plan ne fait pas
 
-- Il ne corrige pas **la commande sortie du plan à la réouverture** (restée
-  `confirmed`, que le nouvel arrêt ne relit pas). Le diff la rendra visible ;
-  la corriger est un chantier à part, avec la fluidité de la réouverture que
-  Hugo veut repenser.
 - Il ne reconstruit ni versions ni papiers d'avant H1.
-- Il ne refait jamais un papier ancien : la donnée ne le permet pas (§ 0).
+- Il ne refait jamais un papier ancien.
+- Il ne dit pas au fournil POURQUOI le commerce a sorti une commande : il dit
+  qu'elle est sortie et que la raison est au commerce.
 
-## 5. Vérifications avant de bâtir
+## 5. À corriger à part : la course de la réouverture
 
-- La révision (`production-order-revision.desk.ts`) : verrou, transaction,
-  auteur.
-- La taille de `content` sur la journée la plus chargée en dev.
-- `arret-du-plan.md` et `dossier-prod-du-jour.md` : ce qu'ils disent du
-  papier rangé, à mettre au présent après H2.
+Le nouvel arrêt ne doit pas pouvoir passer avant que la remise du commerce
+soit faite. Deux pistes, pour le chantier de la fluidité de la réouverture
+que Hugo veut repenser : remettre les commandes en `placed` dans la
+transaction de la réouverture (un port du commerce appelé par le fournil,
+comme les lectures sous verrou), ou faire attendre l'arrêt tant que l'abonné
+n'a pas traité la dernière réouverture. C'est ce qui a produit 8 → 7, puis 9
+au tour suivant, le 2026-11-27 ; ce plan le rend visible, il ne le corrige
+pas.
 
-## 6. Questions pour Hugo
+## 6. Vérifications avant de bâtir
 
-- **Q1** — durée de conservation des versions (elles portent des libellés
-  clients et des noms du staff) : la même que les PDF archivés, ou une borne ?
-- **Q2** — l'envoi du dossier par e-mail (`dossier-dispatch.service.ts`)
-  doit-il noter la version envoyée à chaque destinataire ?
+- La révision (`production-order-revision.desk.ts`) : où est son auteur.
+- Que la réouverture refuse une journée avec des commandes prêtes ou des
+  manques décidés (`assertReopenable` ne lit que fournées, colisage, départ).
+- Qu'aucun reliquat n'inscrit encore de rang supérieur à 1 au plan.
+- La taille de `content` sur la journée la plus chargée.
 
-## 7. Ce que vitruve a contredit (2026-11-27), et ce qui a changé
+## 7. Questions pour Hugo
 
-- **Bloquant** — un PDF par tirage n'existe pas forcément : la donnée devient
-  la trace, le papier est rangé au geste après validation, et son absence est
-  dite (§ 1.6, H2).
-- **Bloquant** — `resupply/` ne peut pas atteindre `plan/` : propriétaire
-  `day/` (§ 1.2).
-- **Bloquant** — la révision d'une commande et le réassort lancé changent le
-  plan figé sans nouveau tirage : ce sont des versions, sans papier propre
-  (§ 0, § 1.6).
-- **Sérieux** — deux numérotations : `version` et `print_run`, toutes deux
-  dites (§ 1.5) ; contenu limité et données personnelles tranchées (§ 1.4) ;
-  le registre ne tient pas le client (§ 2) ; ajout seul par discipline
-  (§ 1.3) ; auteurs nullables (§ 0, § 2).
-- **Mineur** — l'arrêt automatique est le même chemin que le manuel ; la
-  ré-annonce n'écrit rien ; les deux réassorts nommés à part ; emplacement de
-  `printRunStamp`.
+- **Q1** — durée de conservation des versions (libellés clients, noms du
+  staff) : la même que les papiers rangés, ou une borne ?
+- **Q2** — l'envoi du dossier par e-mail doit-il noter la version envoyée à
+  chaque destinataire ?
+
+## 8. Ce que vitruve a contredit (2026-11-27)
+
+**Première lecture** — un tirage n'a pas toujours de papier (la donnée
+devient la trace) ; `resupply/` ne peut pas écrire dans `plan/` (propriétaire
+`day/`) ; révision et réassort lancé changent le plan sans tirage (ce sont
+des versions) ; deux numérotations (`version`, `print_run`) ; contenu limité ;
+auteurs nullables ; ajout seul par discipline.
+
+**Seconde lecture, sur le diff expliqué** :
+
+- **Bloquant** — l'« anomalie en rouge » avait des causes légitimes au
+  commerce que le fournil ne voit pas : orange, sans accuser (§ 1.15), et la
+  course corrigée à la source (§ 5).
+- **Bloquant** — les retirées disparaissent du contenu après un nouvel arrêt :
+  gardées à part (`withdrawn`, § 1.8).
+- **Bloquant** — l'agrégat ne sait pas pourquoi une commande est là : `entry`
+  déduit de la version précédente (§ 1.3, § 1.6) ; le guichet du retrait
+  doit charger la journée et recevoir l'auteur (H1).
+- **Bloquant** — ranger « à la prochaine lecture » sous la clé du tirage
+  rangeait un état révisé sous une ancienne clé : clé par version (§ 1.9).
+- **Sérieux** — « à produire » lu sur `counts`, jamais recalculé (§ 1.13) ;
+  ordre `entry` / `offPlan` écrit (§ 1.6) ; modifiée pendant la réouverture
+  (§ 1.16) ; H0 chiffré, `offPlan` nullable (§ 1.7) ; pas de reprise par le
+  cron (§ 1.10) ; auteur du retrait à faire passer par le port (H1).
+- **Mineur** — diff par envoi `(orderId, rank)` ; pas de version sans
+  changement (§ 1.5) ; commentaire faux à corriger (H0).
