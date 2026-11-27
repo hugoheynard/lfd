@@ -36,7 +36,7 @@ async function setup() {
 }
 
 describe("les lectures C, D et l'heure limite sur l'instantané", () => {
-  it("le classement : produit, famille, sur mesure — depuis l'instantané", async () => {
+  it("le classement : produit, famille, sur mesure — toute déclinaison en vente", async () => {
     const { base, moduleRef } = await setup();
     base.articles = [article("A-1", { customRecipe: true }), article("V-2", { isDefault: false })];
     const reader = moduleRef.get(SnapshotOrderLineClassificationReader);
@@ -45,6 +45,10 @@ describe("les lectures C, D et l'heure limite sur l'instantané", () => {
       [
         "A-1",
         { productId: "prod-A-1", categoryId: "fam-a", categoryPath: ["fam-a"], madeToOrder: true },
+      ],
+      [
+        "V-2",
+        { productId: "prod-V-2", categoryId: "fam-a", categoryPath: ["fam-a"], madeToOrder: false },
       ],
     ]);
   });
