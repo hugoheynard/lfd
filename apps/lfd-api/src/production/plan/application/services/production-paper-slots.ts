@@ -23,24 +23,25 @@ export function closedSnapshotOf(day: ProductionDay): ClosedSnapshot {
  * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
  */
 export function productionCountSlotOf(day: ProductionDay): PaperSlot {
-  const { serviceDay } = closedSnapshotOf(day);
+  const { serviceDay, closedAt, retaken } = closedSnapshotOf(day);
   return {
-    key: productionCountPdfKey(serviceDay),
+    key: productionCountPdfKey(serviceDay, closedAt, retaken?.at ?? null),
     fileName: `compte-a-produire-${serviceDay}.pdf`,
   };
 }
 
 /**
  * La place du dossier du jour : **par tirage arrêté**. La clé porte l'instant
- * du dernier retirage (`dayDossierPdfKey`), si bien qu'un retirage fabrique un
- * dossier complété sans écraser celui qui était parti avant.
+ * de l'arrêt et du dernier retirage (`dayDossierPdfKey`), si bien qu'un
+ * retirage ou un nouvel arrêt après réouverture fabrique son dossier sans
+ * écraser celui qui était parti avant.
  *
  * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
  */
 export function dayDossierSlotOf(day: ProductionDay): PaperSlot {
   const snapshot = closedSnapshotOf(day);
   return {
-    key: dayDossierPdfKey(snapshot.serviceDay, snapshot.retaken?.at ?? null),
+    key: dayDossierPdfKey(snapshot.serviceDay, snapshot.closedAt, snapshot.retaken?.at ?? null),
     fileName: `dossier-du-jour-${snapshot.serviceDay}.pdf`,
   };
 }

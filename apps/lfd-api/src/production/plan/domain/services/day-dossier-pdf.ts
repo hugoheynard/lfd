@@ -28,6 +28,7 @@ import {
   weekdayShortDate,
   type Doc,
 } from "../../../../platform/pdf/paper-pdf-kit.js";
+import { printRunStamp } from "../../../shared/print/index.js";
 import { contentRightOf, PaperPages } from "../../../../platform/pdf/paper-pages.js";
 import { type PdfOverlay, overlaidPdf } from "../../../../platform/pdf/embedded-pdf.js";
 import {
@@ -252,9 +253,11 @@ export function drawRecapWithCalendars(
 }
 
 /**
- * La clé d'archive. **Une par tirage arrêté** : la clôture, puis chaque
- * retirage, dont l'instant entre dans le nom — le dossier complété ne
- * remplace pas celui qui est parti avant lui, il s'y ajoute.
+ * La clé d'archive. **Une par tirage arrêté** : chaque arrêt, puis chaque
+ * retirage, dont les instants entrent dans le nom — le dossier complété ne
+ * remplace pas celui qui est parti avant lui, il s'y ajoute, et l'arrêt qui
+ * suit une réouverture fabrique le sien. Les dossiers sortis restent rangés :
+ * ils sont la trace de ce que le fournil a reçu (Hugo, 2026-11-27).
  *
  * Toute mise en page qui change ce qu'un dossier déjà archivé dirait monte
  * cette version : un dossier archivé sous l'ancienne clé dit le papier
@@ -264,12 +267,12 @@ export function drawRecapWithCalendars(
  */
 export const DOSSIER_LAYOUT_VERSION = "v16";
 
-export function dayDossierPdfKey(serviceDay: string, retakenAt: Date | null): string {
-  const base = `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}`;
-  if (retakenAt === null) {
-    return `${base}.pdf`;
-  }
-  return `${base}-retirage-${retakenAt.toISOString().replace(/[:.]/g, "-")}.pdf`;
+export function dayDossierPdfKey(
+  serviceDay: string,
+  closedAt: Date,
+  retakenAt: Date | null,
+): string {
+  return `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}-${printRunStamp(closedAt, retakenAt)}.pdf`;
 }
 
 /**

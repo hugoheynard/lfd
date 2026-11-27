@@ -295,18 +295,22 @@ describe("renderDayDossierPdf", () => {
 
 describe("dayDossierPdfKey — la version de mise en page", () => {
   it("n'est plus la clé d'avant E1b : un dossier archivé à l'ancien papier n'est jamais resservi", () => {
-    expect(dayDossierPdfKey(DAY, null)).not.toBe(`${DAY}/dossier-du-jour.pdf`);
-    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v16-retirage-");
+    expect(dayDossierPdfKey(DAY, CLOSED, null)).not.toBe(`${DAY}/dossier-du-jour.pdf`);
+    expect(dayDossierPdfKey(DAY, CLOSED, RETAKEN)).toContain("-v16-arret-");
   });
 });
 
 describe("dayDossierPdfKey", () => {
   it("une clé pour la clôture, une autre par retirage : le complément n'écrase pas l'original", () => {
-    const original = dayDossierPdfKey(DAY, null);
-    const completed = dayDossierPdfKey(DAY, RETAKEN);
-    expect(original).toBe(`${DAY}/dossier-du-jour-v16.pdf`);
+    const original = dayDossierPdfKey(DAY, CLOSED, null);
+    const completed = dayDossierPdfKey(DAY, CLOSED, RETAKEN);
+    expect(original).toBe(`${DAY}/dossier-du-jour-v16-arret-2026-10-07T18-00-00-000Z.pdf`);
     expect(completed).not.toBe(original);
     expect(completed.startsWith(`${DAY}/`)).toBe(true);
+  });
+
+  it("un nouvel arrêt après réouverture a sa propre clé : l'ancien dossier reste rangé", () => {
+    expect(dayDossierPdfKey(DAY, RETAKEN, null)).not.toBe(dayDossierPdfKey(DAY, CLOSED, null));
   });
 
   it("compte le réassort sur la fiche de poste, total d'abord, et imprime son bon après les bons de commande", async () => {

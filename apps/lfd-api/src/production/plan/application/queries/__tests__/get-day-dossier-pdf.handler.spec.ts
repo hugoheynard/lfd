@@ -51,6 +51,8 @@ const NOW = new Date();
 const DAY = instantToLocal(NOW).day;
 const CLOSED = new Date(NOW.getTime() - 2 * 60 * 60 * 1000);
 const RETAKEN = new Date(NOW.getTime() - 60 * 60 * 1000);
+const REOPENED = new Date(NOW.getTime() - 50 * 60 * 1000);
+const RECLOSED = new Date(NOW.getTime() - 40 * 60 * 1000);
 const VIENNOISERIES: CatalogFamilyView = { id: "fam-vien", name: "Viennoiseries", position: 0 };
 
 function order(orderId: string): ProducibleOrder {
@@ -149,7 +151,9 @@ describe("GetDayDossierPdfHandler", () => {
     const first = await handler.execute(new GetDayDossierPdfQuery(DAY));
     expect(first.fileName).toBe(`dossier-du-jour-${DAY}.pdf`);
     expect(first.bytes.subarray(0, 5).toString("latin1")).toBe("%PDF-");
-    expect(store.objects.get(dayDossierPdfKey(DAY, null))?.bytes.equals(first.bytes)).toBe(true);
+    expect(store.objects.get(dayDossierPdfKey(DAY, CLOSED, null))?.bytes.equals(first.bytes)).toBe(
+      true,
+    );
 
     const second = await handler.execute(new GetDayDossierPdfQuery(DAY));
     expect(second.bytes.equals(first.bytes)).toBe(true);
@@ -164,7 +168,25 @@ describe("GetDayDossierPdfHandler", () => {
 
     await handler.execute(new GetDayDossierPdfQuery(DAY));
     expect([...store.objects.keys()].sort()).toEqual(
-      [dayDossierPdfKey(DAY, null), dayDossierPdfKey(DAY, RETAKEN)].sort(),
+      [dayDossierPdfKey(DAY, CLOSED, null), dayDossierPdfKey(DAY, CLOSED, RETAKEN)].sort(),
+    );
+  });
+
+  /**
+   * Régression : après une réouverture puis un nouvel arrêt, la clé
+   * redevenait celle du premier arrêt, et l'ancien dossier était resservi.
+   */
+  it("après réouverture et nouvel arrêt, tire le nouveau dossier et garde l'ancien", async () => {
+    const day = closedDay();
+    const { handler, store } = setup(day);
+    const first = await handler.execute(new GetDayDossierPdfQuery(DAY));
+    day.reopen({ packingStarted: false, dispatchStarted: false }, REOPENED, "staff-1");
+    day.close([order("ord_1"), order("ord_2")], new Set<string>(), RECLOSED, null);
+
+    const second = await handler.execute(new GetDayDossierPdfQuery(DAY));
+    expect(second.bytes.equals(first.bytes)).toBe(false);
+    expect([...store.objects.keys()].sort()).toEqual(
+      [dayDossierPdfKey(DAY, CLOSED, null), dayDossierPdfKey(DAY, RECLOSED, null)].sort(),
     );
   });
 
@@ -225,7 +247,7 @@ describe("GetDayDossierPdfHandler", () => {
     expect(extract.fileName).toBe(`dossier-du-jour-${DAY}-extrait.pdf`);
     expect(extract.bytes.equals(whole.bytes)).toBe(false);
     expect(pdfPages(extract.bytes)).toHaveLength(1);
-    expect([...store.objects.keys()]).toEqual([dayDossierPdfKey(DAY, null)]);
+    expect([...store.objects.keys()]).toEqual([dayDossierPdfKey(DAY, CLOSED, null)]);
   });
 
   it("ne range pas un extrait tiré avant le dossier entier", async () => {

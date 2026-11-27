@@ -235,9 +235,31 @@ export const COUNT_LAYOUT_VERSION = "v2";
 /** Le rayon du camembert du jour. */
 const PIE = 6 * MM;
 
-/** La clé du compte à produire. Une par journée et par mise en page. */
-export function productionCountPdfKey(serviceDay: string): string {
-  return `${serviceDay}/compte-a-produire-${COUNT_LAYOUT_VERSION}.pdf`;
+/**
+ * La clé du compte à produire. **Une par tirage arrêté** et par mise en page :
+ * l'arrêt qui suit une réouverture, comme un retirage, compte autre chose que
+ * le papier déjà sorti, qui reste rangé.
+ */
+export function productionCountPdfKey(
+  serviceDay: string,
+  closedAt: Date,
+  retakenAt: Date | null,
+): string {
+  return `${serviceDay}/compte-a-produire-${COUNT_LAYOUT_VERSION}-${printRunStamp(closedAt, retakenAt)}.pdf`;
+}
+
+/**
+ * **Le tirage, dans un nom de fichier** : l'instant de l'arrêt, puis celui du
+ * dernier retirage s'il y en a un. Deux tirages distincts d'une journée ont
+ * toujours deux noms distincts.
+ */
+export function printRunStamp(closedAt: Date, retakenAt: Date | null): string {
+  const closed = `arret-${fileSafe(closedAt)}`;
+  return retakenAt === null ? closed : `${closed}-retirage-${fileSafe(retakenAt)}`;
+}
+
+function fileSafe(at: Date): string {
+  return at.toISOString().replace(/[:.]/g, "-");
 }
 
 /**
