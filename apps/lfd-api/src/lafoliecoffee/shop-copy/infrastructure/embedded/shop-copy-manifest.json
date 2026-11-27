@@ -65,10 +65,17 @@
           "variables": []
         },
         {
-          "key": "accueilPublic.hello.proPills.2",
-          "fr": "Facturation mensuelle",
-          "en": "Monthly invoicing",
-          "it": "Fatturazione mensile",
+          "key": "accueilPublic.hello.proPillOnAccount",
+          "fr": "Paiement au compte",
+          "en": "Payment on account",
+          "it": "Pagamento a conto",
+          "variables": []
+        },
+        {
+          "key": "accueilPublic.hello.proPillAtOrder",
+          "fr": "Paiement à la commande",
+          "en": "Payment at checkout",
+          "it": "Pagamento all’ordine",
           "variables": []
         },
         {

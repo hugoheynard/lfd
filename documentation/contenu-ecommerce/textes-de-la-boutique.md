@@ -4,14 +4,14 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 2037 textes
+## Sommaire — 2038 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
 | Espace | Clé | Textes |
 | --- | --- | --- |
 | **Parcours de commande** | | |
-| [Accueil public — le visiteur sans compte](#espace-accueilpublic) | `accueilPublic` | 63 |
+| [Accueil public — le visiteur sans compte](#espace-accueilpublic) | `accueilPublic` | 64 |
 | [Accueil pro public — le professionnel sans compte (/pro)](#espace-prolanding) | `proLanding` | 30 |
 | [Accueil — l'en-tête de bienvenue](#espace-hero) | `hero` | 4 |
 | [Accueil — les portes d'entrée](#espace-doors) | `doors` | 23 |
@@ -53,7 +53,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **2037** |
+| **Total** | | **2038** |
 
 ## Le parcours de commande
 
@@ -61,7 +61,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 
 ### Accueil public — le visiteur sans compte — `accueilPublic`
 
-Source : `screens/accueil-public.copy.ts` · 63 textes.
+Source : `screens/accueil-public.copy.ts` · 64 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -73,7 +73,8 @@ Source : `screens/accueil-public.copy.ts` · 63 textes.
 | `accueilPublic.hello.titleAnonymous` | Bonjour.<br>On vous sert comment ? | Hello.<br>How can we serve you? | Buongiorno.<br>Come possiamo servirla ? |  |
 | `accueilPublic.hello.proPills.0` | Tarifs pro appliqués | Trade prices applied | Prezzi pro applicati |  |
 | `accueilPublic.hello.proPills.1` | Livraison en station | Delivery in resort | Consegna in stazione |  |
-| `accueilPublic.hello.proPills.2` | Facturation mensuelle | Monthly invoicing | Fatturazione mensile |  |
+| `accueilPublic.hello.proPillOnAccount` | Paiement au compte | Payment on account | Pagamento a conto |  |
+| `accueilPublic.hello.proPillAtOrder` | Paiement à la commande | Payment at checkout | Pagamento all’ordine |  |
 | `accueilPublic.doors.pickup.tag` | Retrait | Pickup | Ritiro |  |
 | `accueilPublic.doors.pickup.title` | Je passe<br>la prendre | I’ll come<br>and get it | Passo<br>a prenderlo |  |
 | `accueilPublic.doors.pickup.intro` | Au Labo ou au village, demain à l’heure de mon choix. | At Le Labo or Le Village, tomorrow at the time I choose. | Al Labo o al village, domani all’ora che scelgo. |  |

@@ -113,10 +113,21 @@ type Regard = 'visiteur' | 'perso' | 'pro';
 /** La bascule de la doublure du dernier montage — à poser à la main. */
 let lastSwitching: WritableSignal<WorkspaceSwitching | null> = signal(null);
 
+/** Le crédit du payeur servi au montage suivant ; aucun par défaut. */
+let proCredit: readonly string[] = [];
+
 function whoProviders(who: Regard, status?: CompanyStatus): readonly unknown[] {
   lastSwitching = signal<WorkspaceSwitching | null>(null);
   // Sans statut, la société n'en dit rien : les cas qui en dépendent le posent.
-  const company = who === 'pro' ? { raisonSociale: 'Tommeuses SAS', status } : null;
+  const company =
+    who === 'pro'
+      ? {
+          raisonSociale: 'Tommeuses SAS',
+          status,
+          grantedTerms: proCredit,
+          directDebitBlocked: false,
+        }
+      : null;
   // ⚠️ La doublure de l'espace porte TOUTE sa surface de lecture, pas seulement
   // ce que l'écran regarde : d'autres services du même arbre lisent `current`,
   // et une doublure partielle échoue à l'exécution, pas à la compilation.
@@ -496,6 +507,24 @@ describe('AccueilPublic — les trois états', () => {
     expect(fixture.nativeElement.querySelector('app-service-doors')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.banner')).toBeNull();
     expect(fixture.nativeElement.querySelectorAll('.pro-pill')).toHaveLength(3);
+  });
+
+  /**
+   * Régression : la troisième pastille disait « Facturation hebdomadaire » à
+   * tous les pros, crédit ou non, quel que soit leur rythme de facturation.
+   */
+  it('dit le règlement du payeur : au compte avec un crédit, à la commande sans', async () => {
+    const pills = (fixture: ComponentFixture<AccueilPublic>): string[] =>
+      Array.from(
+        fixture.nativeElement.querySelectorAll('.pro-pill') as NodeListOf<HTMLElement>,
+      ).map((pill) => pill.textContent?.trim() ?? '');
+
+    proCredit = [];
+    expect(pills(await mount(POINTS, 'pro')).at(-1)).toBe('Paiement à la commande');
+    TestBed.resetTestingModule();
+    proCredit = ['monthly'];
+    expect(pills(await mount(POINTS, 'pro')).at(-1)).toBe('Paiement au compte');
+    proCredit = [];
   });
 
   /**

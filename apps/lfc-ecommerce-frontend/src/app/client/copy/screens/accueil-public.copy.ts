@@ -100,8 +100,12 @@ export interface AccueilPublicCopy {
     readonly title: string;
     /** Le même, quand la fiche ne porte pas encore de prénom. */
     readonly titleAnonymous: string;
-    /** Les trois pastilles d'un espace PRO, et d'aucun autre. */
+    /** Les pastilles fixes d'un espace PRO, et d'aucun autre. */
     readonly proPills: readonly string[];
+    /** La pastille du règlement, quand le crédit du payeur est actif. */
+    readonly proPillOnAccount: string;
+    /** La pastille du règlement, sans crédit actif : on paie à la commande. */
+    readonly proPillAtOrder: string;
   };
 
   /**
@@ -303,7 +307,9 @@ export const ACCUEIL_PUBLIC_FR: AccueilPublicCopy = {
     kicker: 'Nouvelle commande',
     title: 'Bonjour {name}.\nOn vous sert comment ?',
     titleAnonymous: 'Bonjour.\nOn vous sert comment ?',
-    proPills: ['Tarifs pro appliqués', 'Livraison en station', 'Facturation mensuelle'],
+    proPills: ['Tarifs pro appliqués', 'Livraison en station'],
+    proPillOnAccount: 'Paiement au compte',
+    proPillAtOrder: 'Paiement à la commande',
   },
   doors: {
     pickup: {
@@ -398,7 +404,9 @@ export const ACCUEIL_PUBLIC_EN: AccueilPublicCopy = {
     kicker: 'New order',
     title: 'Hello {name}.\nHow can we serve you?',
     titleAnonymous: 'Hello.\nHow can we serve you?',
-    proPills: ['Trade prices applied', 'Delivery in resort', 'Monthly invoicing'],
+    proPills: ['Trade prices applied', 'Delivery in resort'],
+    proPillOnAccount: 'Payment on account',
+    proPillAtOrder: 'Payment at checkout',
   },
   doors: {
     pickup: {
@@ -493,7 +501,9 @@ export const ACCUEIL_PUBLIC_IT: AccueilPublicCopy = {
     kicker: 'Nuovo ordine',
     title: 'Buongiorno {name}.\nCome possiamo servirla ?',
     titleAnonymous: 'Buongiorno.\nCome possiamo servirla ?',
-    proPills: ['Prezzi pro applicati', 'Consegna in stazione', 'Fatturazione mensile'],
+    proPills: ['Prezzi pro applicati', 'Consegna in stazione'],
+    proPillOnAccount: 'Pagamento a conto',
+    proPillAtOrder: 'Pagamento all’ordine',
   },
   doors: {
     pickup: {

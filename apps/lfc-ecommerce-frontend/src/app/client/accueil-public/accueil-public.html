@@ -41,7 +41,7 @@
          de tout ça à se faire rappeler. -->
     @if (pro()) {
       <ul class="pro-pills">
-        @for (pill of c().hello.proPills; track pill) {
+        @for (pill of proPills(); track pill) {
           <li class="pro-pill">{{ pill }}</li>
         }
       </ul>

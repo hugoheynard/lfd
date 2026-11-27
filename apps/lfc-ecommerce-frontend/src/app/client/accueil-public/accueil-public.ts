@@ -17,6 +17,7 @@ import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 
 import { ClientAudience } from '../client-audience.service';
 import { ClientIdentity } from '../client-identity.service';
+import { settlesOnAccount } from '../../account/settles-on-account';
 import { ClientContext } from '../client-context.service';
 import { AuthFacade } from '../../auth/auth.facade';
 import { ClientChrome } from '../client-chrome.service';
@@ -184,6 +185,17 @@ export class AccueilPublic {
   protected readonly pro = computed(
     () => this.recognised() && this.context.shownCompany() !== null,
   );
+
+  /**
+   * Les pastilles d'un pro : les fixes, puis celle du règlement, qui suit le
+   * crédit du PAYEUR (le principal d'un site facturé chez lui). Elle ne nomme
+   * pas de rythme : la boutique ne lit pas celui de la facturation.
+   */
+  protected readonly proPills = computed(() => {
+    const hello = this.c().hello;
+    const onAccount = settlesOnAccount(this.context.shownCompany());
+    return [...hello.proPills, onAccount ? hello.proPillOnAccount : hello.proPillAtOrder];
+  });
 
   /**
    * La porte du coursier est-elle ouverte, ou en attente ?

@@ -122,6 +122,8 @@ export const GLOSSARY_P: Readonly<Record<string, string>> = {
   proLabel: 'Professionnel',
   proOnly: 'Réservé aux pros',
   proPills: 'Pastilles pro',
+  proPillAtOrder: 'Pastille pro — règlement à la commande',
+  proPillOnAccount: 'Pastille pro — règlement au compte',
   proPrice: 'Prix pro',
   proSub: 'Professionnel — sous-titre',
   proVisitNote: 'Visite pro — repère des prix hors taxe',
