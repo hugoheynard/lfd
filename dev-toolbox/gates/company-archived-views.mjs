@@ -101,14 +101,6 @@ export const ADMITTED = new Map([
     { calls: 1, reason: "nomme les titulaires d'une réservation d'article, par identifiant" },
   ],
   [
-    "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-reservation-companies.ts",
-    {
-      calls: 1,
-      reason:
-        "nomme, par identifiant, les sociétés dont une attribution est retirée — un compte supprimé garde son nom dans le fait",
-    },
-  ],
-  [
     "apps/lfd-api/src/lafoliecoffee/loyalty/infrastructure/prisma-loyalty-ledger.reader.ts",
     {
       calls: 1,

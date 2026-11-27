@@ -457,8 +457,6 @@ model CatalogItem {
   /// à tous les pros, comme avant.
   reservations CatalogItemReservation[]
 
-  /// La cible de la clé des attributions (D3 de `plan-fin-du-sur-mesure.md`).
-  @@unique([sku, customRecipe])
   @@index([categoryId])
   @@index([productId])
   @@map("catalog_items")
@@ -682,14 +680,8 @@ model CatalogItemOverride {
 /// mercuriale. Retirer une réservation supprime sa ligne : ce n'est pas un
 /// agrégat métier, et le journal garde le geste.
 model CatalogItemReservation {
-  sku          String
-  /// **Toujours vrai** (`CHECK` posé par la migration) : la clé
-  /// `(sku, custom_recipe)` vers l'article interdit ainsi qu'un article qui
-  /// n'est pas sur mesure ait une attribution, et qu'un article attribué
-  /// cesse de l'être sans que ses attributions partent d'abord
-  /// (`documentation/catalogue/plan-fin-du-sur-mesure.md`, D3).
-  customRecipe Boolean     @default(true) @map("custom_recipe")
-  item         CatalogItem @relation(fields: [sku, customRecipe], references: [sku, customRecipe], onDelete: Restrict, onUpdate: NoAction)
+  sku  String
+  item CatalogItem @relation(fields: [sku], references: [sku], onDelete: Restrict)
 
   companyId  String   @map("company_id")
   reservedAt DateTime @map("reserved_at") @db.Timestamptz(3)

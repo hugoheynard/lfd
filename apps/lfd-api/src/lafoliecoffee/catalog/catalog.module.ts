@@ -28,7 +28,6 @@ import { ApproveReviewHandler } from "./application/commands/approve-review.hand
 import { SetCatalogFeaturedHandler } from "./application/commands/set-catalog-featured.handler.js";
 import { OnProductMediaChangedHandler } from "./application/handlers/on-product-media-changed.handler.js";
 import { OnCatalogProductChangedHandler } from "./application/handlers/on-catalog-product-changed.handler.js";
-import { OrdinaryArticleReleases } from "./application/handlers/ordinary-article-releases.js";
 import { OnCatalogCategoryChangedHandler } from "./application/handlers/on-catalog-category-changed.handler.js";
 import { OnCatalogRulesChangedHandler } from "./application/handlers/on-catalog-rules-changed.handler.js";
 import { OrderLimitsRefresher } from "./application/order-limits-refresher.service.js";
@@ -214,7 +213,6 @@ import { PrismaResupplyOnlyArticlesReader } from "./infrastructure/prisma-resupp
     // Il n'importe pas le référentiel : il reçoit un fait du bus.
     OnProductMediaChangedHandler,
     OnCatalogProductChangedHandler,
-    OrdinaryArticleReleases,
     OnCatalogCategoryChangedHandler,
     // Les règles globales du référentiel (lot 2b) : rangées, puis descendues.
     OnCatalogRulesChangedHandler,

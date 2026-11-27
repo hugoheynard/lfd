@@ -6,7 +6,4 @@
 export abstract class ReservationCompanies {
   /** `null` : l'identifiant ne désigne aucune société. */
   abstract nameOf(companyId: string): Promise<string | null>;
-
-  /** Les noms de plusieurs sociétés, en une lecture ; une société introuvable est absente. */
-  abstract namesOf(companyIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
 }

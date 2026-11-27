@@ -11,7 +11,6 @@ import type { CreatedIdResponse } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";
-import { markCustomRecipe } from "./custom-recipe-fixture.js";
 import { SILENT_TRIGGER } from "./catalog-facts-scene.js";
 import {
   aClient,
@@ -133,7 +132,6 @@ describe("le report d'une règle sur la référence détachée (R1)", () => {
   it("🔴 mur : la règle de la société A ne se reporte pas vers un article réservé à B", async () => {
     const { ruleId, oldSku, newSku } = await detachedWithRule();
     const other = await createCompany(ctx.prisma);
-    await markCustomRecipe(ctx, newSku);
     await staffOf(ctx).put(`/admin/catalog/${newSku}/reservations/${other.id}`).expect(204);
 
     const refused = await carry(ruleId, oldSku, newSku).expect(409);

@@ -66,16 +66,13 @@ beforeEach(async () => {
  * commandeur — sans réservation, aucun pro ne le commanderait (D3).
  */
 async function mark(sku: string, customRecipe: boolean): Promise<void> {
-  const reservation = `/admin/catalog/${sku}/reservations/${companyId}`;
+  await markCustomRecipe(ctx, sku, customRecipe);
   if (customRecipe) {
-    await markCustomRecipe(ctx, sku, true);
-    await ctx.asSub(E2E_STAFF_SUB).put(reservation).expect(204);
-    return;
+    await ctx
+      .asSub(E2E_STAFF_SUB)
+      .put(`/admin/catalog/${sku}/reservations/${companyId}`)
+      .expect(204);
   }
-  // Décoché : l'attribution part AVANT la colonne, comme dans l'abonné de la
-  // fiche (plan-fin-du-sur-mesure.md, D4) — la clé refuserait l'ordre inverse.
-  await ctx.asSub(E2E_STAFF_SUB).delete(reservation).expect(204);
-  await markCustomRecipe(ctx, sku, false);
 }
 
 /** Une commande professionnelle de retrait pour la journée servie ; rend sa référence. */

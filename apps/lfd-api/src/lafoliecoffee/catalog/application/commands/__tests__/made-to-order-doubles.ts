@@ -8,7 +8,6 @@ import type { CatalogItemRepository } from "../../../domain/ports/catalog-item.r
 import {
   CatalogReservations,
   type CatalogReservation,
-  type ReleasedReservation,
 } from "../../../domain/ports/catalog-reservations.js";
 import { MadeToOrderSettings } from "../../../domain/ports/made-to-order-settings.js";
 import { ReservationCompanies } from "../../../domain/ports/reservation-companies.js";
@@ -63,17 +62,6 @@ export class InMemoryCatalogReservations extends CatalogReservations {
     this.steps.push(`release:${sku}:${companyId}`);
     return Promise.resolve(this.rows.delete(`${sku}|${companyId}`));
   }
-
-  releaseAllOf(skus: readonly string[]): Promise<readonly ReleasedReservation[]> {
-    const released = [...this.rows.values()]
-      .filter((row) => skus.includes(row.sku))
-      .map((row) => ({ sku: row.sku, companyId: row.companyId }));
-    for (const row of released) {
-      this.steps.push(`release:${row.sku}:${row.companyId}`);
-      this.rows.delete(`${row.sku}|${row.companyId}`);
-    }
-    return Promise.resolve(released);
-  }
 }
 
 /** L'annuaire des sociétés : celles qu'on lui donne, et elles seules. */
@@ -84,17 +72,6 @@ export class KnownCompanies extends ReservationCompanies {
 
   nameOf(companyId: string): Promise<string | null> {
     return Promise.resolve(this.names.get(companyId) ?? null);
-  }
-
-  namesOf(companyIds: readonly string[]): Promise<ReadonlyMap<string, string>> {
-    return Promise.resolve(
-      new Map(
-        companyIds.flatMap((id) => {
-          const name = this.names.get(id);
-          return name === undefined ? [] : [[id, name] as const];
-        }),
-      ),
-    );
   }
 }
 
@@ -110,12 +87,9 @@ export interface MadeToOrderDoubles {
   readonly clock: FixedClock;
 }
 
-/** Les doubles du catalogue, plus ceux du sur mesure ; l'article est sur mesure sauf avis contraire. */
-export function buildMadeToOrder(
-  seed?: (item: CatalogItem) => void,
-  customRecipe = true,
-): MadeToOrderDoubles {
-  const { steps, items, events, uow } = build(seed, undefined, [], customRecipe);
+/** Les doubles du catalogue, plus ceux du sur mesure. */
+export function buildMadeToOrder(seed?: (item: CatalogItem) => void): MadeToOrderDoubles {
+  const { steps, items, events, uow } = build(seed);
   return {
     steps,
     items,

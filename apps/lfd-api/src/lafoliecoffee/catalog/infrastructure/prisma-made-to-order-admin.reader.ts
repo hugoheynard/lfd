@@ -51,9 +51,7 @@ export class PrismaMadeToOrderAdminReader extends MadeToOrderAdminReader {
     const rows = await this.prisma.catalogItem.findMany({
       where: {
         ...STILL_SOLD,
-        // Seul le sur mesure s'attribue, et la base le tient
-        // (`plan-fin-du-sur-mesure.md`, D2-D3) : il n'y a rien d'autre à montrer.
-        customRecipe: true,
+        OR: [{ customRecipe: true }, { reservations: { some: {} } }],
       },
       select: {
         sku: true,

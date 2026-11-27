@@ -81,8 +81,6 @@ export const ADMITTED = {
     "administration : le catalogue du personnel, retirés et en revue compris",
   "lafoliecoffee/catalog/infrastructure/prisma-made-to-order-admin.reader.ts":
     "administration : l'écran du sur mesure",
-  "lafoliecoffee/catalog/infrastructure/prisma-catalog-reservations.ts":
-    "écriture des attributions : `DELETE … RETURNING` dans l'abonné de la fiche, hors du devis et du rayon",
   "lafoliecoffee/catalog/infrastructure/custom-recipe-reconciliation.operation.ts":
     "opération d'après déploiement (ops) : les articles ordinaires attribués, retirés compris — hors du devis et du rayon",
   "lafoliecoffee/catalog/infrastructure/prisma-published-catalog.reader.ts":

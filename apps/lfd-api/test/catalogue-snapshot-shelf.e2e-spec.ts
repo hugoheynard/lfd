@@ -17,7 +17,6 @@ import type { PublicStorefrontPageView, ShopCatalogueView, ShopItemView } from "
 
 import { AppConfig } from "../src/platform/config/app-config.js";
 import { Clock } from "../src/platform/time/clock.js";
-import { markCustomRecipe } from "./custom-recipe-fixture.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { noelBody, OPERATIONS } from "./operations-at-commerce-scene.js";
@@ -149,7 +148,6 @@ describe("le rayon recalculé — le mur des réservations au rayon pro", () => 
   it("un pro ne commande pas l'article réservé à une autre société ; elle, si", async () => {
     // La mémoire chauffée AVANT la réservation : le numéro doit la défaire.
     expect(orderable(await proShelf(BUYER_SUB, scene.pro.companyId), CROISSANT)).toBe(true);
-    await markCustomRecipe(ctx, CROISSANT);
     await agents()
       .as(E2E_STAFF_SUB)
       .put(`/admin/catalog/${CROISSANT}/reservations/${scene.proWithoutCredit.companyId}`)

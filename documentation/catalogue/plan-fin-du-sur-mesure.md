@@ -1,7 +1,9 @@
 # Plan — une vignette par déclinaison, et seul le sur mesure s'attribue
 
-> 🟦 Demandé par Hugo le 2026-11-27. **Tout est bâti** (commits locaux, non
-> poussés) : V1, V2, F1, F2, F3. Reste le déploiement, en deux temps, au § 4 bis. Contredit
+> 🟦 Demandé par Hugo le 2026-11-27. **V1, V2, F1, F2 bâtis et partis en
+> production ensemble.** F3 a été bâti (`561f72521`) puis **retiré de dev par
+> un revert** pour ne pas partir avec eux : il se réapplique (`git revert` du
+> revert) une fois l'opération ops appliquée et sa simulation à zéro (§ 4 bis). Contredit
 > deux fois par `vitruve` le même jour (v1 et v2) ; cette v3 intègre ses
 > objections et les décisions de Hugo qui ont suivi.
 >

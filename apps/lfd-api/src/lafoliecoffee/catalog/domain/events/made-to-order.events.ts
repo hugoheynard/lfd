@@ -37,17 +37,10 @@ export class ReservationChangedEvent implements JournaledEvent {
     readonly item: CatalogItemSubject,
     readonly company: ReservationCompany,
     readonly reserved: boolean,
-    /**
-     * La clé d'idempotence, quand le geste n'a pas de requête à lui : l'abonné
-     * qui retire plusieurs attributions d'un même fait (une par société).
-     * Absente, le journal la dérive de la trace.
-     */
-    readonly idempotencyKey?: string,
   ) {}
 
   journalFact(): JournalFact {
     return {
-      ...(this.idempotencyKey === undefined ? {} : { idempotencyKey: this.idempotencyKey }),
       type: this.reserved ? MADE_TO_ORDER_FACTS.reserved : MADE_TO_ORDER_FACTS.released,
       subjectType: SUBJECT_TYPE,
       subjectId: this.item.sku,

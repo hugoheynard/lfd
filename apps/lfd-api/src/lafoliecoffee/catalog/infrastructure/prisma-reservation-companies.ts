@@ -18,15 +18,4 @@ export class PrismaReservationCompanies extends ReservationCompanies {
     });
     return company === null ? null : companyDisplayName(company);
   }
-
-  async namesOf(companyIds: readonly string[]): Promise<ReadonlyMap<string, string>> {
-    if (companyIds.length === 0) {
-      return new Map();
-    }
-    const companies = await this.prisma.company.findMany({
-      where: { id: { in: [...companyIds] } },
-      select: { id: true, enseigne: true, raisonSociale: true },
-    });
-    return new Map(companies.map((company) => [company.id, companyDisplayName(company)]));
-  }
 }

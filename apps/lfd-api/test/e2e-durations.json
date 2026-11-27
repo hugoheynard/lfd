@@ -320,7 +320,6 @@
   "test/loyalty-voucher-order.e2e-spec.ts": 7330,
   "test/loyalty-welcome.e2e-spec.ts": 3628,
   "test/loyalty.e2e-spec.ts": 7282,
-  "test/made-to-order-end.e2e-spec.ts": 11728,
   "test/made-to-order-everywhere.e2e-spec.ts": 4055,
   "test/made-to-order-reports.e2e-spec.ts": 4657,
   "test/made-to-order-wall.e2e-spec.ts": 6277,

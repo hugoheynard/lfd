@@ -205,11 +205,6 @@ describe("le sur mesure (fait de la fiche) et la visibilité", () => {
 });
 
 describe("la réservation à une société", () => {
-  /** Seul le sur mesure s'attribue : les deux articles le sont, par le fait de la fiche. */
-  beforeEach(async () => {
-    await deliverAsFacts(ctx, snapshot(["VIE-001", "VIE-002"], ["VIE-001", "VIE-002"]));
-  });
-
   it("réserver, lire des deux côtés, retirer : une ligne, deux faits", async () => {
     const company = await createCompany(ctx.prisma, { enseigne: "Le Fournil d'Anna" });
 
@@ -275,11 +270,6 @@ describe("la réservation à une société", () => {
 });
 
 describe("le mur du paramétrage", () => {
-  /** Seul le sur mesure s'attribue : les deux articles le sont, par le fait de la fiche. */
-  beforeEach(async () => {
-    await deliverAsFacts(ctx, snapshot(["VIE-001", "VIE-002"], ["VIE-001", "VIE-002"]));
-  });
-
   it("le support, sans `lfc_made_to_order`, ne réserve ni ne lit", async () => {
     const company = await createCompany(ctx.prisma);
     await ctx.prisma.staffUser.create({
@@ -322,11 +312,6 @@ async function holderOf(
 }
 
 describe("le droit du sur mesure, à part du catalogue (Hugo, 2026-10-30)", () => {
-  /** Seul le sur mesure s'attribue : les deux articles le sont, par le fait de la fiche. */
-  beforeEach(async () => {
-    await deliverAsFacts(ctx, snapshot(["VIE-001", "VIE-002"], ["VIE-001", "VIE-002"]));
-  });
-
   it("`lfc_catalog:write` seul ne règle, ne réserve ni ne lit le sur mesure", async () => {
     const company = await createCompany(ctx.prisma);
     const catalogue = await holderOf("catalogue", [{ resource: "lfc_catalog", action: "write" }]);
