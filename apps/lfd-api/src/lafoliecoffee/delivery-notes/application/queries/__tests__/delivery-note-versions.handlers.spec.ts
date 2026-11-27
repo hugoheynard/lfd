@@ -145,7 +145,7 @@ describe("GetDeliveryNoteVersionPdfHandler — le PDF d'une version figée", () 
 
     const pdf = await handler.execute(new GetDeliveryNoteVersionPdfQuery("ord_1", NOTE.number, 1));
 
-    expect(pdf.fileName).toBe("bon-de-livraison-BL-1042-1-v1.pdf");
+    expect(pdf.fileName).toBe("LFC-ORD-1042-HOTEL-DES-TROIS-PONTS-BL-1042-1-v1.pdf");
     const text = pdfPages(pdf.bytes).join("\n");
     expect(text).toContain("Non livré");
     expect(text).toContain("Croissant");
@@ -217,7 +217,7 @@ describe("GetDeliveryNoteVersionPdfHandler — le PDF d'une version figée", () 
       );
 
       expect(first.fileName).not.toBe(second.fileName);
-      expect(second.fileName).toBe("bon-de-livraison-BL-1042-1-v2.pdf");
+      expect(second.fileName).toBe("LFC-ORD-1042-HOTEL-DES-TROIS-PONTS-BL-1042-1-v2.pdf");
     });
   });
 

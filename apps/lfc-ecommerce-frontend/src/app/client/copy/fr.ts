@@ -399,7 +399,6 @@ export const FR: ClientCopy = {
     vat: 'TVA {rate}',
     total: 'Total TTC',
     totalPretax: 'Total HT',
-    totalInHouse: 'Valeur, non facturée',
     pretaxNote: 'TVA et TTC sur la facture du mois',
     courierOffered: 'Coursier offert',
     freeDeliveryShort: 'Plus que {amount} HT pour la livraison offerte',

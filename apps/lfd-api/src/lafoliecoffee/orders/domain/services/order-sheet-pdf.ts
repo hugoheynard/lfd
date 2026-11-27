@@ -34,6 +34,7 @@ import {
   PRETAX_ONLY_NOTE,
   totalRows,
 } from "./order-sheet-pdf-totals.js";
+import { orderDocumentFileName } from "@lfd/contracts";
 
 /**
  * **Le bon de commande en PDF** — l'exemplaire qu'on tend au client.
@@ -467,7 +468,18 @@ export function orderSheetPdfKey(sheet: OrderSheet): string {
   return `orders/${sheet.orderId}/bon-de-commande-r${String(sheet.revision)}-d${String(DRAWING_VERSION)}.pdf`;
 }
 
-/** Le nom proposé au téléchargement — lisible sur un bureau, pas une clé opaque. */
+/**
+ * Le nom proposé au téléchargement — lisible sur un bureau, pas une clé
+ * opaque : la référence et le client que la feuille imprime en tête.
+ */
 export function orderSheetPdfFileName(sheet: OrderSheet): string {
-  return `confirmation-de-commande-${sheet.reference}.pdf`;
+  return orderDocumentFileName(sheet.reference, printedCustomerName(sheet), "confirmation");
+}
+
+/** Le nom du bloc client : la personne pour un bon public, l'enseigne sinon. */
+function printedCustomerName(sheet: OrderSheet): string {
+  if ("variant" in sheet && sheet.variant === "public") {
+    return sheet.customer.legalName;
+  }
+  return sheet.customer.tradeName === "" ? sheet.customer.legalName : sheet.customer.tradeName;
 }

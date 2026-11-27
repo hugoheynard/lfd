@@ -29,7 +29,7 @@
         }}</fold-callout>
       }
       @if (current.kind === 'ready') {
-        <app-revision-quote [quote]="current.quote" />
+        <app-revision-quote [quote]="current.quote" [unpriced]="unpriced()" />
         <p class="fact" data-quote-indicative>{{ r().requestQuoteIndicative }}</p>
       }
     }

@@ -210,4 +210,13 @@ describe('HistoryTable', () => {
       expect(fixture.componentInstance.selected().size).toBe(ROWS.length);
     });
   });
+
+  it('une commande interne ne dit aucun montant dans la colonne du total', () => {
+    fixture.componentRef.setInput('orders', [
+      { ...(ROWS[0] as HistoryOrder), payment: 'in_house' },
+    ]);
+    fixture.detectChanges();
+    const cell = el().querySelector('td.folddt-cell.is-numeric');
+    expect(cell?.textContent?.trim()).toBe(FR.done.inHouse);
+  });
 });

@@ -24,6 +24,9 @@ export {
   formatOrderDay,
   formatOrderInstant,
   orderHeaderTotal,
+  isPricedOrder,
+  IN_HOUSE_ORDER_MENTION,
+  IN_HOUSE_AMOUNT_WORD,
 } from './order-format';
 export { resolveZoneForPostalCode } from './delivery-zone';
 export { entryPriceOf, orderTotalRows, priceStepLabels, wasFloored } from './order-pricing';

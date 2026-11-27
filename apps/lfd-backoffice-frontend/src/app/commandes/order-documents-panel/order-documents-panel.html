@@ -6,7 +6,12 @@
       @for (doc of sheet(); track doc.key) {
         <ng-container [ngTemplateOutlet]="piece" [ngTemplateOutletContext]="{ $implicit: doc }" />
       }
-      <app-order-delivery-notes-card [orderId]="order().id" [refresh]="notesRefresh()" />
+      <app-order-delivery-notes-card
+        [orderId]="order().id"
+        [orderReference]="order().orderNumber"
+        [customerName]="customerName()"
+        [refresh]="notesRefresh()"
+      />
       <app-order-invoices-card [orderId]="order().id" />
       @for (doc of others(); track doc.key) {
         <ng-container [ngTemplateOutlet]="piece" [ngTemplateOutletContext]="{ $implicit: doc }" />

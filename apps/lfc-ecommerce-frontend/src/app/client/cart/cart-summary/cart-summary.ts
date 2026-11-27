@@ -103,14 +103,15 @@ export class CartSummary implements OnInit {
 
   protected readonly onAccount = computed(() => settlesOnAccount(this.firm.company()));
 
-  /** Un de nos restaurants : le total dit ce que la commande vaut, rien n'est à régler. */
+  /**
+   * Un de nos restaurants : **aucun montant** au panier (Hugo, 2026-11-27) —
+   * ni prix de ligne, ni décompte, ni total. Les articles et leurs quantités
+   * restent ; la phrase « commande interne » prend la place des montants.
+   */
   protected readonly inHouse = computed(() => payerIsInHouse(this.firm.company()));
 
   protected readonly totalLabel = computed(() => {
     const c = this.t().cart;
-    if (this.inHouse()) {
-      return c.totalInHouse;
-    }
     return this.onAccount() ? c.totalPretax : c.total;
   });
 

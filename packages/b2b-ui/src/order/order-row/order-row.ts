@@ -9,7 +9,7 @@ import {
 import { FoldBadgeComponent } from 'fold-ng';
 import { ORDER_ORIGIN_LABELS, type AdminOrderRow } from '@lfd/contracts';
 
-import { formatCents, formatOrderDate } from '../order-format';
+import { formatCents, formatOrderDate, IN_HOUSE_AMOUNT_WORD, isPricedOrder } from '../order-format';
 
 /**
  * `lfd-order-row` — **une commande sur une ligne**, telle que le back-office la
@@ -61,7 +61,11 @@ export class OrderRow {
   readonly open = output<AdminOrderRow>();
 
   protected readonly placedAt = computed(() => formatOrderDate(this.order().placedAt));
-  protected readonly total = computed(() => formatCents(this.order().totalCents));
+  /** Le montant parcouru ; « Interne » pour une commande interne, qui n'en montre aucun. */
+  protected readonly total = computed(() => {
+    const order = this.order();
+    return isPricedOrder(order) ? formatCents(order.totalCents) : IN_HOUSE_AMOUNT_WORD;
+  });
 
   /**
    * La provenance, ou `null` quand il n'y a rien à signaler. `self_service` est

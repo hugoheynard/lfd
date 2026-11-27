@@ -68,6 +68,8 @@ export class ChangeRequestCard {
   readonly changed = input.required<boolean>();
   /** Le devis indicatif de la demande, tenu par la page. */
   readonly quote = input.required<QuoteState>();
+  /** Commande interne : le devis indicatif ne dit aucun montant. */
+  readonly unpriced = input(false);
   /** Relire la commande : la demande a été composée sur une version dépassée. */
   readonly reload = output();
   /** Redemander le devis après une panne. */

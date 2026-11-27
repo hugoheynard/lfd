@@ -136,7 +136,9 @@ describe("le rangement", () => {
   });
 
   it("propose un nom lisible sur un bureau, pas une clé opaque", () => {
-    expect(orderSheetPdfFileName(sheet())).toBe("confirmation-de-commande-ORD-4812.pdf");
+    expect(orderSheetPdfFileName(sheet())).toBe(
+      "LFC-ORD-4812-HOTEL-DES-TROIS-PONTS-confirmation.pdf",
+    );
   });
 });
 

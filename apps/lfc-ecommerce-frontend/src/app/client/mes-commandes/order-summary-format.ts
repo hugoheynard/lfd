@@ -73,6 +73,7 @@ export function exclusionLabel(
     cancelled: copy.excludedCancelled,
     payment_pending: copy.excludedPending,
     payment_failed: copy.excludedFailed,
+    in_house: copy.excludedInHouse,
   };
   return labels[reason];
 }

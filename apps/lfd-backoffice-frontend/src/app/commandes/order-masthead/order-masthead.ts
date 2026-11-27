@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import {
   formatCents,
+  isPricedOrder,
   orderHeaderTotal,
   orderStatusLabel,
   orderStatusVariant,
@@ -33,7 +34,11 @@ export class OrderMasthead {
 
   protected readonly header = computed(() => orderHeader(this.order()));
 
+  /** `null` pour une commande interne : aucun montant, le badge du règlement le dit. */
   protected readonly total = computed(() => {
+    if (!isPricedOrder(this.order())) {
+      return null;
+    }
     const total = orderHeaderTotal(this.order());
     return { value: formatCents(total.cents), basis: total.basis };
   });

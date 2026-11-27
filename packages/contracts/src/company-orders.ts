@@ -177,6 +177,7 @@ export const ORDER_SUMMARY_EXCLUSION_REASONS = [
   "cancelled",
   "payment_pending",
   "payment_failed",
+  "in_house",
 ] as const;
 export type OrderSummaryExclusionReason = (typeof ORDER_SUMMARY_EXCLUSION_REASONS)[number];
 

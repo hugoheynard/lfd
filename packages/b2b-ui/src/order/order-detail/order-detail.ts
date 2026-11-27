@@ -31,6 +31,8 @@ import {
   formatMillicents,
   formatVatPercent,
   fulfillmentLabel,
+  IN_HOUSE_ORDER_MENTION,
+  isPricedOrder,
 } from '../order-format';
 import { OrderDetailHead } from '../order-detail-head/order-detail-head';
 import { SectionTitle } from '../section-title/section-title';
@@ -365,6 +367,14 @@ export class OrderDetail {
     const order = this.order();
     return order.fulfillmentMethod === 'delivery' ? order.deliveryAddress : order.pickupAddress;
   });
+
+  /**
+   * **La commande montre-t-elle ses prix ?** Faux pour une commande interne
+   * (`isPricedOrder`) : les quantités seules, et la mention à la place des
+   * montants.
+   */
+  protected readonly priced = computed(() => isPricedOrder(this.order()));
+  protected readonly inHouseMention = IN_HOUSE_ORDER_MENTION;
 
   /** Le récapitulatif des montants — assemblé par `orderTotalRows`, pas ici. */
   protected readonly totals = computed<readonly TotalRow[]>(() =>

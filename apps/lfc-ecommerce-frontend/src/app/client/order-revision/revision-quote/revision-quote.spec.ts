@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import type { OrderRevisionQuoteView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { FR } from '../../copy/fr';
 import { ORDERS_FR } from '../../copy/screens/orders.copy';
 import { differenceLabel, RevisionQuote } from './revision-quote';
 
@@ -39,5 +40,18 @@ describe('RevisionQuote', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('[data-total]')?.textContent).toContain('10,55');
     expect(el.querySelector('[data-difference]')?.textContent).toContain('+ 4,20');
+  });
+
+  it('une commande interne ne dit ni total ni écart, mais son régime', () => {
+    TestBed.configureTestingModule({ imports: [RevisionQuote] });
+    const fixture = TestBed.createComponent(RevisionQuote);
+    fixture.componentRef.setInput('quote', QUOTE);
+    fixture.componentRef.setInput('unpriced', true);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-total]')).toBeNull();
+    expect(el.querySelector('[data-difference]')).toBeNull();
+    expect(el.textContent).not.toContain('€');
+    expect(el.querySelector('[data-in-house]')?.textContent).toContain(FR.done.inHouse);
   });
 });

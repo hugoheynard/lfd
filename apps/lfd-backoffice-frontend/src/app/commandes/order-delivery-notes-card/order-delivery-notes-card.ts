@@ -7,7 +7,12 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import type { AdminDeliveryNoteView, DeliveryNoteStatusView, StaffNote } from '@lfd/contracts';
+import {
+  orderDocumentFileName,
+  type AdminDeliveryNoteView,
+  type DeliveryNoteStatusView,
+  type StaffNote,
+} from '@lfd/contracts';
 import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
@@ -67,6 +72,10 @@ export const ORIGIN_NOT_KEPT = 'version d’origine non conservée (bon antérie
 })
 export class OrderDeliveryNotesCard {
   readonly orderId = input.required<string>();
+  /** La référence de la commande, en tête du nom des fichiers téléchargés. */
+  readonly orderReference = input.required<string>();
+  /** Le client que les bons impriment ; vide, le nom de fichier s'en passe. */
+  readonly customerName = input('');
   /** Un compteur que le parent avance pour faire relire la liste (après une décision). */
   readonly refresh = input(0);
 
@@ -161,7 +170,7 @@ export class OrderDeliveryNotesCard {
   private async downloadEdition(note: StaffNote, edition: number): Promise<void> {
     try {
       const blob = await this.service.editionPdf(this.orderId(), note.number, edition);
-      this.printer.download(blob, `bon-de-livraison-${note.number}-origine.pdf`);
+      this.printer.download(blob, this.fileName(`${note.number}-origine`));
     } catch (error) {
       this.notify.error(error, `Le BL d’origine ${note.number} n'a pas pu être téléchargé.`);
     }
@@ -174,10 +183,18 @@ export class OrderDeliveryNotesCard {
       const blob = ciphered
         ? await this.service.clientPdf(this.orderId(), note.number)
         : await this.service.carrierPdf(this.orderId(), note.number);
-      this.printer.download(blob, `bon-de-livraison-${note.number}.pdf`);
+      this.printer.download(
+        blob,
+        this.fileName(ciphered ? note.number : `${note.number}-transport`),
+      );
       await this.load(this.orderId());
     } catch (error) {
       this.notify.error(error, `Le bon de livraison ${note.number} n'a pas pu être téléchargé.`);
     }
+  }
+
+  /** Le nom que l'API donne au même bon : `LFC-<réf>-<CLIENT>-<suffixe>.pdf`. */
+  private fileName(suffix: string): string {
+    return orderDocumentFileName(this.orderReference(), this.customerName(), suffix);
   }
 }

@@ -40,7 +40,9 @@
                       <span class="price" data-weight>{{ shown }}</span>
                     }
                   </span>
-                  <span class="sum">{{ line.total }}</span>
+                  @if (!unpriced()) {
+                    <span class="sum">{{ line.total }}</span>
+                  }
                   <fold-number-input
                     size="sm"
                     align="center"
@@ -123,6 +125,7 @@
             [revision]="revision()"
             [changed]="changed()"
             [quote]="quote()"
+            [unpriced]="unpriced()"
             (reload)="load()"
             (retryQuote)="retryQuote()"
           />
@@ -158,7 +161,7 @@
                   }}</fold-callout>
                 }
                 @if (current.kind === 'ready') {
-                  <app-revision-quote [quote]="current.quote" />
+                  <app-revision-quote [quote]="current.quote" [unpriced]="unpriced()" />
                 }
               }
               @if (settlementSaid(); as said) {

@@ -54,6 +54,9 @@ export class TrackCard {
   /** Au compte, le montant est HT et le dit (F5). */
   protected readonly total = computed(() => {
     const order = this.order();
+    if (order.inHouse) {
+      return this.t().orders.payInHouse;
+    }
     const amount = formatEuro(order.total);
     return order.pretax ? `${amount} ${this.t().orders.totalPretax}` : amount;
   });

@@ -1,6 +1,13 @@
 import type { CustomerOrderView } from '@lfd/contracts';
 
-import { historyRowOf, isFulfilled, isLive, trackedOf, type RowCopy } from './order-rows';
+import {
+  historyRowOf,
+  isFulfilled,
+  isLive,
+  isUnpriced,
+  trackedOf,
+  type RowCopy,
+} from './order-rows';
 
 const COPY: RowCopy = {
   pickup: 'Retrait',
@@ -446,5 +453,13 @@ describe('le site et l’auteur d’une commande (plan des commandes des sites, 
       { cents: 30 },
     ]);
     expect(historyRowOf(ORDER, '', COPY).discountLines).toBeUndefined();
+  });
+
+  it('une commande interne se dit sans montant, dans la liste comme dans le suivi', () => {
+    const inHouse = { ...ORDER, settlement: 'in_house' } as const;
+    expect(isUnpriced(historyRowOf(inHouse, '', COPY))).toBe(true);
+    expect(trackedOf(inHouse, COPY).inHouse).toBe(true);
+    expect(isUnpriced(historyRowOf(ORDER, '', COPY))).toBe(false);
+    expect(trackedOf(ORDER, COPY).inHouse).toBe(false);
   });
 });

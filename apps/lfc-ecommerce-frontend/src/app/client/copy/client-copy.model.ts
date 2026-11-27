@@ -817,11 +817,6 @@ export interface ClientCopy {
      * facture du mois, un TTC par commande la contredirait.
      */
     readonly totalPretax: string;
-    /**
-     * Le total d'une commande interne d'un de nos restaurants : ce qu'elle
-     * vaut, jamais un montant à régler.
-     */
-    readonly totalInHouse: string;
     /** Sous ce total : où sont la TVA et le TTC. */
     readonly pretaxNote: string;
     /**

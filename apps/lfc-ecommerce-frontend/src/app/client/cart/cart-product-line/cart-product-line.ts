@@ -175,6 +175,9 @@ export class CartProductLine {
    */
   readonly pending = input(false);
 
+  /** Faux pour un de nos restaurants : ni prix unitaire, ni total de ligne (Hugo, 2026-11-27). */
+  readonly priced = input(true);
+
   protected readonly sum = computed(() => {
     const cents = this.basis.showsTtc() ? this.totalTtcCents() : this.totalHtCents();
     return cents === null ? '—' : formatCents(cents);

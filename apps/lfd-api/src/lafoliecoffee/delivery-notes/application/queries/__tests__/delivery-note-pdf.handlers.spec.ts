@@ -101,7 +101,7 @@ describe("GetClientNotePdfHandler — le BL dans l'espace client", () => {
 
     const pdf = await handler.execute(new GetClientNotePdfQuery("user_member", "ord_1"));
 
-    expect(pdf.fileName).toBe("bon-de-livraison-BL-1042-1.pdf");
+    expect(pdf.fileName).toBe("LFC-ORD-1042-HOTEL-DES-TROIS-PONTS-BL-1042-1.pdf");
     expect(pdf.bytes.length).toBeGreaterThan(0);
   });
 
@@ -131,7 +131,7 @@ describe("GetCarrierNotePdfHandler — le BL de transport pour l'équipe", () =>
 
     const pdf = await handler.execute(new GetCarrierNotePdfQuery("ord_1", "BL-1042-1"));
 
-    expect(pdf.fileName).toBe("bon-de-livraison-BL-1042-1-transport.pdf");
+    expect(pdf.fileName).toBe("LFC-ORD-1042-HOTEL-DES-TROIS-PONTS-BL-1042-1-transport.pdf");
   });
 
   it("refuse un numéro que la commande ne porte pas", async () => {
@@ -215,7 +215,7 @@ describe("GetCounterCarrierNotePdfHandler — le BL de transport remis au compto
 
     expect(pdf.number).toBe(note.number);
     expect(pdf.bytes.subarray(0, 5).toString()).toBe("%PDF-");
-    expect(pdf.fileName).toBe(`bon-de-livraison-${note.number}-transport.pdf`);
+    expect(pdf.fileName).toBe(`LFC-ORD-1042-HOTEL-DES-TROIS-PONTS-${note.number}-transport.pdf`);
   });
 
   it("dit « pas encore » quand la remise est attestée sans BL écrit", async () => {

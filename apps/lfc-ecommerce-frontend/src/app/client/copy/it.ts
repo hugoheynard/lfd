@@ -404,7 +404,6 @@ export const IT: ClientCopy = {
     vat: 'IVA {rate}',
     total: 'Totale IVA incl.',
     totalPretax: 'Totale IVA escl.',
-    totalInHouse: 'Valore, non fatturato',
     pretaxNote: 'IVA e totale IVA inclusa sulla fattura del mese',
     courierOffered: 'Corriere offerto',
     freeDeliveryShort: 'Ancora {amount} IVA esclusa per la consegna gratuita',

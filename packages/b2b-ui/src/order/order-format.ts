@@ -260,6 +260,23 @@ export function formatOrderInstant(iso: string): string {
 }
 
 /**
+ * **Une commande interne ne montre aucun prix** (décidé par Hugo le
+ * 2026-11-27) : ni prix unitaire, ni montant de ligne, ni remise, frais, TVA
+ * ou total — les quantités seules, et {@link IN_HOUSE_ORDER_MENTION}. Ses
+ * montants restent sur la commande ; ils ne s'affichent pas. La même règle
+ * que le bon de livraison et la feuille de commande côté API.
+ */
+export function isPricedOrder(order: { readonly settlement: SettlementRegime }): boolean {
+  return order.settlement !== 'in_house';
+}
+
+/** Ce que dit, à la place des montants, une commande interne. */
+export const IN_HOUSE_ORDER_MENTION = 'Commande interne — sans facturation.';
+
+/** Le mot qui tient la place du montant d'une commande interne dans une liste. */
+export const IN_HOUSE_AMOUNT_WORD = 'Interne';
+
+/**
  * Le montant d'en-tête d'une commande et son assiette. Un pro au compte n'y lit
  * que le HT — celui que le serveur a calculé (`pretaxCents`) —, comme dans son
  * récapitulatif : la TVA et le TTC sont sur la facture du mois.

@@ -167,7 +167,7 @@ describe("l'accusé de réception d'une commande", () => {
     await fire(subject);
 
     const data = subject.mailer.last?.data as PlacedDemandData;
-    expect(data.document?.fileName).toBe("confirmation-de-commande-ORD-4812.pdf");
+    expect(data.document?.fileName).toBe("LFC-ORD-4812-HOTEL-DES-TROIS-PONTS-confirmation.pdf");
     expect(data.document).not.toHaveProperty("pdfBase64");
     const key = data.document?.pdfStored.key ?? "";
     expect(data.document?.pdfStored.store).toBe("customer-documents");

@@ -19,6 +19,7 @@ import {
 import { formatEuro } from '../../format-money';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import {
+  isUnpriced,
   originLabelOf,
   type HistoryOrder,
   type OrderOrigin,
@@ -143,8 +144,15 @@ export class HistoryTable {
         label: copy.colTotal,
         numeric: true,
         // Au compte, le montant est HT et le dit (F5).
-        value: (order) =>
-          order.pretax ? `${formatEuro(order.total)} ${copy.totalPretax}` : formatEuro(order.total),
+        // Une commande interne ne dit aucun montant : le texte du régime à la place.
+        value: (order) => {
+          if (isUnpriced(order)) {
+            return this.t().done.inHouse;
+          }
+          return order.pretax
+            ? `${formatEuro(order.total)} ${copy.totalPretax}`
+            : formatEuro(order.total);
+        },
       },
     ];
   });

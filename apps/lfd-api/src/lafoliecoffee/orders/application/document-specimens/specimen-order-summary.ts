@@ -71,6 +71,7 @@ function sourceOf(state: OrderToPlace, selection: SpecimenSelection): OrderSumma
     fulfillmentMethod,
     author: { kind: "customer", name: "EXEMPLE — Réception" },
     cancelled: selection.cancelled,
+    inHouse: false,
     paymentStatus: state.paymentStatus,
     subtotalCents: state.subtotalCents,
     discountCents: state.discountCents,

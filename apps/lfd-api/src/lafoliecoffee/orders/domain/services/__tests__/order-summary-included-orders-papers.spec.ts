@@ -25,6 +25,7 @@ function order(over: Partial<OrderSummarySource> & { readonly id: string }): Ord
     fulfillmentMethod: "pickup",
     author: { kind: "customer", name: "Léa Martin" },
     cancelled: false,
+    inHouse: false,
     paymentStatus: "not_required",
     subtotalCents: 1_000,
     discountCents: 0,

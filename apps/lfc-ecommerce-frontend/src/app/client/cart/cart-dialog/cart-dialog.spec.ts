@@ -722,6 +722,17 @@ describe('le panier d’un restaurant maison', () => {
     expect(regle).toEqual([null]);
   });
 
+  it('🔴 aucun montant : ni total, ni prix de ligne, ni décompte (Hugo, 2026-11-27)', () => {
+    const fixture = boot({ auth: RECONNU, granted: ['monthly'], inHousePayer: true });
+    const root = el(fixture);
+
+    expect(root.querySelector('li[app-cart-product-line]')).not.toBeNull();
+    expect(root.querySelector('dl.count')).toBeNull();
+    expect(root.querySelector('.sum')).toBeNull();
+    expect(root.textContent).not.toContain('€');
+    expect(root.querySelector('[data-in-house]')?.textContent).toContain(FR.done.inHouse);
+  });
+
   it('sans crédit accordé, le bouton reste : rien n’est à régler', () => {
     const fixture = boot({ auth: RECONNU, granted: [], inHousePayer: true });
 

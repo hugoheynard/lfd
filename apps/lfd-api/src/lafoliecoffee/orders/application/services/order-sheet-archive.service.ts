@@ -139,6 +139,43 @@ export class OrderSheetArchive {
   }
 
   /**
+   * **Ce que vaut le bon rangé face à la commande d'aujourd'hui** :
+   * `stale` s'il diffère, `current` s'il dit la même chose, `absent` si rien
+   * n'est rangé (le prochain téléchargement le fabriquera d'après la
+   * commande). Le rendu étant déterministe, deux octets égaux disent le même
+   * document.
+   *
+   * @throws {DocumentStorageUnavailableError} le stockage est indisponible :
+   *   une reprise ne juge pas une copie qu'elle n'a pas pu lire.
+   */
+  async archiveState(
+    sheet: ClientSheet,
+    handoverToken: string | null,
+  ): Promise<"stale" | "current" | "absent"> {
+    if (awaitsItsQr(sheet, handoverToken)) {
+      return "absent";
+    }
+    const archived = await this.documents.readIfPresent(orderSheetPdfKey(sheet));
+    if (archived === null) {
+      return "absent";
+    }
+    return archived.equals(await this.render(sheet, handoverToken)) ? "current" : "stale";
+  }
+
+  /**
+   * **Refait le bon rangé d'après la commande d'aujourd'hui** — pour une
+   * commande reprise après coup, dont la copie gardée ne dit plus vrai. Un
+   * bon rangé est un fait : ce geste est réservé aux reprises, et le courriel
+   * déjà parti garde sa pièce jointe.
+   *
+   * @throws {DocumentStorageUnavailableError} le stockage est indisponible.
+   */
+  async replaceArchive(sheet: ClientSheet, handoverToken: string | null): Promise<void> {
+    const bytes = await this.render(sheet, handoverToken);
+    await this.documents.save(orderSheetPdfKey(sheet), { bytes, contentType: "application/pdf" });
+  }
+
+  /**
    * La couleur est lue AU RENDU (plan `commandes/back-office/tri-depart-et-couleurs.md`,
    * L5) : celle de la passation pour le bon archivé et joint au courriel. Un
    * bon déjà rangé n'est pas refait — c'est pourquoi la version de dessin

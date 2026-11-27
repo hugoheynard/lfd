@@ -1,3 +1,4 @@
+import { isPricedOrder } from '@lfd/b2b-ui/order';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -210,11 +211,25 @@ export class OrderRevisionPage {
    */
   private readonly refusedTotalCents = signal<number | null>(null);
 
+  /**
+   * Commande interne d'un de nos restaurants : la page ne montre aucun montant
+   * — ni prix de ligne, ni total, ni écart (décidé par Hugo le 2026-11-27).
+   */
+  protected readonly unpriced = computed(() => {
+    const state = this.state();
+    return state.kind === 'ready' && !isPricedOrder(state.order);
+  });
+
   /** L'avertissement de la passation, une fois le devis neuf rendu et différent. */
   protected readonly totalChanged = computed(() => {
     const before = this.refusedTotalCents();
     const quote = this.quote();
-    if (before === null || quote.kind !== 'ready' || quote.quote.totalCents === before) {
+    if (
+      this.unpriced() ||
+      before === null ||
+      quote.kind !== 'ready' ||
+      quote.quote.totalCents === before
+    ) {
       return null;
     }
     const c = this.t().cart;
@@ -295,7 +310,7 @@ export class OrderRevisionPage {
 
   protected readonly lines = computed(() =>
     this.draft().lines.map((line) => {
-      const quoted = this.quotedLines().get(line.sku);
+      const quoted = this.unpriced() ? undefined : this.quotedLines().get(line.sku);
       return {
         ...line,
         ...weightFieldOf(line, this.itemsBySku().get(line.sku)),

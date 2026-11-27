@@ -42,7 +42,10 @@ export function differenceLabel(
 export class RevisionQuote {
   readonly quote = input.required<OrderRevisionQuoteView>();
 
-  private readonly t = inject(ClientCopyService).t;
+  /** Commande interne d'un de nos restaurants : aucun montant, le texte du régime à la place. */
+  readonly unpriced = input(false);
+
+  protected readonly t = inject(ClientCopyService).t;
   protected readonly c = computed(() => this.t().orders.revision);
 
   protected readonly total = computed(() => formatCents(this.quote().totalCents));

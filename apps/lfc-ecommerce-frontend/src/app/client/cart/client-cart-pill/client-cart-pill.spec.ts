@@ -39,6 +39,13 @@ async function opened(panels: PanelsDouble, count: number): Promise<void> {
 }
 
 describe('ClientCartPill — la bascule du panier', () => {
+  // Le panneau du panier est chargé à la demande : à froid, sa compilation dépasse
+  // l'attente du test. Le charger une fois avant éprouve la bascule, pas la vitesse
+  // du transformateur.
+  beforeAll(async () => {
+    await import('../cart-dialog/cart-dialog');
+  });
+
   // jsdom n'a pas `matchMedia` : on se met en pile, là où la pastille ouvre la feuille.
   beforeEach(() => {
     Object.defineProperty(window, 'matchMedia', {

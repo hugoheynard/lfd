@@ -1,12 +1,13 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { SectionTitle, orderDocuments, type OrderDocument } from '@lfd/b2b-ui/order';
-import type { AdminOrderView } from '@lfd/contracts';
+import { orderDocumentFileName, type AdminOrderView } from '@lfd/contracts';
 import { FoldButtonComponent } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
 import { PdfPrinter } from '../../shared/print-pdf/pdf-printer';
 import { isOrderSheet } from '../commande-page/order-sheet-key';
+import { orderDocumentCustomer } from '../order-document-customer';
 import { DocumentRow } from '../document-row/document-row';
 import { HandoverProofCard } from '../handover-proof-card/handover-proof-card';
 import { OrderDeliveryNotesCard } from '../order-delivery-notes-card/order-delivery-notes-card';
@@ -62,10 +63,15 @@ export class OrderDocumentsPanel {
   protected readonly sheet = computed(() => this.documents().filter((d) => isOrderSheet(d.key)));
   /** Les autres pièces de la commande elle-même (la facture du mois), après les bons et factures. */
   protected readonly others = computed(() => this.documents().filter((d) => !isOrderSheet(d.key)));
+  /** Le client que les documents impriment — il entre dans le nom des fichiers. */
+  protected readonly customerName = computed(() => orderDocumentCustomer(this.order()));
 
   protected download(key: string): void {
     void this.withSheet(key, (blob, order) => {
-      this.printer.download(blob, `confirmation-de-commande-${order.orderNumber}.pdf`);
+      this.printer.download(
+        blob,
+        orderDocumentFileName(order.orderNumber, orderDocumentCustomer(order), 'confirmation'),
+      );
     });
   }
 

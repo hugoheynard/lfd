@@ -27,10 +27,12 @@
          tant qu'elle tient ; sinon ils passent ensemble dessous, toujours à droite. -->
     <div class="om-end" data-om-end>
       <!-- Le chiffre et son assiette sur la même ligne de base : « 197,34 € HT ». -->
-      <p class="om-total" data-om-total>
-        <span class="om-total-value">{{ total().value }}</span>
-        <span class="om-total-basis">{{ total().basis }}</span>
-      </p>
+      @if (total(); as t) {
+        <p class="om-total" data-om-total>
+          <span class="om-total-value">{{ t.value }}</span>
+          <span class="om-total-basis">{{ t.basis }}</span>
+        </p>
+      }
       <ng-content select="[mastheadAction]" />
     </div>
   </div>

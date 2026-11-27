@@ -1,6 +1,7 @@
 import {
   type CompanyOrderAuthorView,
   companyDisplayName,
+  IN_HOUSE_OFFER_NATURE,
   vatSharesSchema,
   type VatShareView,
 } from "@lfd/contracts";
@@ -22,6 +23,7 @@ const SUMMARY_SELECT = {
   companyId: true,
   status: true,
   paymentStatus: true,
+  offerNature: true,
   requestedDeliveryDate: true,
   fulfillmentMethod: true,
   placedByStaffId: true,
@@ -88,6 +90,7 @@ function sourceOf(row: SummaryRow): readonly OrderSummarySource[] {
       fulfillmentMethod: row.fulfillmentMethod,
       author: authorOf(row),
       cancelled: row.status === OrderStatus.cancelled,
+      inHouse: row.offerNature === IN_HOUSE_OFFER_NATURE,
       paymentStatus: row.paymentStatus,
       subtotalCents: row.subtotalCents,
       discountCents: row.discountCents,

@@ -3705,3 +3705,4 @@ export {
   favoriteSkuSchema,
   type MyFavoritesView,
 } from "./shop-favorites.js";
+export { fileNameCustomerPart, orderDocumentFileName } from "./document-file-name.js";

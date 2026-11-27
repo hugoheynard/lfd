@@ -31,7 +31,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 15 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 119 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 118 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 33 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
@@ -39,7 +39,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le cadre — bandeaux et erreurs générales](#espace-chrome) | `chrome` | 62 |
 | [La navigation](#espace-nav) | `nav` | 17 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 291 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 292 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Payer par lien — la page publique /payer](#espace-paylink) | `payLink` | 24 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
@@ -742,7 +742,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 119 textes.
+Source : `fr.ts · en.ts · it.ts` · 118 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -774,7 +774,6 @@ Source : `fr.ts · en.ts · it.ts` · 119 textes.
 | `cart.vat` | TVA {rate} | VAT {rate} | IVA {rate} | `{rate}` |
 | `cart.total` | Total TTC | Total incl. VAT | Totale IVA incl. |  |
 | `cart.totalPretax` | Total HT | Total excl. VAT | Totale IVA escl. |  |
-| `cart.totalInHouse` | Valeur, non facturée | Value, not invoiced | Valore, non fatturato |  |
 | `cart.pretaxNote` | TVA et TTC sur la facture du mois | VAT and total incl. VAT on the monthly invoice | IVA e totale IVA inclusa sulla fattura del mese |  |
 | `cart.courierOffered` | Coursier offert | Courier on us | Corriere offerto |  |
 | `cart.freeDeliveryShort` | Plus que {amount} HT pour la livraison offerte | Only {amount} excl. VAT more for free delivery | Ancora {amount} IVA esclusa per la consegna gratuita | `{amount}` |
@@ -1075,7 +1074,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 291 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 292 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1148,6 +1147,7 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.summary.excludedCancelled` | annulée | cancelled | annullato |  |
 | `orders.summary.excludedPending` | paiement en attente | payment pending | pagamento in attesa |  |
 | `orders.summary.excludedFailed` | paiement refusé | payment refused | pagamento rifiutato |  |
+| `orders.summary.excludedInHouse` | commande interne — sans facturation | internal order — not invoiced | ordine interno — senza fatturazione |  |
 | `orders.summary.pdf` | PDF | PDF | PDF |  |
 | `orders.summary.csv` | Tableur | Spreadsheet | Foglio di calcolo |  |
 | `orders.summary.failed` | Le récapitulatif n’a pas pu être établi. Réessayez dans un instant. | The summary could not be built. Try again in a moment. | Non è stato possibile preparare il riepilogo. Riprova tra un istante. |  |

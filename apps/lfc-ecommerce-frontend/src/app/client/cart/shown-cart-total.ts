@@ -1,7 +1,7 @@
 import { computed, inject, type Signal } from '@angular/core';
 import type { ShopQuoteView } from '@lfd/contracts';
 
-import { settlesOnAccount } from '../../account/settles-on-account';
+import { payerIsInHouse, settlesOnAccount } from '../../account/settles-on-account';
 import { ClientCompany } from '../client-company.service';
 import { ClientCopyService } from '../copy/client-copy.service';
 import { formatCents } from '../format-money';
@@ -28,12 +28,18 @@ export function shownCartTotalCents(totals: ShopQuoteView, onAccount: boolean): 
  * Le même total, écrit avec sa base — « 7,58 € HT » au compte, « 8,00 € TTC »
  * sinon (Hugo, 2026-10-27 : « Régler » et le panier de l'en-tête ne disaient
  * pas laquelle). À appeler dans un contexte d'injection.
+ *
+ * Vide pour un de nos restaurants (payeur maison) : son panier ne montre
+ * aucun montant (Hugo, 2026-11-27) — le lecteur n'affiche alors rien.
  */
 export function shownCartTotalLabel(): Signal<string> {
   const cart = inject(ClientCart);
   const firm = inject(ClientCompany);
   const t = inject(ClientCopyService).t;
   return computed(() => {
+    if (payerIsInHouse(firm.company())) {
+      return '';
+    }
     const onAccount = settlesOnAccount(firm.company());
     const suffix = onAccount ? t().shop.htSuffix : t().shop.ttcSuffix;
     return `${formatCents(shownCartTotalCents(cart.totals(), onAccount))} ${suffix}`;

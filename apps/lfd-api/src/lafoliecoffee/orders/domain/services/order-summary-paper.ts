@@ -41,6 +41,7 @@ const EXCLUSION_LABELS: Readonly<Record<OrderSummaryExclusionReason, string>> = 
   cancelled: "annulée",
   payment_pending: "paiement en attente",
   payment_failed: "paiement refusé",
+  in_house: "commande interne — sans facturation",
 };
 
 /** Pourquoi une commande sélectionnée est hors des totaux, en mots. */

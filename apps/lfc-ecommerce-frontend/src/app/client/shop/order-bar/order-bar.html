@@ -128,7 +128,9 @@
           (click)="pay.emit()"
         >
           <span>{{ c().pay }}</span>
-          <span class="total">{{ total() }}</span>
+          @if (total()) {
+            <span class="total">{{ total() }}</span>
+          }
         </button>
       } @else {
         <span class="empty">{{ c().empty }}</span>

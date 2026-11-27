@@ -55,6 +55,7 @@ export interface OrderSummaryCopy {
   readonly excludedCancelled: string;
   readonly excludedPending: string;
   readonly excludedFailed: string;
+  readonly excludedInHouse: string;
   readonly pdf: string;
   readonly csv: string;
   /** Un refus sans message lisible (réseau, panne). */
@@ -123,6 +124,7 @@ export const ORDER_SUMMARY_FR: OrderSummaryCopy = {
   excludedCancelled: 'annulée',
   excludedPending: 'paiement en attente',
   excludedFailed: 'paiement refusé',
+  excludedInHouse: 'commande interne — sans facturation',
   pdf: 'PDF',
   csv: 'Tableur',
   failed: 'Le récapitulatif n’a pas pu être établi. Réessayez dans un instant.',
@@ -188,6 +190,7 @@ export const ORDER_SUMMARY_EN: OrderSummaryCopy = {
   excludedCancelled: 'cancelled',
   excludedPending: 'payment pending',
   excludedFailed: 'payment refused',
+  excludedInHouse: 'internal order — not invoiced',
   pdf: 'PDF',
   csv: 'Spreadsheet',
   failed: 'The summary could not be built. Try again in a moment.',
@@ -253,6 +256,7 @@ export const ORDER_SUMMARY_IT: OrderSummaryCopy = {
   excludedCancelled: 'annullato',
   excludedPending: 'pagamento in attesa',
   excludedFailed: 'pagamento rifiutato',
+  excludedInHouse: 'ordine interno — senza fatturazione',
   pdf: 'PDF',
   csv: 'Foglio di calcolo',
   failed: 'Non è stato possibile preparare il riepilogo. Riprova tra un istante.',

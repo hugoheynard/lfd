@@ -16,6 +16,8 @@ import {
 } from '@lfd/contracts';
 import {
   formatCents,
+  IN_HOUSE_AMOUNT_WORD,
+  isPricedOrder,
   formatOrderDate,
   orderStatusLabel,
   orderStatusVariant,
@@ -207,8 +209,9 @@ export class OrdersTable {
     return row.fulfillmentDay === null ? null : formatOrderDate(row.fulfillmentDay);
   }
 
+  /** « Interne » pour une commande interne : elle ne montre aucun montant. */
   protected total(row: AdminOrderRow): string {
-    return formatCents(row.totalCents);
+    return isPricedOrder(row) ? formatCents(row.totalCents) : IN_HOUSE_AMOUNT_WORD;
   }
 
   protected status(row: AdminOrderRow): string {

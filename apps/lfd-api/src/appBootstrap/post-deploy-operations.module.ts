@@ -1,5 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 
+import { OrdersModule } from "../lafoliecoffee/orders/orders.module.js";
+import { Ord35SheetOperation } from "../lafoliecoffee/orders/infrastructure/ord-35-sheet.operation.js";
 import {
   POST_DEPLOY_OPERATIONS,
   type PostDeployOperation,
@@ -21,10 +23,12 @@ import {
  */
 @Global()
 @Module({
+  imports: [OrdersModule],
   providers: [
     {
       provide: POST_DEPLOY_OPERATIONS,
-      useValue: [] satisfies readonly PostDeployOperation[],
+      useFactory: (ord35: Ord35SheetOperation): readonly PostDeployOperation[] => [ord35],
+      inject: [Ord35SheetOperation],
     },
   ],
   exports: [POST_DEPLOY_OPERATIONS],

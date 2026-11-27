@@ -92,6 +92,7 @@ async function boot(read: () => Promise<readonly AdminDeliveryNoteView[]>): Prom
   });
   const fixture = TestBed.createComponent(OrderDeliveryNotesCard);
   fixture.componentRef.setInput('orderId', 'o_1');
+  fixture.componentRef.setInput('orderReference', 'ORD-35');
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();

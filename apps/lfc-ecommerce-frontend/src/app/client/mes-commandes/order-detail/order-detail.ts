@@ -8,7 +8,13 @@ import { discountLabel } from '../../shop/pickup-discount';
 import { OrderCancelSection } from '../../order-cancellation/order-cancel-section/order-cancel-section';
 import { OrderReviseSection } from '../../order-revision/order-revise-section/order-revise-section';
 import { formatCents } from '../../format-money';
-import { isFulfilled, originLabelOf, type HistoryOrder, type OrderPayment } from '../order-rows';
+import {
+  isFulfilled,
+  isUnpriced,
+  originLabelOf,
+  type HistoryOrder,
+  type OrderPayment,
+} from '../order-rows';
 import { discountLabelIn, ticketRowsOf } from '../order-ticket-rows';
 
 /** Une note de 1 à 5. Zéro veut dire « pas encore notée », pas « zéro étoile ». */
@@ -90,6 +96,12 @@ export class OrderDetail {
 
   protected readonly reportable = computed(() => isFulfilled(this.order()));
 
+  /**
+   * Commande interne : aucun montant dans le tiroir — ni remise, ni bon, ni
+   * ticket, ni remboursement. Le règlement dit déjà « Commande interne ».
+   */
+  protected readonly unpriced = computed(() => isUnpriced(this.order()));
+
   protected readonly paymentLabel = computed(() => {
     const copy = this.t().orders;
     const labels: Record<OrderPayment, string> = {
@@ -119,7 +131,9 @@ export class OrderDetail {
    */
   protected readonly voucherAmount = computed(() => {
     const cents = this.order().voucherDiscountCents;
-    return cents > 0 && this.order().ticket === undefined ? formatCents(cents) : null;
+    return cents > 0 && !this.unpriced() && this.order().ticket === undefined
+      ? formatCents(cents)
+      : null;
   });
 
   /**
@@ -129,7 +143,7 @@ export class OrderDetail {
    */
   protected readonly ticketRows = computed(() => {
     const ticket = this.order().ticket;
-    return ticket === undefined
+    return ticket === undefined || this.unpriced()
       ? null
       : ticketRowsOf(ticket, this.t().orders, this.locale.current());
   });
@@ -141,7 +155,7 @@ export class OrderDetail {
    */
   protected readonly discountLines = computed(() => {
     const lines = this.order().discountLines;
-    if (lines === undefined) {
+    if (lines === undefined || this.unpriced()) {
       return null;
     }
     const fallback = this.t().orders.detailPickupDiscount;
@@ -160,7 +174,7 @@ export class OrderDetail {
    */
   protected readonly pickupDiscount = computed(() => {
     const discount = this.order().pickupDiscount;
-    if (discount === undefined) {
+    if (discount === undefined || this.unpriced()) {
       return null;
     }
     const t = this.t();
@@ -185,7 +199,7 @@ export class OrderDetail {
   protected readonly refundLabel = computed(() => {
     const copy = this.t().orders;
     const refund = this.order().refund;
-    if (refund.kind === 'none') {
+    if (refund.kind === 'none' || this.unpriced()) {
       return null;
     }
     return refund.kind === 'full'

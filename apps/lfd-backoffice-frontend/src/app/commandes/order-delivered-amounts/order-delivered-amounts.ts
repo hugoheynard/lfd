@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import type { AdminOrderView } from '@lfd/contracts';
-import { formatCents, SectionTitle } from '@lfd/b2b-ui/order';
+import { formatCents, isPricedOrder, SectionTitle } from '@lfd/b2b-ui/order';
 import { FoldCardComponent, FoldFieldComponent, FoldFieldListComponent } from 'fold-ng';
 
 /** Les deux colonnes de la carte : ce qui a été commandé, ce qui se facture. */
@@ -29,7 +29,8 @@ export class OrderDeliveredAmounts {
 
   protected readonly rows = computed<AmountRows | null>(() => {
     const order = this.order();
-    if (order.shortfall?.decision == null) {
+    // Une commande interne ne montre aucun montant, livré ou commandé.
+    if (order.shortfall?.decision == null || !isPricedOrder(order)) {
       return null;
     }
     const billable = order.billable ?? null;

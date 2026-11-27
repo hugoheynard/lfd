@@ -83,9 +83,12 @@
                   <th scope="col" class="od-col-qty" data-col-departed>Parti</th>
                 }
                 <th scope="col">Article</th>
-                <th scope="col" class="od-col-num od-col-unit">PU HT</th>
-                <th scope="col" class="od-col-num od-col-vat">TVA</th>
-                <th scope="col" class="od-col-num">Total HT</th>
+                <!-- Une commande interne ne montre aucun prix : ni colonne, ni trace. -->
+                @if (priced()) {
+                  <th scope="col" class="od-col-num od-col-unit">PU HT</th>
+                  <th scope="col" class="od-col-num od-col-vat">TVA</th>
+                  <th scope="col" class="od-col-num">Total HT</th>
+                }
               </tr>
             </thead>
             <tbody>
@@ -124,8 +127,8 @@
                          ont produit un effet, dans l'ordre où ils l'ont produit.
                          Les règles qui les ont produits peuvent avoir été
                          retirées depuis : la trace, elle, reste. -->
-                      @let steps = priceStepLabels(line, locale());
-                      @if (steps.length > 0 || wasFloored(line)) {
+                      @let steps = priced() ? priceStepLabels(line, locale()) : [];
+                      @if (steps.length > 0 || (priced() && wasFloored(line))) {
                         <span class="od-article-price" data-article-discount>
                           @for (label of steps; track $index) {
                             <span class="od-step">{{ label }}</span>
@@ -144,7 +147,7 @@
                          s'atteindre au clavier et s'annoncer, ce qu'un `<tr>` ne
                          fait pas. Absent côté client, où la trace ne descend
                          plus. -->
-                      @if (selectableLines()) {
+                      @if (selectableLines() && priced()) {
                         <button
                           type="button"
                           class="od-why"
@@ -156,20 +159,22 @@
                       }
                     </div>
                   </td>
-                  <td class="od-col-num od-col-unit">
-                    @if (entryPriceOf(line); as entry) {
-                      <!-- Le tarif d'entrée, barré : c'est lui qui rend la remise
-                         lisible. `<s>` et non une classe — la rature doit exister
-                         pour un lecteur d'écran aussi. -->
-                      <s class="od-was">{{ fmtMillicents(entry) }}</s>
-                    }
-                    {{ fmtMillicents(line.unitPriceMillicents) }}
-                    @if (line.saleUnit === 'weight') {
-                      <span class="od-muted">/ kg</span>
-                    }
-                  </td>
-                  <td class="od-col-num od-col-vat od-muted">{{ fmtVat(line.vatRate) }}</td>
-                  <td class="od-col-num">{{ fmtCents(line.lineTotalCents) }}</td>
+                  @if (priced()) {
+                    <td class="od-col-num od-col-unit">
+                      @if (entryPriceOf(line); as entry) {
+                        <!-- Le tarif d'entrée, barré : c'est lui qui rend la remise
+                           lisible. `<s>` et non une classe — la rature doit exister
+                           pour un lecteur d'écran aussi. -->
+                        <s class="od-was">{{ fmtMillicents(entry) }}</s>
+                      }
+                      {{ fmtMillicents(line.unitPriceMillicents) }}
+                      @if (line.saleUnit === 'weight') {
+                        <span class="od-muted">/ kg</span>
+                      }
+                    </td>
+                    <td class="od-col-num od-col-vat od-muted">{{ fmtVat(line.vatRate) }}</td>
+                    <td class="od-col-num">{{ fmtCents(line.lineTotalCents) }}</td>
+                  }
                 </tr>
               }
             </tbody>
@@ -293,36 +298,44 @@
           @if (framed()) {
             <fold-card>
               <lfd-section-title title="Montants" />
-              <dl class="od-totals">
-                @for (row of totals(); track row.key) {
-                  <div class="od-total-row" [class.is-strong]="row.strong">
-                    <dt>
-                      {{ row.label }}
-                      @if (row.hint) {
-                        <span class="od-total-hint">{{ row.hint }}</span>
-                      }
-                    </dt>
-                    <dd>{{ row.value }}</dd>
-                  </div>
-                }
-              </dl>
+              @if (!priced()) {
+                <p class="od-muted" data-in-house-mention>{{ inHouseMention }}</p>
+              } @else {
+                <dl class="od-totals">
+                  @for (row of totals(); track row.key) {
+                    <div class="od-total-row" [class.is-strong]="row.strong">
+                      <dt>
+                        {{ row.label }}
+                        @if (row.hint) {
+                          <span class="od-total-hint">{{ row.hint }}</span>
+                        }
+                      </dt>
+                      <dd>{{ row.value }}</dd>
+                    </div>
+                  }
+                </dl>
+              }
             </fold-card>
           } @else {
             <section class="od-card">
               <lfd-section-title title="Montants" />
-              <dl class="od-totals">
-                @for (row of totals(); track row.key) {
-                  <div class="od-total-row" [class.is-strong]="row.strong">
-                    <dt>
-                      {{ row.label }}
-                      @if (row.hint) {
-                        <span class="od-total-hint">{{ row.hint }}</span>
-                      }
-                    </dt>
-                    <dd>{{ row.value }}</dd>
-                  </div>
-                }
-              </dl>
+              @if (!priced()) {
+                <p class="od-muted" data-in-house-mention>{{ inHouseMention }}</p>
+              } @else {
+                <dl class="od-totals">
+                  @for (row of totals(); track row.key) {
+                    <div class="od-total-row" [class.is-strong]="row.strong">
+                      <dt>
+                        {{ row.label }}
+                        @if (row.hint) {
+                          <span class="od-total-hint">{{ row.hint }}</span>
+                        }
+                      </dt>
+                      <dd>{{ row.value }}</dd>
+                    </div>
+                  }
+                </dl>
+              }
             </section>
           }
 

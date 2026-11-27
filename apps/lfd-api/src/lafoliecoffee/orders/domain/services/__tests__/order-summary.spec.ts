@@ -27,6 +27,7 @@ function order(over: Partial<OrderSummarySource> & { readonly id: string }): Ord
     fulfillmentMethod: "pickup",
     author: { kind: "customer", name: "Léa Martin" },
     cancelled: false,
+    inHouse: false,
     paymentStatus: "not_required",
     subtotalCents: 1_000,
     discountCents: 0,
@@ -224,6 +225,43 @@ describe("summarizeOrders — exclues et listées (§6.5)", () => {
     expect(summary.total.orderCount).toBe(1);
     expect(summary.total.bottom.totalCents).toBe(1_055);
     expect(summary.companies.map((c) => c.companyId)).toEqual([PRINCIPAL]);
+  });
+});
+
+describe("summarizeOrders — la commande interne", () => {
+  it("une commande interne est exclue et nommée, jamais sommée pour 0 €", () => {
+    const summary = summarizeOrders(PRINCIPAL, [
+      order({ id: "ok", paymentStatus: "paid" }),
+      order({ id: "interne", inHouse: true, totalCents: 0, vatCents: 0, vatShares: [] }),
+    ]);
+
+    expect(summary.excluded).toEqual([
+      { orderId: "interne", orderNumber: "ORD-interne", reason: "in_house" },
+    ]);
+    expect(summary.total.orderCount).toBe(1);
+    expect(summary.total.products).toEqual([
+      { sku: "VIE-001", name: "Croissant", quantity: 10, saleUnit: "piece", htCents: 1_000 },
+    ]);
+  });
+
+  it("annulée ET interne : la raison est l'annulation", () => {
+    const summary = summarizeOrders(PRINCIPAL, [
+      order({ id: "x", cancelled: true, inHouse: true }),
+    ]);
+
+    expect(summary.excluded.map((e) => e.reason)).toEqual(["cancelled"]);
+  });
+
+  it("un payeur maison sans autre commande : tout est exclu, aucune table", () => {
+    const summary = summarizeOrders(PRINCIPAL, [
+      order({ id: "i1", inHouse: true }),
+      order({ id: "i2", inHouse: true }),
+    ]);
+
+    expect(summary.companies).toEqual([]);
+    expect(summary.total.orderCount).toBe(0);
+    expect(summary.total.bottom.totalCents).toBe(0);
+    expect(summary.excluded.map((e) => e.reason)).toEqual(["in_house", "in_house"]);
   });
 });
 

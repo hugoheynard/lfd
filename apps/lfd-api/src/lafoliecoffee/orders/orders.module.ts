@@ -209,6 +209,7 @@ import { AdminOrderSheetSpecimensController } from "./http/admin-order-sheet-spe
 import { AdminOrderSummarySpecimenController } from "./http/admin-order-summary-specimen.controller.js";
 import { GetOrderSheetPdfHandler } from "./application/queries/get-order-sheet-pdf.handler.js";
 import { OrderSheetArchive } from "./application/services/order-sheet-archive.service.js";
+import { Ord35SheetOperation } from "./infrastructure/ord-35-sheet.operation.js";
 import { OrderSheetAttachment } from "./application/services/order-sheet-attachment.service.js";
 import { OrderSheetLogoSource } from "./domain/ports/order-sheet-logo.source.js";
 import { OrderSheetColorSource } from "./domain/ports/order-sheet-color.source.js";
@@ -544,6 +545,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     GetOrderSummarySpecimenHandler,
     OrderSheetArchive,
     OrderSheetAttachment,
+    // La reprise de la confirmation d'ORD-35, reliée à la liste par `appBootstrap/post-deploy-operations.module.ts`.
+    Ord35SheetOperation,
     // Le logo du bon (plan-bon-public §2.1), lu dans `assets/` comme les polices de la facture.
     // Le logo de la marque, lu par `platform/brand` (plan matrice des
     // allergènes §2) : un seul lecteur pour tous les papiers.
@@ -782,6 +785,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
   // doit résoudre les prix contre l'autorité que la caisse utilise, pas contre
   // une seconde copie. Cf. `PricingAdminModule`.
   exports: [
+    Ord35SheetOperation,
     // La passation d'une échéance et les CGV d'un panier, pour le fil des paniers récurrents.
     RecurringOccurrencePlacement,
     OrdersBasketSalesTerms,

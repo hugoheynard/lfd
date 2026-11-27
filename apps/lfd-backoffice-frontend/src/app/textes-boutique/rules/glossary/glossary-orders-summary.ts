@@ -43,6 +43,7 @@ export const GLOSSARY_ORDERS_SUMMARY: Readonly<Record<string, string>> = {
   excludedCancelled: 'Exclue : annulée',
   excludedPending: 'Exclue : paiement en attente',
   excludedFailed: 'Exclue : paiement refusé',
+  excludedInHouse: 'Exclue : commande interne',
   pdf: 'Bouton PDF',
   csv: 'Bouton tableur',
   exportFailed: 'Échec du fichier',

@@ -399,7 +399,6 @@ export const EN: ClientCopy = {
     vat: 'VAT {rate}',
     total: 'Total incl. VAT',
     totalPretax: 'Total excl. VAT',
-    totalInHouse: 'Value, not invoiced',
     pretaxNote: 'VAT and total incl. VAT on the monthly invoice',
     courierOffered: 'Courier on us',
     freeDeliveryShort: 'Only {amount} excl. VAT more for free delivery',

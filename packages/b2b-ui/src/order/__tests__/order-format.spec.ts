@@ -1,5 +1,6 @@
 import {
   fulfillmentLabel,
+  isPricedOrder,
   orderStatusLabel,
   orderStatusVariant,
   settlementStatusLabel,
@@ -64,5 +65,14 @@ describe('fulfillmentLabel — le point de retrait nommé', () => {
 
   it('dit la livraison, sans point', () => {
     expect(fulfillmentLabel('delivery', 'La Folie Bakery')).toBe('Livraison par coursier');
+  });
+});
+
+describe('isPricedOrder — une commande interne ne montre aucun prix', () => {
+  it('tait les prix d’une commande interne, et d’elle seule', () => {
+    expect(isPricedOrder({ settlement: 'in_house' })).toBe(false);
+    for (const settlement of ['paid', 'account', 'offered', 'shop_till'] as const) {
+      expect(isPricedOrder({ settlement })).toBe(true);
+    }
   });
 });

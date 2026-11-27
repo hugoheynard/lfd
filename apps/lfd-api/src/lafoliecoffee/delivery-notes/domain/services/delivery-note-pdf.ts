@@ -43,6 +43,7 @@ import {
 } from "./delivery-note-pdf-parts.js";
 import { undeliveredMention, undeliveredSpace } from "./delivery-note-pdf-undelivered.js";
 import type { UndeliveredLine } from "./undelivered-lines.js";
+import { orderDocumentFileName } from "@lfd/contracts";
 
 /**
  * **Le bon de livraison en PDF** (plan
@@ -357,7 +358,20 @@ export async function renderClientNotePdf(
   );
 }
 
-/** Le nom proposé au téléchargement. */
+/**
+ * Le nom proposé au téléchargement : la commande, le client que le bon imprime
+ * en tête et le numéro du bon, suivi de « -transport » pour l'exemplaire du
+ * transporteur : les deux se distinguent dans un dossier.
+ */
 export function deliveryNotePdfFileName(note: PrintableNote): string {
-  return `bon-de-livraison-${note.number}${note.audience === "carrier" ? "-transport" : ""}.pdf`;
+  const suffix = note.audience === "carrier" ? `${note.number}-transport` : note.number;
+  return orderDocumentFileName(note.orderReference, printedCustomerName(note), suffix);
+}
+
+/** Le nom du bloc client : la personne pour un bon public, l'enseigne sinon. */
+function printedCustomerName(note: PrintableNote): string {
+  if (note.audience === "client" && note.variant === "public") {
+    return note.customer.legalName;
+  }
+  return note.customer.tradeName === "" ? note.customer.legalName : note.customer.tradeName;
 }

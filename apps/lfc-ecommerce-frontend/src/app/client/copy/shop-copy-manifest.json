@@ -3820,13 +3820,6 @@
           "variables": []
         },
         {
-          "key": "cart.totalInHouse",
-          "fr": "Valeur, non facturée",
-          "en": "Value, not invoiced",
-          "it": "Valore, non fatturato",
-          "variables": []
-        },
-        {
           "key": "cart.pretaxNote",
           "fr": "TVA et TTC sur la facture du mois",
           "en": "VAT and total incl. VAT on the monthly invoice",
@@ -5965,6 +5958,13 @@
           "fr": "paiement refusé",
           "en": "payment refused",
           "it": "pagamento rifiutato",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.excludedInHouse",
+          "fr": "commande interne — sans facturation",
+          "en": "internal order — not invoiced",
+          "it": "ordine interno — senza fatturazione",
           "variables": []
         },
         { "key": "orders.summary.pdf", "fr": "PDF", "en": "PDF", "it": "PDF", "variables": [] },

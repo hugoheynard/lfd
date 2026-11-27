@@ -5,6 +5,7 @@ import { FoldBadgeComponent } from 'fold-ng';
 import {
   formatCents,
   formatOrderDate,
+  isPricedOrder,
   orderHeaderTotal,
   orderStatusLabel,
   orderStatusVariant,
@@ -37,6 +38,8 @@ export class OrderDetailHead {
 
   /** Le total de l'en-tête et son assiette — cf. `orderHeaderTotal`. */
   protected readonly headerTotal = computed(() => orderHeaderTotal(this.order()));
+  /** Une commande interne ne montre pas de montant : le badge du règlement le dit. */
+  protected readonly priced = computed(() => isPricedOrder(this.order()));
 
   protected fmtCents(cents: number): string {
     return formatCents(cents);

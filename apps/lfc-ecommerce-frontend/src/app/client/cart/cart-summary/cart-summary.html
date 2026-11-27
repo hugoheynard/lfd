@@ -11,7 +11,8 @@
           [line]="line"
           [totalHtCents]="totalOf(line.product.sku)?.ht ?? null"
           [totalTtcCents]="totalOf(line.product.sku)?.ttc ?? null"
-          [excluded]="excludedSkus().has(line.product.sku)"
+          [excluded]="!inHouse() && excludedSkus().has(line.product.sku)"
+          [priced]="!inHouse()"
           [pending]="cart.pendingSkus().has(line.product.sku)"
           (quantityChange)="cart.setQuantity(line.product.sku, $event)"
           (dropped)="cart.drop(line.product.sku)"
@@ -32,6 +33,10 @@
 
 @if (refusal(); as message) {
   <fold-callout variant="alert">{{ message }}</fold-callout>
+} @else if (inHouse()) {
+  <!-- Un de nos restaurants : pas un montant, pas un bon, pas une mention de
+       TVA — la commande est interne (Hugo, 2026-11-27). -->
+  <p class="points" data-in-house>{{ t().done.inHouse }}</p>
 } @else {
   <!-- Le bon de fidélité : seulement en espace personnel, programme ouvert,
        au moins un bon disponible. Un seul par commande, ou aucun. -->

@@ -105,6 +105,8 @@ export interface TrackedOrder {
   readonly total: number;
   /** `total` est HORS TAXE : un pro au compte (F5), cf. {@link amountOf}. */
   readonly pretax: boolean;
+  /** Commande interne d'un de nos restaurants : la carte ne montre aucun montant. */
+  readonly inHouse: boolean;
   readonly pieces: number;
   /** L'avancement, de 0 à 100 — le statut, dessiné. */
   readonly percent: number;
@@ -413,6 +415,7 @@ export function trackedOf(order: RowSource, copy: RowCopy): TrackedOrder {
     sub: windowOf(order, copy.before) || copy.noWindow,
     total: amountOf(order) / 100,
     pretax: order.settlement === 'account',
+    inHouse: order.settlement === 'in_house',
     pieces: piecesOf(order),
     // Le statut, DESSINÉ : quatre étapes, donc un quart par étape franchie —
     // la dernière à moitié tant qu'un reste suit.
@@ -672,4 +675,14 @@ function hour(iso: string): string {
   return Number.isNaN(date.getTime())
     ? ''
     : date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+/**
+ * Une commande interne d'un de nos restaurants ne montre AUCUN montant — ni
+ * prix, ni remise, ni total (décidé par Hugo le 2026-11-27) : le bon et la
+ * feuille le font déjà au serveur (`isPriced` de `order-sheet-pdf.ts`). Lu
+ * sur le régime figé à la passation, comme `paymentOf`.
+ */
+export function isUnpriced(order: { readonly payment: OrderPayment }): boolean {
+  return order.payment === 'in_house';
 }

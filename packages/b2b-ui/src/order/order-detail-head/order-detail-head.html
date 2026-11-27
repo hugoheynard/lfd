@@ -21,8 +21,10 @@
     <fold-badge [variant]="paymentVariant()" [content]="paymentLabel()" />
   </div>
 
-  <p class="od-total">
-    <span class="od-total-value">{{ fmtCents(headerTotal().cents) }}</span>
-    <span class="od-total-label">{{ headerTotal().basis }}</span>
-  </p>
+  @if (priced()) {
+    <p class="od-total">
+      <span class="od-total-value">{{ fmtCents(headerTotal().cents) }}</span>
+      <span class="od-total-label">{{ headerTotal().basis }}</span>
+    </p>
+  }
 </header>

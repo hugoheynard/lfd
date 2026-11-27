@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { orderDocumentFileName } from '@lfd/contracts/shop-values';
 import {
   FoldButtonComponent,
   FoldElementTitleComponent,
@@ -29,6 +30,7 @@ import { AuthFacade } from '../../../auth/auth.facade';
 import { ClientChrome } from '../../client-chrome.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { ClientCompany } from '../../client-company.service';
+import { ClientIdentity } from '../../client-identity.service';
 import { ClientOrderHistory, type OrderDays } from '../client-order-history.service';
 import { DeliveryNoteService } from '../delivery-note.service';
 import { OrderSheetService } from '../order-sheet.service';
@@ -116,6 +118,7 @@ export class CommandesPage {
   /** Une session expirée ne se relit pas : on propose de se reconnecter. */
   protected readonly sessionExpired = this.auth.sessionExpired;
   private readonly client = inject(ClientCompany);
+  private readonly identity = inject(ClientIdentity);
 
   /**
    * La commande à ouvrir, venue du lien du courriel (`/mes-commandes/:orderId`) ;
@@ -271,8 +274,11 @@ export class CommandesPage {
     try {
       const pdf = await this.sheets.pdfOf(order.id);
       // Le nom se compose sur la RÉFÉRENCE, celle que le client lit sur son
-      // écran : c'est ce qu'il cherchera dans son dossier de téléchargements.
-      downloadBlob(`confirmation-de-commande-${order.reference}.pdf`, pdf);
+      // écran, et le client que le bon imprime — le nom que l'API donne.
+      downloadBlob(
+        orderDocumentFileName(order.reference, this.customerOf(order), 'confirmation'),
+        pdf,
+      );
     } catch {
       this.notify.error(this.t().orders.purchaseOrderFailed);
     }
@@ -285,13 +291,26 @@ export class CommandesPage {
 
   private async fetchDeliveryNote(order: HistoryOrder): Promise<void> {
     try {
+      // L'écran ne connaît pas le numéro du bon : « BL » le tient à sa place.
       downloadBlob(
-        `bon-de-livraison-${order.reference}.pdf`,
+        orderDocumentFileName(order.reference, this.customerOf(order), 'BL'),
         await this.deliveryNotes.pdfOf(order.id),
       );
     } catch {
       this.notify.error(this.t().orders.deliveryNoteFailed);
     }
+  }
+
+  /**
+   * Le client dont c'est la commande : le site qui l'a passée, sinon la
+   * société ouverte, sinon la personne. Vide si l'écran ne le sait pas — le
+   * nom de fichier s'en passe alors.
+   */
+  private customerOf(order: HistoryOrder): string {
+    if (order.site !== null) {
+      return order.site;
+    }
+    return this.client.company() === null ? this.identity.fullName() : this.client.name();
   }
 
   /**

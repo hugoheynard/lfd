@@ -43,7 +43,6 @@ export const GLOSSARY_T_W: Readonly<Record<string, string>> = {
   totalChanged: 'Total changé depuis le panier',
   totalChangedConfirm: 'Total changé — commander au nouveau total',
   totalChangedModify: 'Total changé — modifier le panier',
-  totalInHouse: 'Total — commande interne',
   totalHt: 'Total HT',
   totalPretax: 'Total HT',
   totalTtc: 'Total TTC',

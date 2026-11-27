@@ -48,6 +48,8 @@ export interface OrderSummarySource {
   readonly fulfillmentMethod: FulfillmentMethod;
   readonly author: CompanyOrderAuthorView;
   readonly cancelled: boolean;
+  /** Commande interne (régime `in_house`) : ni facturée ni réglée, jamais sommée. */
+  readonly inHouse: boolean;
   readonly paymentStatus: PaymentStatus;
   readonly subtotalCents: number;
   readonly discountCents: number;
@@ -102,7 +104,7 @@ export function ensureAllSummarized(
  * exactement la somme des commandes : aucun écart d'arrondi à expliquer,
  * parce qu'on ne recalcule rien. Une table par société, la société listée en
  * tête, puis le total général (§6.2). Annulées et paiements en attente ou
- * refusés sont hors des totaux, et listés (§6.5).
+ * refusés et commandes internes sont hors des totaux, et listés (§6.5).
  *
  * `sources` : la plus récente en tête — le nom d'un produit est celui de la
  * première commande qui le porte.
@@ -132,6 +134,9 @@ export function summarizeOrders(
 function exclusionOf(source: OrderSummarySource): OrderSummaryExclusionReason | null {
   if (source.cancelled) {
     return "cancelled";
+  }
+  if (source.inHouse) {
+    return "in_house";
   }
   return PAYMENT_EXCLUSIONS[source.paymentStatus] ?? null;
 }

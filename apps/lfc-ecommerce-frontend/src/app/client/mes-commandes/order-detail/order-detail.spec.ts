@@ -283,4 +283,28 @@ describe('OrderDetail', () => {
     expect(lines).toEqual(['Inscrits −0,50 €', `${FR.orders.detailPickupDiscount} −0,30 €`]);
     expect(el().textContent).not.toContain('éligibles');
   });
+
+  it('une commande interne ne montre aucun montant : ni remise, ni bon, ni ticket', () => {
+    fixture.componentRef.setInput('order', {
+      ...ROWS[0]!,
+      payment: 'in_house',
+      voucherDiscountCents: 474,
+      discountLines: [{ cents: 30 }],
+      ticket: {
+        lines: [{ name: 'Banana bread', quantity: 1, unitTtcCents: 2_100, lineTtcCents: 2_100 }],
+        articlesCents: 2_100,
+        discountCents: 0,
+        voucherCents: 0,
+        deliveryFeeCents: 0,
+        totalCents: 2_100,
+        byRate: [{ rate: 5.5, htCents: 1_991, vatCents: 109, ttcCents: 2_100 }],
+      },
+    });
+    fixture.detectChanges();
+    expect(el().querySelector('[data-ticket]')).toBeNull();
+    expect(el().querySelector('[data-discount-line]')).toBeNull();
+    expect(el().textContent).not.toContain(FR.cart.voucherHtLine);
+    expect(el().textContent).not.toContain('€');
+    expect(el().textContent).toContain(FR.orders.payInHouse);
+  });
 });

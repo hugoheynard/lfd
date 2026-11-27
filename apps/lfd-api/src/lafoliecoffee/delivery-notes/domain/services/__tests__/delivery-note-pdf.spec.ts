@@ -78,10 +78,10 @@ describe("le BL chiffré en PDF", () => {
 
   it("propose un nom de fichier par lecteur", () => {
     expect(deliveryNotePdfFileName(clientNoteOf(handedOverNote(), HEAD, PRO_BILLING))).toBe(
-      "bon-de-livraison-BL-1042-1.pdf",
+      "LFC-ORD-1042-HOTEL-DES-TROIS-PONTS-BL-1042-1.pdf",
     );
     expect(deliveryNotePdfFileName(carrierNoteOf(handedOverNote(), HEAD))).toBe(
-      "bon-de-livraison-BL-1042-1-transport.pdf",
+      "LFC-ORD-1042-HOTEL-DES-TROIS-PONTS-BL-1042-1-transport.pdf",
     );
   });
 });

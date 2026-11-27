@@ -186,6 +186,18 @@ describe('OrderDocumentsPanel — l’onglet « Documents »', () => {
     expect(printer.download).not.toHaveBeenCalled();
   });
 
+  it('« Télécharger » nomme la confirmation comme l’API : référence, client, nature', async () => {
+    const { el, printer } = await render();
+    el.querySelector<HTMLButtonElement>(
+      '[data-order-document="order-sheet"] [data-doc-download]',
+    )?.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(printer.download).toHaveBeenCalledWith(
+      PDF,
+      'LFC-ORD-9-BOULANGERIE-MARTIN-SAS-confirmation.pdf',
+    );
+  });
+
   it('l’e-mail dit son étape, en mots simples', async () => {
     const { el } = await render();
     const status = group(el, 'sends')?.querySelector('[data-order-mail-status]');

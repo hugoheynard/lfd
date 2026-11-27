@@ -67,6 +67,7 @@
     "chrome.installLater": null,
     "accueilPublic.doors.courier.pending.tag": null,
     "accueilPublic.doors.courier.pending.hint": null,
-    "cart.intro": null
+    "cart.intro": null,
+    "cart.totalInHouse": null
   }
 }

@@ -76,7 +76,7 @@
         }
         <span>{{ count() > 0 ? c().pay : c().emptyShort }}</span>
       </span>
-      @if (count() > 0) {
+      @if (count() > 0 && total()) {
         <span class="total">{{ total() }}</span>
       }
     </button>
