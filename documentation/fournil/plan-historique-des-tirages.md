@@ -251,6 +251,42 @@ client de `content` n'est tenu par **aucune porte** : décision écrite ici et
 à Q1. `context-version-columns` ne s'applique pas (elle ne lit que les tables
 de l'instantané du catalogue).
 
+## 2 bis. Le parcours normal ne change pas
+
+Décidé par Hugo le 2026-11-27 : sur le parcours normal — arrêter, tirer le
+dossier, l'envoyer, retirer, le retirer et l'envoyer, sans réouverture —
+tout se passe comme avant ce plan.
+
+**Ce qui reste identique** : les gestes, leurs refus et leurs faits durables ;
+les envois du dossier (mêmes moments, mêmes destinataires, PDF joint) ; le
+compte à produire et le contenu du dossier ; un arrêt ordinaire, que H-1 ne
+touche pas (il ne lit le commerce qu'après une réouverture).
+
+**Ce qui change, et que ce plan assume** :
+
+1. chaque geste écrit une version **dans sa transaction** : si elle échoue,
+   le geste échoue (la trace ne doit pas pouvoir manquer) ;
+2. l'annulation après l'arrêt sauve aussi la journée (`plan_version`), sous
+   le verrou qu'elle prend déjà ;
+3. le dossier est fabriqué après l'arrêt en plus du téléchargement, **hors
+   transaction** : son échec est journalisé, il n'annule ni le geste ni
+   l'e-mail ;
+4. le PDF porte « Version n » en en-tête et se range sous une clé par
+   version.
+
+**Comment c'est tenu** :
+
+- un e2e du parcours normal complet (arrêt → dossier → e-mail → retirage →
+  dossier → e-mail), écrit **avant** H-1 et vert à chaque lot ;
+- les e2e existants passent **sans modification** — `production-day-closed`,
+  `production-day-reopened`, `production-dossier`, `production-dossier-mail`,
+  `production-closing-sweep`, `production-day-persistence`,
+  `reopened-fact-rearrest-race` — sauf les seules attentes que le § 2 bis
+  point 4 change (nom du fichier rangé, en-tête), modifiées dans le lot H2 et
+  nommées dans son commit ;
+- tout ce qui part hors transaction (papier au geste, réenvoi) journalise son
+  échec et ne retient rien.
+
 ## 3. Les lots
 
 **H-1 — fermer la course de la réouverture (préalable).** Un arrêt refuse
