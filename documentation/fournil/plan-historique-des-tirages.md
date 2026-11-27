@@ -414,8 +414,18 @@ avec la dernière version reçue, et le geste « renvoyer la version courante »
 « dossier mis à jour » (texte au dictionnaire des e-mails, manifeste
 régénéré), le papier de la version courante joint, une trace par envoi
 comme aujourd'hui (clé `(journée, instant du réenvoi, destinataire)`), la
-clé d'intention de l'écran (`lint:intent-key-gestures`). Ce que l'e-mail dit
-du changement (le résumé du diff ?) est à décider avec Hugo avant H6.
+clé d'intention de l'écran (`lint:intent-key-gestures`).
+
+**L'e-mail porte un résumé du diff** (Hugo, 2026-11-27), calculé par la même
+`diffPlanVersions` que l'écran — l'écran et l'e-mail ne peuvent pas dire deux
+choses différentes. Par destinataire, il compare **la dernière version qu'il a
+reçue** (`plan_version` de sa trace, H2b) à la version courante : chacun lit ce
+qui a changé depuis SON papier. Dans l'ordre : l'effet sur la production par
+produit (« croissant 120 → 135, +15 »), les changements de commandes en une
+ligne chacun (entrées, dont hors plan ; révisées ; annulées — toujours
+produites), plafonnés avec « et N autres », puis les sorties dont la raison
+est au commerce, dites comme à l'écran. Un destinataire sans trace de version
+(envoi d'avant H2b) reçoit le résumé contre la première version de la journée.
 
 ## 4. Ce que ce plan ne fait pas
 
