@@ -127,14 +127,19 @@ function orderOf(order: DayRow["orders"][number]): ProductionDaySnapshot["orders
     dueAt: order.dueAt,
     clientele: clienteleOf(order.clientele),
     siteId: order.siteId,
-    lines: order.lines.map((line) => ({
-      sku: line.sku,
-      productName: line.productName,
-      quantity: line.quantity,
-      saleUnit: productionSaleUnitOf(line.sku, line.saleUnit),
-      madeToOrder: line.madeToOrder,
-      options: productionLineOptionsOf(line.sku, line.options),
-    })),
+    lines: order.lines.map((line) => {
+      const options = productionLineOptionsOf(line.sku, line.options);
+      return {
+        sku: line.sku,
+        productName: line.productName,
+        quantity: line.quantity,
+        saleUnit: productionSaleUnitOf(line.sku, line.saleUnit),
+        madeToOrder: line.madeToOrder,
+        // Absent = aucune, la forme du domaine : une ligne sans option se
+        // relit telle qu'elle a été écrite.
+        ...(options.length > 0 ? { options } : {}),
+      };
+    }),
     sheetDetails: sheetDetailsOf(order),
   };
 }

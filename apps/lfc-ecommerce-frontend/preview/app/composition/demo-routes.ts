@@ -10,6 +10,7 @@ import type {
   PublishedShopCopyView,
   ShopCartResponse,
   ShopCartView,
+  ShopOptionGroupsView,
 } from '@lfd/contracts';
 import { DEFAULT_LEGAL_DOCUMENT } from '@lfd/contracts';
 import { audienceOf, pickupOpenTo } from '@lfd/contracts/shop-values';
@@ -31,6 +32,9 @@ import {
 import { demoMyQuote, demoQuote, readQuoteRequest } from '../demo-data/demo-quote';
 import { demoDay } from '../demo-data/demo-days';
 import type { PreviewWorld } from '../journeys/preview-world';
+
+/** Aucune option de commande au catalogue de démo : le panier n'en propose pas. */
+const NO_OPTION_GROUPS: ShopOptionGroupsView = { items: [] };
 
 /** La personne du parcours n'a encore rien mis en favori. */
 const NO_FAVORITES: MyFavoritesView = { skus: [] };
@@ -203,6 +207,12 @@ export const DEMO_ROUTES: readonly DemoRoute[] = [
     pattern: /^\/me\/loyalty$/u,
     serves: 'la fidélité du parcours',
     answer: (_request, _match, world) => ok(world.loyalty),
+  },
+  {
+    method: 'GET',
+    pattern: /^\/shop\/catalogue\/options(?:\/mine)?$/u,
+    serves: 'aucune option de commande : le panier ne propose pas de choix',
+    answer: () => ok(NO_OPTION_GROUPS),
   },
   {
     method: 'GET',

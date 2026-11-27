@@ -23,6 +23,7 @@ export const GLOSSARY_T_W: Readonly<Record<string, string>> = {
   termSuspendedSub: 'Règlement au compte — suspendu',
   terminated: 'Compte clos',
   thu: 'Jeudi',
+  ticketOptionSome: 'Ticket — options d’une ligne (« dont 2 tranchés »)',
   titleAccount: 'Titre — au compte',
   titleInHouse: 'Titre — commande interne',
   titleAnonymous: 'Titre — sans prénom',
