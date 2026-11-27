@@ -3,6 +3,7 @@ import { Global, Module } from "@nestjs/common";
 import {
   PrismaClosedPlansReader,
   PrismaCurrentArrestHold,
+  PrismaInscribedOrdersReader,
   PrismaOrderInscriptionReader,
   ProductionOrderRevisionDesk,
   ProductionOrderWithdrawalDesk,
@@ -12,6 +13,7 @@ import { ProductionLaunchedResupplies } from "../production/resupply/production-
 import {
   ClosedPlansReader,
   CurrentArrestHold,
+  InscribedOrdersReader,
   LaunchedResupplies,
   OrderInscriptionReader,
   OrderRevisionDesk,
@@ -46,6 +48,8 @@ import { ProductionModule } from "../production/production.module.js";
     // la révision est notée sous le verrou de chaque journée qu'elle touche.
     { provide: OrderRevisionDesk, useExisting: ProductionOrderRevisionDesk },
     { provide: OrderInscriptionReader, useExisting: PrismaOrderInscriptionReader },
+    // La liste staff éteint le badge « hors plan » d'une commande déjà inscrite.
+    { provide: InscribedOrdersReader, useExisting: PrismaInscribedOrdersReader },
     // L'arrêt du plan comme limite (lot O3, 2026-10-14) : la boutique lit les
     // journées arrêtées, la passation s'y admet sous le verrou de la journée.
     { provide: ClosedPlansReader, useExisting: PrismaClosedPlansReader },
@@ -61,6 +65,7 @@ import { ProductionModule } from "../production/production.module.js";
     OrderWithdrawalDesk,
     OrderRevisionDesk,
     OrderInscriptionReader,
+    InscribedOrdersReader,
     ClosedPlansReader,
     PlanAdmissionDesk,
     LaunchedResupplies,

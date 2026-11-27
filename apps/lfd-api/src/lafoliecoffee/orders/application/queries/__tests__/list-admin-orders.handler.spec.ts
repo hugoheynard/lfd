@@ -1,5 +1,6 @@
 import { type AdminOrderRow, adminOrdersQuerySchema } from "@lfd/contracts";
 
+import { InscribedOrdersReader } from "../../../../../production/channels/commerce/index.js";
 import {
   StaffAuthorDirectory,
   StaffAuthors,
@@ -110,13 +111,30 @@ class OneAuthorDirectory extends StaffAuthorDirectory {
   }
 }
 
+/** Le fournil qui a inscrit `inscribed`, et les lots qu'on lui a demandés. */
+class FixedInscribedOrders extends InscribedOrdersReader {
+  readonly asked: (readonly string[])[] = [];
+
+  constructor(private readonly inscribed: ReadonlySet<string> = new Set()) {
+    super();
+  }
+
+  inscribedAmong(orderIds: readonly string[]): Promise<ReadonlySet<string>> {
+    this.asked.push(orderIds);
+    return Promise.resolve(new Set(orderIds.filter((id) => this.inscribed.has(id))));
+  }
+}
+
 function handlerOf(
   reader: AdminOrderListReader,
   reviews: CurrentOrderReviewsReader = new FixedCurrentReviews(),
   staff: StaffAuthorDirectory = new OneAuthorDirectory(),
+  inscribed: InscribedOrdersReader = new FixedInscribedOrders(),
 ): ListAdminOrdersHandler {
-  return new ListAdminOrdersHandler(reader, reviews, staff);
+  return new ListAdminOrdersHandler(reader, reviews, staff, inscribed);
 }
+
+const offPlanRowOf = (id: string): AdminOrderRow => ({ ...rowOf(id, EARLIER), offPlan: true });
 
 describe("ListAdminOrdersHandler", () => {
   it("rend un curseur sur la DERNIÈRE ligne quand le lecteur en a vu au-delà", async () => {
@@ -236,6 +254,33 @@ describe("ListAdminOrdersHandler", () => {
     ]);
     expect(reviews.asked).toEqual([["b", "a", "c"]]);
     expect(staff.calls).toBe(1);
+  });
+
+  it("éteint « hors plan » d'une commande que le fournil a inscrite, et le garde sinon", async () => {
+    const reader = new SlicedReader({
+      rows: [offPlanRowOf("in"), offPlanRowOf("out"), rowOf("plan", EARLIER)],
+      hasMore: false,
+      total: 3,
+    });
+    const inscribed = new FixedInscribedOrders(new Set(["in", "plan"]));
+
+    const page = await handlerOf(reader, undefined, undefined, inscribed).execute(queryOf({}));
+
+    expect(page.rows.map((row) => [row.id, row.offPlan])).toEqual([
+      ["in", false],
+      ["out", true],
+      ["plan", false],
+    ]);
+    expect(inscribed.asked).toEqual([["in", "out"]]);
+  });
+
+  it("ne demande rien au fournil quand aucune ligne n'est hors plan", async () => {
+    const reader = new SlicedReader({ rows: [rowOf("a", EARLIER)], hasMore: false, total: 1 });
+    const inscribed = new FixedInscribedOrders(new Set(["a"]));
+
+    await handlerOf(reader, undefined, undefined, inscribed).execute(queryOf({}));
+
+    expect(inscribed.asked).toEqual([]);
   });
 
   it("refuse une vue inconnue à la forme", () => {

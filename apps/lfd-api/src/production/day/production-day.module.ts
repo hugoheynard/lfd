@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { ClosedPlansReader } from "../channels/commerce/closed-plans.reader.js";
+import { InscribedOrdersReader } from "../channels/commerce/inscribed-orders.reader.js";
 import { OrderInscriptionReader } from "../channels/commerce/order-inscription.reader.js";
 import { PruneProductionDayChangesHandler } from "./application/commands/prune-production-day-changes.handler.js";
 import { OnPackingReturned } from "./application/handlers/on-packing-returned.handler.js";
@@ -45,6 +46,7 @@ import { PrismaAtelierSheetsReader } from "./infrastructure/prisma-atelier-sheet
 import { PrismaClosedPlansReader } from "./infrastructure/prisma-closed-plans.reader.js";
 import { PrismaFrozenResuppliesReader } from "./infrastructure/prisma-frozen-resupplies.reader.js";
 import { PrismaLaunchedResupplyLookup } from "./infrastructure/prisma-launched-resupply.lookup.js";
+import { PrismaInscribedOrdersReader } from "./infrastructure/prisma-inscribed-orders.reader.js";
 import { PrismaOrderInscriptionReader } from "./infrastructure/prisma-order-inscription.reader.js";
 import { PrismaOrderRevisionNoticeLedger } from "./infrastructure/prisma-order-revision-notice.ledger.js";
 import { PrismaOrderRevisionNoticesReader } from "./infrastructure/prisma-order-revision-notices.reader.js";
@@ -112,6 +114,8 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
     { provide: OrderWithdrawalsReader, useClass: PrismaOrderWithdrawalsReader },
     PrismaOrderInscriptionReader,
     { provide: OrderInscriptionReader, useExisting: PrismaOrderInscriptionReader },
+    PrismaInscribedOrdersReader,
+    { provide: InscribedOrdersReader, useExisting: PrismaInscribedOrdersReader },
     ProductionOrderWithdrawalDesk,
     // La modification d'une commande : les notes de révision, écrites par le guichet sous le verrou.
     { provide: OrderRevisionNoticeLedger, useClass: PrismaOrderRevisionNoticeLedger },
@@ -177,6 +181,7 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
     DayInscribedOrderHeaderReader,
     ProductionOrderRevisionDesk,
     PrismaOrderInscriptionReader,
+    PrismaInscribedOrdersReader,
     PrismaClosedPlansReader,
     PrismaArrestedPlanHold,
     PrismaCurrentArrestHold,
@@ -200,6 +205,7 @@ export {
   PrismaCurrentArrestHold,
   PrismaClosedPlansReader,
   PrismaFrozenResuppliesReader,
+  PrismaInscribedOrdersReader,
   PrismaOrderInscriptionReader,
   PrismaOutputCorrectionsReader,
   ProductionDayVersionSource,

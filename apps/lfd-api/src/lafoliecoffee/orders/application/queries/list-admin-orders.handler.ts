@@ -1,6 +1,7 @@
 import type { AdminOrderRow, AdminOrdersPage } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
+import { InscribedOrdersReader } from "../../../../production/channels/commerce/index.js";
 import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { OrderReviewListNotReadableError } from "../../domain/errors/admin-order-list-errors.js";
 import { AdminOrderListReader } from "../../domain/ports/admin-order-list.reader.js";
@@ -17,6 +18,10 @@ import { ListAdminOrdersQuery } from "./list-admin-orders.query.js";
  * Chaque ligne porte son visa en cours, nommé par l'annuaire : une lecture
  * des visas et une de l'annuaire pour la page, jamais une par ligne.
  *
+ * Une commande que le fournil a déjà inscrite n'est plus « hors plan », même
+ * si le commerce la tient encore `placed` (un retirage ne la confirme pas) :
+ * une lecture du fournil pour les seules lignes hors plan de la page.
+ *
  * @throws {OrderReviewListNotReadableError} `to_review` sans `b2b_order_review:read`.
  */
 @QueryHandler(ListAdminOrdersQuery)
@@ -28,6 +33,7 @@ export class ListAdminOrdersHandler implements IQueryHandler<
     private readonly orders: AdminOrderListReader,
     private readonly reviews: CurrentOrderReviewsReader,
     private readonly staff: StaffAuthorDirectory,
+    private readonly inscribed: InscribedOrdersReader,
   ) {}
 
   async execute(query: ListAdminOrdersQuery): Promise<AdminOrdersPage> {
@@ -37,13 +43,26 @@ export class ListAdminOrdersHandler implements IQueryHandler<
     const slice = await this.orders.page(adminOrderListCriteriaOf(query.filters));
     const last = slice.rows.at(-1);
     return {
-      rows: await this.withReviews(slice.rows),
+      rows: await this.withReviews(await this.withoutInscribedOffPlan(slice.rows)),
       nextCursor:
         slice.hasMore && last !== undefined
           ? AdminOrderCursor.after(new Date(last.placedAt), last.id).encode()
           : null,
       total: slice.total,
     };
+  }
+
+  private async withoutInscribedOffPlan(
+    rows: readonly AdminOrderRow[],
+  ): Promise<readonly AdminOrderRow[]> {
+    const offPlan = rows.filter((row) => row.offPlan).map((row) => row.id);
+    if (offPlan.length === 0) {
+      return rows;
+    }
+    const inscribed = await this.inscribed.inscribedAmong(offPlan);
+    return rows.map((row) =>
+      row.offPlan && inscribed.has(row.id) ? { ...row, offPlan: false } : row,
+    );
   }
 
   private async withReviews(rows: readonly AdminOrderRow[]): Promise<AdminOrderRow[]> {

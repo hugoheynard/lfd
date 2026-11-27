@@ -85,6 +85,8 @@ export {
   type OrderWithdrawalOutcome,
 } from "./order-withdrawal.desk.js";
 export { OrderInscriptionReader } from "./order-inscription.reader.js";
+// La liste staff éteint le badge « hors plan » d'une commande déjà inscrite.
+export { InscribedOrdersReader } from "./inscribed-orders.reader.js";
 // La modification d'une commande (voir `documentation/commandes/modification/modifier-une-commande.md`,
 // § 2.8 « Les autres blocs », 2026-10-23) : le guichet que le fournil DÉCLARE et IMPLÉMENTE pour
 // noter une révision sous le verrou de chaque journée qu'elle touche.
