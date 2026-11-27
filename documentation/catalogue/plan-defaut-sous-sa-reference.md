@@ -262,7 +262,7 @@ Décisions prises par Claude sous le mandat de Hugo du 2026-10-29 au soir
 Objections intégrées aux lots : magasins oubliés (`SiteStockAlert`,
 `SiteResupplyLine`, `ResupplyReceiptLine`, `BakehouseResupplyDraft`,
 `CatalogOperationOverride.hiddenSkus` à vérifier) ; réimplémenteur oublié
-`prisma-withdrawn-shop-skus.reader.ts:34` (alimente le refus L5) ; 75 fichiers
+`prisma-withdrawn-shop-skus.reader.ts:30` (alimente le refus L5) ; 75 fichiers
 lisent `productSku`/`shopSkuOf`, pas 43 ; les habitudes
 (`list-my-usuals.handler.ts`, seuil de trois commandes que la scission ferait
 passer dessous) ; D2 et la restauration peuvent-ils toucher le défaut — à
