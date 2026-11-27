@@ -387,15 +387,83 @@ Décidé au bâti (2026-11-27), là où le plan ne tranchait pas :
 - Le contenu garde ses instants en chaînes ISO (forme 1, relue par un schéma
   qui vérifie la forme, jamais un cast).
 
-**H2 — le papier par version.** La clé par version (§ 1.10) pour le dossier
+~~**H2 — le papier par version.** La clé par version (§ 1.10) pour le dossier
 et le compte, la clé par tirage gardée pour les journées sans version, la
 demande `AfterCommit`, l'en-tête « Version n ».
 Tests : rangé au geste, non rangé puis rangé à la lecture, version dépassée
-jamais rangée, révision rangée sous sa propre version.
+jamais rangée, révision rangée sous sa propre version.~~
+— 2026-11-27, bâti, non commité. Clés : `dayDossierPdfKey` et
+`productionCountPdfKey` (paramètre `planVersion`, lu sur la journée chargée
+par `production-paper-slots.ts`) ; port `PlanVersionPaper`
+(`apps/lfd-api/src/production/day/domain/ports/plan-version.paper.ts`),
+implémenté par `ArchivedPlanVersionPaper`
+(`apps/lfd-api/src/production/plan/application/services/archived-plan-version-paper.ts`),
+relié par `apps/lfd-api/src/appBootstrap/plan-version-paper-feed.module.ts` ;
+`ProductionPaperArchive.isArchived` pour H4. Tests :
+`apps/lfd-api/src/production/plan/domain/services/__tests__/day-dossier-pdf-key.spec.ts`,
+`apps/lfd-api/src/production/shared/print/domain/services/__tests__/production-count-pdf-key.spec.ts`,
+`apps/lfd-api/src/production/plan/application/services/__tests__/archived-plan-version-paper.spec.ts`,
+`get-day-dossier-pdf.handler.spec.ts`, `ledger-plan-version-recorder.spec.ts`
+(ajouts), et `apps/lfd-api/test/production-plan-version-paper.e2e-spec.ts`.
+**Reste de H2 : l'en-tête « Version n · tirage m » du dossier** — voir
+ci-dessous, en attente de Hugo.
 
-**H2b — la version de chaque envoi.** `plan_version` sur
+~~**H2b — la version de chaque envoi.** `plan_version` sur
 `production_dossier_dispatch` (migration additive), posé à `claim`. Tests :
-arrêt puis retirage, chaque destinataire porte la version de son papier.
+arrêt puis retirage, chaque destinataire porte la version de son papier.~~
+— 2026-11-27, bâti, non commité. Migration
+`20261128001000_chaque_envoi_du_dossier_note_sa_version` (retour arrière dans
+`prisma/rollback/`) ; tests :
+`apps/lfd-api/src/production/plan/application/handlers/__tests__/send-dossier.plan-version.spec.ts`
+et le même e2e que H2.
+
+Décidé au bâti de H2 et H2b (2026-11-27), là où le plan ne tranchait pas :
+
+- **Le papier est demandé par l'écrivain des versions**, pas par chaque
+  geste : la révision vit dans `day/` et le réassort lancé dans `resupply/`,
+  qui n'atteignent pas le plan. Le noyau déclare `PlanVersionPaper`, le plan
+  l'implémente, `appBootstrap` les relie (`@Global`, comme les autres fils :
+  le module de la journée ne peut pas importer celui du plan, qui l'importe).
+  `day/index.ts` passe de 78 à 79 noms (`$h2` de
+  `production-subcontexts-debt.json`, **à relire**). `shared/print` reste à 39.
+- **Seule la cause `order_withdrawn` ne demande pas de papier** (§ 1.14).
+  Toutes les autres, quand une version est écrite, le demandent : arrêt,
+  arrêt automatique, retirage, révision, réassort lancé, ouverture par un
+  réassort.
+- **Le papier est tiré de la journée en mémoire**, celle que le geste vient
+  de sauver (état `n`, numéro `n`) : rien n'est relu en base après la
+  validation. Compte et dossier sont deux tâches indépendantes : l'une qui
+  échoue n'empêche pas l'autre. Un échec est journalisé par `BackgroundWork`.
+- **🟥 L'en-tête du dossier n'est PAS changé — à trancher par Hugo.**
+  « Plan du ven. 27 nov. pour le ven. 27 nov. · Version 1 · tirage 1 »
+  allonge l'en-tête de droite de dix-huit caractères, et le titre de chaque
+  page, à sa gauche, prend la place qui reste : « ORD-… — Fiche de
+  commande » passe sur deux lignes (vérifié au rendu le 2026-11-27), et
+  `production-dossier.e2e-spec.ts` rougit sur trois cas (il cherche la page
+  par « Fiche de commande »). Le dossier garde donc « · vN » pour toutes les
+  journées, et `DOSSIER_LAYOUT_VERSION` reste `v16`. Pistes, à choisir : une
+  forme courte (« · V1 · t1 »), la version au pied (« Arrêté le … ·
+  Version 1 »), ou un en-tête sur deux lignes. Le jour où la mise en page
+  change, ⚠️ la constante entre aussi dans la clé par tirage : il faudra la
+  figer pour les journées sans version, sans quoi leurs dossiers rangés
+  deviennent inatteignables (§ 1.10).
+- **Le compte à produire dit sa version** en en-tête (« 28 novembre 2026 ·
+  Version 4 ») : son titre est court et ne passe pas à la ligne (vérifié au
+  rendu). `COUNT_LAYOUT_VERSION` monte à `v3` ; la clé par tirage garde `v2`,
+  figée dans une constante privée : une journée sans version imprime le même
+  compte qu'avant, et ses comptes rangés restent atteints.
+- **« Ce papier est-il rangé ? »** : `ProductionPaperArchive.isArchived(clé)`,
+  lu au stockage. Un stockage en panne **lève** au lieu de répondre « non » :
+  « papier non rangé » est une affirmation. Il lit l'objet entier
+  (`readIfPresent`) : le port de stockage n'a pas de lecture d'existence, à
+  revoir en H4 si la liste en lit beaucoup.
+- **`DossierDispatchLog.claim` prend la version en quatrième paramètre,
+  facultatif** (`null` par défaut) : le seul appelant de production la passe
+  toujours, et l'appel direct de `production-dossier.e2e-spec.ts` reste tel
+  quel (§ 2 bis : les e2e existants passent sans modification). De même,
+  `planVersion` est facultatif dans `dayDossierPdfKey` et
+  `productionCountPdfKey`, pour que les attentes existantes sur la clé par
+  tirage ne changent pas.
 
 **H3 — comparer et expliquer.** `diffPlanVersions` (§ 1.16 à 1.21), tests
 unitaires exhaustifs, dont le cas du 2026-11-27 rejoué.

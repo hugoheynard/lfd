@@ -252,17 +252,21 @@ export function drawRecapWithCalendars(
 }
 
 /**
- * La clé d'archive. **Une par tirage arrêté** : chaque arrêt, puis chaque
- * retirage, dont les instants entrent dans le nom — le dossier complété ne
- * remplace pas celui qui est parti avant lui, il s'y ajoute, et l'arrêt qui
- * suit une réouverture fabrique le sien. Les dossiers sortis restent rangés :
- * ils sont la trace de ce que le fournil a reçu (Hugo, 2026-11-27).
+ * La clé d'archive. **Une par version du plan** (`plan-historique-des-tirages.md`,
+ * § 1.10) : `<jour>/dossier-du-jour-<mise en page>-version-<n>.pdf`, `n` lu sur
+ * la journée chargée — l'état et son numéro viennent de la même ligne, si bien
+ * qu'un lecteur range toujours l'état `n` sous la clé `n`. Les dossiers sortis
+ * restent rangés : ils sont la trace de ce que le fournil a reçu.
+ *
+ * Une journée sans numéro (arrêtée avant les versions) garde la clé **par
+ * tirage** — l'instant de l'arrêt, puis celui du dernier retirage — : les
+ * dossiers déjà rangés restent atteints.
  *
  * Toute mise en page qui change ce qu'un dossier déjà archivé dirait monte
- * cette version : un dossier archivé sous l'ancienne clé dit le papier
- * d'avant, et changer la clé le laisse en place sans jamais le resservir.
- * Une impression provisoire n'est pas archivée ici : elle ne la fait pas
- * monter.
+ * cette version : changer la clé laisse l'ancien en place sans jamais le
+ * resservir. ⚠️ Elle entre aussi dans la clé par tirage : la monter rend
+ * inatteignables les dossiers rangés des journées sans version (§ 1.10). Une
+ * impression provisoire n'est pas archivée ici : elle ne la fait pas monter.
  */
 export const DOSSIER_LAYOUT_VERSION = "v16";
 
@@ -278,8 +282,11 @@ export function dayDossierPdfKey(
   serviceDay: string,
   closedAt: Date,
   retakenAt: Date | null,
+  planVersion: number | null = null,
 ): string {
-  return `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}-${printRunStamp(closedAt, retakenAt)}.pdf`;
+  return planVersion === null
+    ? `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}-${printRunStamp(closedAt, retakenAt)}.pdf`
+    : `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}-version-${String(planVersion)}.pdf`;
 }
 
 /**

@@ -94,6 +94,8 @@ export { ProductionReturnRequests } from "./domain/ports/production-return.reque
  * (`documentation/fournil/plan-historique-des-tirages.md`).
  */
 export { PlanVersionRecorder } from "./domain/ports/plan-version.recorder.js";
+/** Et ce qu'elle demande, après la validation, au métier qui tire le papier de la version. */
+export { PlanVersionPaper } from "./domain/ports/plan-version.paper.js";
 export { ProductionTrancheSettingsRepository } from "./domain/ports/production-tranche-settings.repository.js";
 export type { TrancheSettingsAuthor } from "./domain/ports/production-tranche-settings.repository.js";
 

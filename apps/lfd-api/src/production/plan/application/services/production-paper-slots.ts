@@ -18,30 +18,36 @@ export function closedSnapshotOf(day: ProductionDay): ClosedSnapshot {
 }
 
 /**
- * La place du compte à produire d'une journée.
+ * La place du compte à produire d'une journée, par version du plan comme le
+ * dossier.
  *
  * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
  */
 export function productionCountSlotOf(day: ProductionDay): PaperSlot {
   const { serviceDay, closedAt, retaken } = closedSnapshotOf(day);
   return {
-    key: productionCountPdfKey(serviceDay, closedAt, retaken?.at ?? null),
+    key: productionCountPdfKey(serviceDay, closedAt, retaken?.at ?? null, day.planVersion),
     fileName: `compte-a-produire-${serviceDay}.pdf`,
   };
 }
 
 /**
- * La place du dossier du jour : **par tirage arrêté**. La clé porte l'instant
- * de l'arrêt et du dernier retirage (`dayDossierPdfKey`), si bien qu'un
- * retirage ou un nouvel arrêt après réouverture fabrique son dossier sans
- * écraser celui qui était parti avant.
+ * La place du dossier du jour : **par version du plan**, le numéro lu sur la
+ * journée chargée (`dayDossierPdfKey`) — un retirage, une révision ou un
+ * nouvel arrêt après réouverture fabrique son dossier sans écraser celui qui
+ * était parti avant. Une journée sans numéro garde la place par tirage.
  *
  * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
  */
 export function dayDossierSlotOf(day: ProductionDay): PaperSlot {
   const snapshot = closedSnapshotOf(day);
   return {
-    key: dayDossierPdfKey(snapshot.serviceDay, snapshot.closedAt, snapshot.retaken?.at ?? null),
+    key: dayDossierPdfKey(
+      snapshot.serviceDay,
+      snapshot.closedAt,
+      snapshot.retaken?.at ?? null,
+      day.planVersion,
+    ),
     fileName: `dossier-du-jour-${snapshot.serviceDay}.pdf`,
   };
 }

@@ -6,6 +6,7 @@ import { ServiceDay } from "../../../domain/value-objects/service-day.value-obje
 import {
   FixedWithdrawalsAfterInscription,
   PlanVersionStore,
+  RequestedPapers,
   StoredDays,
   VersionLedgerDown,
   planVersionRecorder,
@@ -115,5 +116,78 @@ describe("LedgerPlanVersionRecorder", () => {
       planVersionRecorder(days, new PlanVersionStore()).save(day, "closed", MARIE),
     ).rejects.toThrow(PlanVersionOutOfSequenceError);
     expect(days.saves).toBe(0);
+  });
+
+  describe("le papier de la version (§ 1.11, § 1.14)", () => {
+    it("une version écrite demande son papier, la journée portant déjà son numéro", async () => {
+      const day = closedDay();
+      const papers = new RequestedPapers();
+      const recorder = planVersionRecorder(
+        new StoredDays(day),
+        new PlanVersionStore(),
+        undefined,
+        undefined,
+        papers,
+      );
+
+      await recorder.save(day, "closed", MARIE);
+
+      expect(papers.versions).toEqual([1]);
+    });
+
+    it("un plan inchangé ne demande aucun papier", async () => {
+      const day = closedDay();
+      const papers = new RequestedPapers();
+      const store = new PlanVersionStore();
+      const recorder = planVersionRecorder(
+        new StoredDays(day),
+        store,
+        undefined,
+        undefined,
+        papers,
+      );
+      await recorder.save(day, "closed", MARIE);
+
+      await recorder.save(day, "order_revised", MARIE);
+
+      expect(papers.versions).toEqual([1]);
+    });
+
+    it("un retrait écrit sa version mais pas de papier : il n'en a pas de propre", async () => {
+      const day = closedDay();
+      const papers = new RequestedPapers();
+      const store = new PlanVersionStore();
+      const withdrawals = new FixedWithdrawalsAfterInscription();
+      const recorder = planVersionRecorder(
+        new StoredDays(day),
+        store,
+        withdrawals,
+        undefined,
+        papers,
+      );
+      await recorder.save(day, "closed", MARIE);
+      withdrawals.entries = [{ orderId: "ord_2", at: NIGHT }];
+
+      await recorder.save(day, "order_withdrawn", { kind: "guest" }, "ord_2");
+
+      expect(store.appended.map((version) => version.version)).toEqual([1, 2]);
+      expect(papers.versions).toEqual([1]);
+    });
+
+    it("une version que le registre refuse ne demande pas de papier", async () => {
+      const day = closedDay();
+      const papers = new RequestedPapers();
+      const store = new PlanVersionStore();
+      store.failing = true;
+
+      await expect(
+        planVersionRecorder(new StoredDays(day), store, undefined, undefined, papers).save(
+          day,
+          "closed",
+          MARIE,
+        ),
+      ).rejects.toThrow(VersionLedgerDown);
+      expect(papers.versions).toEqual([]);
+    });
   });
 });

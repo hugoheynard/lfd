@@ -4,6 +4,7 @@ import type { Clock } from "../../../../../platform/time/clock.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { PlanVersion } from "../../../domain/entities/plan-version.js";
 import { PlanVersionLedger } from "../../../domain/ports/plan-version.ledger.js";
+import { PlanVersionPaper } from "../../../domain/ports/plan-version.paper.js";
 import { PlanVersionsReader } from "../../../domain/ports/plan-versions.reader.js";
 import type { ProductionDay } from "../../../domain/entities/production-day.js";
 import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
@@ -96,6 +97,7 @@ export function planVersionRecorder(
   store: PlanVersionStore = new PlanVersionStore(),
   withdrawals: WithdrawalsAfterInscriptionReader = new FixedWithdrawalsAfterInscription(),
   clock: Clock = new FixedClock(new Date(0)),
+  paper: PlanVersionPaper = new RequestedPapers(),
 ): LedgerPlanVersionRecorder {
   return new LedgerPlanVersionRecorder(
     days,
@@ -104,5 +106,15 @@ export function planVersionRecorder(
     withdrawals,
     new FixedIdGenerator("version"),
     clock,
+    paper,
   );
+}
+
+/** Les papiers demandés, notés par le numéro que la journée portait à la demande. */
+export class RequestedPapers extends PlanVersionPaper {
+  readonly versions: (number | null)[] = [];
+
+  requestAfterCommit(day: ProductionDay): void {
+    this.versions.push(day.planVersion);
+  }
 }

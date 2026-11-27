@@ -27,8 +27,17 @@ export abstract class DossierDispatchLog {
   /**
    * Prend l'envoi. `false` : il a déjà été pris — servi, échoué ou en cours —
    * et ne repart pas.
+   *
+   * @param planVersion la version du plan que le papier joint imprime, lue sur
+   *   la journée chargée par l'abonné (`plan-historique-des-tirages.md`,
+   *   § 7 Q2) ; absente ou `null` : journée sans version.
    */
-  abstract claim(slot: DossierDispatchSlot, recipientName: string, at: Date): Promise<boolean>;
+  abstract claim(
+    slot: DossierDispatchSlot,
+    recipientName: string,
+    at: Date,
+    planVersion?: number | null,
+  ): Promise<boolean>;
 
   /**
    * Note ce que l'envoi a donné — **une issue, une fois** : seul un envoi

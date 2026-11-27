@@ -172,10 +172,19 @@ function drawScan(doc: Doc, url: string, reference: string, y: number): void {
  * y a sa propre ligne, marquée « SUR MESURE » (plan
  * `plan-sur-mesure-partout.md`, Q2). « N articles » compte des références,
  * pas des lignes.
+ *
+ * `sheet.planVersion` : la version du plan que le compte imprime, dite en
+ * en-tête (« Version 3 », `plan-historique-des-tirages.md`, § 1.15) ; absente
+ * ou `null` (journée arrêtée avant les versions, spécimen) : le jour seul.
  */
 export function renderProductionCountPdf(
   items: readonly CountPaperRow[],
-  sheet: { readonly serviceDay: string; readonly closedAt: Date; readonly logo: Buffer },
+  sheet: {
+    readonly serviceDay: string;
+    readonly closedAt: Date;
+    readonly logo: Buffer;
+    readonly planVersion?: number | null;
+  },
   shares: readonly CountColorShare[],
 ): Promise<Buffer> {
   return render(
@@ -208,9 +217,13 @@ export function renderProductionCountPdf(
         rule(doc, y, 0.6, ROW_GRAY);
         y += 3.5 * MM;
       }
+      const version = sheet.planVersion ?? null;
       pages.finish({
         logo: sheet.logo,
-        headerRight: longDate(sheet.serviceDay),
+        headerRight:
+          version === null
+            ? longDate(sheet.serviceDay)
+            : `${longDate(sheet.serviceDay)} · Version ${String(version)}`,
         footerLeft: `Arrêté le ${parisDate(sheet.closedAt)} — il ne se recalcule pas.`,
       });
     },
@@ -226,26 +239,36 @@ export function renderProductionCountPdf(
 export const ATELIER_LAYOUT_VERSION = "v2";
 
 /**
- * `v2` (2026-10-25, Hugo) : le compte à produire prend le cadre des papiers
- * du fournil (en-tête au logo, numéro de page encadré, « (1/x) »). Un compte
- * archivé sous l'ancienne clé n'est jamais resservi.
+ * La mise en page du compte à produire. `v3` : l'en-tête dit la version du
+ * plan. Un compte archivé sous l'ancienne clé n'est jamais resservi.
  */
-export const COUNT_LAYOUT_VERSION = "v2";
+export const COUNT_LAYOUT_VERSION = "v3";
+
+/**
+ * La mise en page des comptes rangés par tirage, figée : ils ne portent pas
+ * de version, leur en-tête n'a pas changé, et leur clé ne doit pas bouger.
+ */
+const RUN_KEYED_COUNT_LAYOUT = "v2";
 
 /** Le rayon du camembert du jour. */
 const PIE = 6 * MM;
 
 /**
- * La clé du compte à produire. **Une par tirage arrêté** et par mise en page :
- * l'arrêt qui suit une réouverture, comme un retirage, compte autre chose que
- * le papier déjà sorti, qui reste rangé.
+ * La clé du compte à produire. **Une par version du plan**
+ * (`plan-historique-des-tirages.md`, § 1.10), `n` lu sur la journée chargée.
+ * Une journée sans numéro (arrêtée avant les versions) garde la clé par
+ * tirage — l'instant de l'arrêt, puis du dernier retirage — et la mise en page
+ * {@link RUN_KEYED_COUNT_LAYOUT} : les comptes déjà rangés restent atteints.
  */
 export function productionCountPdfKey(
   serviceDay: string,
   closedAt: Date,
   retakenAt: Date | null,
+  planVersion: number | null = null,
 ): string {
-  return `${serviceDay}/compte-a-produire-${COUNT_LAYOUT_VERSION}-${printRunStamp(closedAt, retakenAt)}.pdf`;
+  return planVersion === null
+    ? `${serviceDay}/compte-a-produire-${RUN_KEYED_COUNT_LAYOUT}-${printRunStamp(closedAt, retakenAt)}.pdf`
+    : `${serviceDay}/compte-a-produire-${COUNT_LAYOUT_VERSION}-version-${String(planVersion)}.pdf`;
 }
 
 /**

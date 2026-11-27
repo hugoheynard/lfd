@@ -47,6 +47,7 @@ import { ListDossierRecipientsHandler } from "./application/queries/list-dossier
 import { ListDossierStaffCandidatesHandler } from "./application/queries/list-dossier-staff-candidates.handler.js";
 import { BusAutomaticDayCloser } from "./application/services/bus-automatic-day-closer.js";
 import { DossierDispatch } from "./application/services/dossier-dispatch.service.js";
+import { ArchivedPlanVersionPaper } from "./application/services/archived-plan-version-paper.js";
 import { DossierDeadlinesReading } from "./application/services/dossier-deadlines-reading.service.js";
 import { DossierFunctionSheetsReading } from "./application/services/dossier-function-sheets-reading.service.js";
 import { PlanArrestAdmission } from "./application/services/plan-arrest-admission.js";
@@ -156,6 +157,9 @@ import { PrismaProductionSettingsReader } from "./infrastructure/prisma-producti
     ProductionPaperRenderer,
     GetProductionCountPdfHandler,
     GetDayDossierPdfHandler,
+    // Le papier d'une version, rangé après la validation du geste qui l'écrit ;
+    // relié au port du noyau par `PlanVersionPaperFeedModule`.
+    ArchivedPlanVersionPaper,
     // L'envoi du dossier : deux abonnés durables et le service qu'ils partagent.
     DossierDispatch,
     SendDossierOnDayClosed,
@@ -195,6 +199,8 @@ import { PrismaProductionSettingsReader } from "./infrastructure/prisma-producti
   exports: [
     // Ce que la racine de composition relie aux autres blocs.
     ProductionPlanAdmissionDesk,
+    // Et au noyau, qui ne peut pas importer le plan.
+    ArchivedPlanVersionPaper,
   ],
 })
 export class ProductionPlanModule {}
@@ -204,4 +210,4 @@ export class ProductionPlanModule {}
  * (`appBootstrap/`) relie à un port d'un autre bloc : elle les prend ici,
  * jamais dans l'intérieur du métier.
  */
-export { ProductionPlanAdmissionDesk };
+export { ArchivedPlanVersionPaper, ProductionPlanAdmissionDesk };

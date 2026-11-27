@@ -14,9 +14,14 @@ export class PrismaDossierDispatchLog extends DossierDispatchLog {
     super();
   }
 
-  async claim(slot: DossierDispatchSlot, recipientName: string, at: Date): Promise<boolean> {
+  async claim(
+    slot: DossierDispatchSlot,
+    recipientName: string,
+    at: Date,
+    planVersion: number | null = null,
+  ): Promise<boolean> {
     const { count } = await this.prisma.productionDossierDispatch.createMany({
-      data: [{ ...slot, recipientName, outcome: "pending", claimedAt: at }],
+      data: [{ ...slot, recipientName, outcome: "pending", claimedAt: at, planVersion }],
       skipDuplicates: true,
     });
     return count > 0;

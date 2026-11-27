@@ -92,6 +92,7 @@ import { OptionGroupHoldersFeedModule } from "./option-group-holders-feed.module
 import { SalesContextUsageFeedModule } from "./sales-context-usage-feed.module.js";
 import { OrderTimeLimitTargetsFeedModule } from "./order-time-limit-targets-feed.module.js";
 import { ProductionDeskFeedModule } from "./production-desk-feed.module.js";
+import { PlanVersionPaperFeedModule } from "./plan-version-paper-feed.module.js";
 import { PackingDeliveryFeedModule } from "./packing-delivery-feed.module.js";
 import { GeneralOrderCutoffModule } from "./general-order-cutoff.module.js";
 import { SaleReferenceUsageModule } from "./sale-reference-usage.module.js";
@@ -276,6 +277,8 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     ProductionFeedModule,
     // Le retrait d'une commande annulée, que le fournil tient pour le commerce.
     ProductionDeskFeedModule,
+    // Le papier d'une version : le noyau du fournil le demande, le plan le tire.
+    PlanVersionPaperFeedModule,
     HandoverModule,
     HandoverFeedModule,
     // Le départ incomplet décidé au comptoir (plan comptoir, 2026-11-03).

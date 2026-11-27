@@ -671,6 +671,10 @@ model ProductionDossierDispatch {
   failure       String?
   claimedAt     DateTime  @map("claimed_at") @db.Timestamptz(6)
   settledAt     DateTime? @map("settled_at") @db.Timestamptz(6)
+  /// La version du plan que le papier joint imprime, lue sur la journée que
+  /// l'abonné a chargée (`plan-historique-des-tirages.md`, § 7 Q2) ; `null`
+  /// pour un envoi d'avant les versions, ou d'une journée sans version.
+  planVersion   Int?      @map("plan_version")
 
   @@id([serviceDay, occasionAt, recipientId])
   @@map("production_dossier_dispatch")

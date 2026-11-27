@@ -38,14 +38,22 @@ export class OneDay extends ProductionDayRepository {
 
 /** La trace doublée : l'unicité de la clé, comme la clé primaire. */
 export class DispatchTable extends DossierDispatchLog {
-  readonly rows = new Map<string, { name: string; outcome: DossierDispatchOutcome | null }>();
+  readonly rows = new Map<
+    string,
+    { name: string; outcome: DossierDispatchOutcome | null; planVersion: number | null }
+  >();
 
-  claim(slot: DossierDispatchSlot, recipientName: string): Promise<boolean> {
+  claim(
+    slot: DossierDispatchSlot,
+    recipientName: string,
+    _at: Date,
+    planVersion: number | null = null,
+  ): Promise<boolean> {
     const key = keyOf(slot);
     if (this.rows.has(key)) {
       return Promise.resolve(false);
     }
-    this.rows.set(key, { name: recipientName, outcome: null });
+    this.rows.set(key, { name: recipientName, outcome: null, planVersion });
     return Promise.resolve(true);
   }
 

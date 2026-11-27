@@ -219,7 +219,8 @@ export class DossierDispatch {
       occasionAt: occasion.at,
       recipientId: addressee.recipientId,
     };
-    if (!(await this.log.claim(slot, addressee.name, this.clock.now()))) {
+    // La version du papier joint : celle de la journée chargée, d'où il est tiré.
+    if (!(await this.log.claim(slot, addressee.name, this.clock.now(), day.planVersion))) {
       return;
     }
     const counts = dossierCountsOf(day.orders, day.resupplies);

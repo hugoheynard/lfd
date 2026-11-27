@@ -9,18 +9,24 @@ import {
   type WithdrawalEntry,
 } from "../../domain/entities/plan-version.js";
 import type { ProductionDay } from "../../domain/entities/production-day.js";
+import { PlanVersionPaper } from "../../domain/ports/plan-version.paper.js";
 import { PlanVersionRecorder } from "../../domain/ports/plan-version.recorder.js";
 import { PlanVersionLedger } from "../../domain/ports/plan-version.ledger.js";
 import { PlanVersionsReader } from "../../domain/ports/plan-versions.reader.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { WithdrawalsAfterInscriptionReader } from "../../domain/ports/withdrawals-after-inscription.reader.js";
 
+/** La seule cause dont la version n'a pas de papier propre (§ 1.14). */
+const WITHOUT_OWN_PAPER: PlanVersionCause = "order_withdrawn";
+
 /**
  * L'écrivain des versions, tel que le noyau l'implémente — cf.
  * {@link PlanVersionRecorder}. La version précédente et les retraits après
  * inscription sont relus sous le verrou, la version suivante construite ; si
  * le plan a changé, la journée prend son numéro, puis elle est sauvée (l'état
- * et son numéro par le même `save`), puis la version est ajoutée.
+ * et son numéro par le même `save`), puis la version est ajoutée — et son
+ * papier demandé pour après la validation (`PlanVersionPaper`), sauf pour un
+ * retrait, qui n'a pas de papier propre (§ 1.14).
  */
 @Injectable()
 export class LedgerPlanVersionRecorder extends PlanVersionRecorder {
@@ -31,6 +37,7 @@ export class LedgerPlanVersionRecorder extends PlanVersionRecorder {
     private readonly withdrawals: WithdrawalsAfterInscriptionReader,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
+    private readonly paper: PlanVersionPaper,
   ) {
     super();
   }
@@ -55,6 +62,9 @@ export class LedgerPlanVersionRecorder extends PlanVersionRecorder {
     await this.days.save(day);
     if (next !== null) {
       await this.ledger.append(next);
+      if (cause !== WITHOUT_OWN_PAPER) {
+        this.paper.requestAfterCommit(day);
+      }
     }
   }
 }

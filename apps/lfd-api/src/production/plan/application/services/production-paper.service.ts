@@ -117,7 +117,12 @@ export class ProductionPaperRenderer {
     ]);
     const bytes = await renderProductionCountPdf(
       countPaperRowsOf(snapshot.counts, snapshot.orders),
-      { serviceDay: snapshot.serviceDay, closedAt: snapshot.closedAt, logo },
+      {
+        serviceDay: snapshot.serviceDay,
+        closedAt: snapshot.closedAt,
+        logo,
+        planVersion: day.planVersion,
+      },
       countColorSharesOf(snapshot.orders, resupplies, colors, resupplyColors),
     );
     return { bytes, archivable: true };

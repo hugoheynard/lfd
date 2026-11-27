@@ -276,3 +276,65 @@ describe("GetDayDossierPdfHandler", () => {
     ).rejects.toBeInstanceOf(DossierSelectionUnknownError);
   });
 });
+
+/**
+ * Le dossier d'une journée versionnée se range sous la version qu'elle porte
+ * (`plan-historique-des-tirages.md`, § 1.10) : l'état et son numéro viennent
+ * de la même journée chargée.
+ */
+describe("GetDayDossierPdfHandler — par version du plan", () => {
+  function versioned(): ProductionDay {
+    const day = closedDay();
+    day.numberPlanVersion(1);
+    return day;
+  }
+
+  it("range le dossier sous la version de la journée", async () => {
+    const { handler, store } = setup(versioned());
+
+    await handler.execute(new GetDayDossierPdfQuery(DAY));
+
+    expect([...store.objects.keys()]).toEqual([dayDossierPdfKey(DAY, CLOSED, null, 1)]);
+  });
+
+  it("une révision est rangée sous sa propre version, la précédente restant rangée", async () => {
+    const day = versioned();
+    const { handler, store } = setup(day);
+    const first = await handler.execute(new GetDayDossierPdfQuery(DAY));
+    day.reviseOrder("ord_1", [{ sku: "VIE-001", quantity: 15 }]);
+    day.numberPlanVersion(2);
+
+    const second = await handler.execute(new GetDayDossierPdfQuery(DAY));
+
+    expect(second.bytes.equals(first.bytes)).toBe(false);
+    expect([...store.objects.keys()].sort()).toEqual(
+      [dayDossierPdfKey(DAY, CLOSED, null, 1), dayDossierPdfKey(DAY, CLOSED, null, 2)].sort(),
+    );
+  });
+
+  it("non rangé à la première lecture (commerce muet), rangé à la suivante sous la même version", async () => {
+    const { handler, store, shelves } = setup(versioned());
+    shelves.broken = true;
+    await handler.execute(new GetDayDossierPdfQuery(DAY));
+    expect(store.objects.size).toBe(0);
+
+    shelves.broken = false;
+    await handler.execute(new GetDayDossierPdfQuery(DAY));
+
+    expect([...store.objects.keys()]).toEqual([dayDossierPdfKey(DAY, CLOSED, null, 1)]);
+  });
+
+  it("une version dépassée avant d'être rangée ne l'est jamais : la lecture range la courante", async () => {
+    const day = versioned();
+    const { handler, store, shelves } = setup(day);
+    shelves.broken = true;
+    await handler.execute(new GetDayDossierPdfQuery(DAY));
+    day.reviseOrder("ord_1", [{ sku: "VIE-001", quantity: 15 }]);
+    day.numberPlanVersion(2);
+    shelves.broken = false;
+
+    await handler.execute(new GetDayDossierPdfQuery(DAY));
+
+    expect([...store.objects.keys()]).toEqual([dayDossierPdfKey(DAY, CLOSED, null, 2)]);
+  });
+});
