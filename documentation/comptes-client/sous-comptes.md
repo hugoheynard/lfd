@@ -341,7 +341,19 @@ rôle effectif dans X =
 commandes ; un `billing` en lit la facturation (`billingReadingRole` :
 l'héritier `owner` ou `billing` lit comme `billing`). Un `owner`/`admin`
 hérité vaut `admin`. À rang égal (`orders` propre, `billing` hérité), la
-membership propre au site l'emporte. Ce que l'héritage n'ouvre jamais :
+membership propre au site l'emporte.
+
+**Ajouter une adresse de livraison est ouvert à tout membre** (Hugo,
+2026-11-27), propre ou hérité, `orders` et `billing` compris :
+`ensureCanAddDeliveryAddress` (`account/domain/services/company-access.ts`).
+Lui donner le défaut que portait une autre adresse, corriger ou archiver
+une adresse restent au gestionnaire (`ensureCompanyAdmin`) ; la première
+adresse d'un carnet vide devient le défaut pour tout le monde, le carnet
+le décide. Côté boutique, `canAddDeliveryAddress` ouvre le bouton
+« Ajouter » et la case « par défaut » ne se montre qu'au gestionnaire ou
+sur un carnet vide.
+
+Ce que l'héritage n'ouvre jamais :
 les gestes sur le RIB et le mandat (membership propre seulement), et la
 carte d'un site, réglée par l'`owner`/`admin` du principal seuls
 (`MANAGING_ROLES`).

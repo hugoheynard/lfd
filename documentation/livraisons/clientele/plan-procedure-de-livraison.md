@@ -35,18 +35,18 @@
 > ligne (« aucun concept de procédure ») a cessé d'être vraie avec le lot API.
 > Seul un pointeur devenu faux a été repointé, le 2026-10-07.
 
-| Fait                                                                                                                                                | Où                                                                                                                       |
-| --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Une adresse de livraison est une ligne `addresses` (`kind`), archivée et jamais supprimée ; ses consignes (`deliverySpecs`) sont un JSON            | `prisma/schema/public/account.prisma` `model Address`                                                                    |
-| Le carnet `DeliveryAddressBook` est chargé **pour une société** : une adresse d'une autre société y est absente, donc introuvable                   | `account/domain/entities/delivery-address-book.ts`, `update-delivery-address.handler.ts`                                 |
-| Routes client murées `/companies/:companyId/delivery-addresses/…` : lecture membre, écriture `ensureCompanyAdmin`                                   | `account/http/company-addresses.controller.ts`                                                                           |
-| Routes staff `/admin/companies/:companyId/delivery-addresses/…` sous `@AdminSurface("b2b_companies")`, faits `*ByStaffEvent` publiés en transaction | `account/http/admin-company-pieces.controller.ts`, les six `*-by-staff.handler.ts` des adresses (découpés le 2026-09-19) |
-| `DocumentStore` (bucket des pièces privées du client) : `save`/`read`/`readIfPresent`/`delete` ; clés `companies/{companyId}/…`                     | `platform/storage/document-store.ts`, `ingest-kbis.ts:62`                                                                |
-| Validation d'image par les octets de tête (PNG/JPEG), `imageDimensions` de `@lfd/storage`                                                           | `accounting/domain/value-objects/entity-logo.ts`                                                                         |
-| Réduction d'une photo dans le navigateur (canvas, `toBlob` JPEG)                                                                                    | `packages/b2b-ui/src/company/kbis-capture-panel/capture-frame.ts`                                                        |
-| Admin : la carte `lfd-company-addresses-card` a un menu par adresse (défaut, modifier, supprimer)                                                   | `b2b-ui/company/company-addresses-card/`                                                                                 |
-| Client : `delivery-address-dialog` ouvert depuis Mon compte, `dialogSide()` centre/bas                                                              | `apps/lfc-ecommerce-frontend/src/app/client/mon-compte/addresses/`, `client/panel-side.ts`                               |
-| Aucun concept de procédure n'existe encore                                                                                                          | grep `procédure de livraison`, `DeliveryProcedure` : vide                                                                |
+| Fait                                                                                                                                                       | Où                                                                                                                       |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Une adresse de livraison est une ligne `addresses` (`kind`), archivée et jamais supprimée ; ses consignes (`deliverySpecs`) sont un JSON                   | `prisma/schema/public/account.prisma` `model Address`                                                                    |
+| Le carnet `DeliveryAddressBook` est chargé **pour une société** : une adresse d'une autre société y est absente, donc introuvable                          | `account/domain/entities/delivery-address-book.ts`, `update-delivery-address.handler.ts`                                 |
+| Routes client murées `/companies/:companyId/delivery-addresses/…` : lecture et ajout membre (`ensureCanAddDeliveryAddress`), le reste `ensureCompanyAdmin` | `account/http/company-addresses.controller.ts`                                                                           |
+| Routes staff `/admin/companies/:companyId/delivery-addresses/…` sous `@AdminSurface("b2b_companies")`, faits `*ByStaffEvent` publiés en transaction        | `account/http/admin-company-pieces.controller.ts`, les six `*-by-staff.handler.ts` des adresses (découpés le 2026-09-19) |
+| `DocumentStore` (bucket des pièces privées du client) : `save`/`read`/`readIfPresent`/`delete` ; clés `companies/{companyId}/…`                            | `platform/storage/document-store.ts`, `ingest-kbis.ts:62`                                                                |
+| Validation d'image par les octets de tête (PNG/JPEG), `imageDimensions` de `@lfd/storage`                                                                  | `accounting/domain/value-objects/entity-logo.ts`                                                                         |
+| Réduction d'une photo dans le navigateur (canvas, `toBlob` JPEG)                                                                                           | `packages/b2b-ui/src/company/kbis-capture-panel/capture-frame.ts`                                                        |
+| Admin : la carte `lfd-company-addresses-card` a un menu par adresse (défaut, modifier, supprimer)                                                          | `b2b-ui/company/company-addresses-card/`                                                                                 |
+| Client : `delivery-address-dialog` ouvert depuis Mon compte, `dialogSide()` centre/bas                                                                     | `apps/lfc-ecommerce-frontend/src/app/client/mon-compte/addresses/`, `client/panel-side.ts`                               |
+| Aucun concept de procédure n'existe encore                                                                                                                 | grep `procédure de livraison`, `DeliveryProcedure` : vide                                                                |
 
 ## 2. Décisions
 
@@ -142,7 +142,7 @@ immutable` (l'URL côté écran porte `?rev=`).
 ### 2.4 Qui écrit, qui lit
 
 - **Client** : lecture tout membre ; écriture gestionnaire (`ensureCompanyAdmin`),
-  comme les adresses. L'adresse doit appartenir au carnet de la société et ne
+  comme la correction d'une adresse (l'ajout, lui, est ouvert à tout membre). L'adresse doit appartenir au carnet de la société et ne
   pas être archivée, sinon `CompanyAddressNotFoundError` (404).
 - **Staff** : `@AdminSurface("delivery_procedures")`, sa propre ressource
   depuis le 2026-10-01 (`plan-droits-par-geste.md`, DG-D1 ;
