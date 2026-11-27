@@ -656,6 +656,13 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
     icon: 'package',
     section: 'Paramétrage produit',
   },
+  {
+    key: 'options-de-commande',
+    label: 'Options de commande',
+    link: '/pim/options-de-commande',
+    icon: 'sliders',
+    section: 'Paramétrage produit',
+  },
 
   // GÉNÉRAL — ce qu'on règle une fois et qui vaut pour tout le reste. En
   // DERNIER, à l'inverse de l'ordre où on y touche : on ouvre le référentiel

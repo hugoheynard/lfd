@@ -39,6 +39,7 @@ import { VariantCustomRecipeForm } from './form-sections/variant-custom-recipe/v
 import { VariantAudienceForm } from './form-sections/variant-audience/variant-audience-form';
 import { OperationOnlyForm } from './form-sections/operation-only/operation-only-form';
 import { ColdRequirementForm } from './form-sections/cold-requirement/cold-requirement-form';
+import { OptionGroupsForm } from './form-sections/option-groups/option-groups-form';
 import { AudienceForm } from './form-sections/audience/audience-form';
 import { VariantsAsTilesForm } from './form-sections/variants-as-tiles/variants-as-tiles-form';
 import { VariantIdentityForm } from './form-sections/variant-identity/variant-identity-form';
@@ -156,6 +157,7 @@ interface PageSection {
     VariantIdentityForm,
     MinQuantitiesForm,
     ColdRequirementForm,
+    OptionGroupsForm,
     OrderLimitForm,
     AllergensForm,
     NutritionForm,

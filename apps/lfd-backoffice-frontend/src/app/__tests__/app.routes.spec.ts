@@ -327,6 +327,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'pim/appellations': null,
   'pim/allergenes': null,
   'pim/conditionnements': null,
+  'pim/options-de-commande': null,
   'pim/limites-de-commande': null,
   'pim/produits/nouveau': null,
   'pim/produits/:id': null,

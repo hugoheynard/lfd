@@ -1,0 +1,82 @@
+@if (loadError(); as message) {
+  <fold-empty-state tone="alert" title="Options illisibles" [subtitle]="message" />
+} @else {
+  <div class="stack">
+    @if (activations().length === 0) {
+      <fold-empty-state
+        title="Aucune option"
+        subtitle="La fiche se commande telle quelle. Activez un groupe pour proposer un choix — tranché, par exemple."
+      />
+    } @else {
+      <ul class="activations">
+        @for (activation of activations(); track activation.groupId) {
+          <li class="activation">
+            <span class="activation-text">
+              <strong>{{ activation.name }}</strong>
+              <span class="muted">{{ scopeLabel(activation) }}</span>
+            </span>
+            @if (activation.archived) {
+              <fold-badge content="Groupe archivé — plus proposé" variant="neutral" />
+            }
+            @if (canEdit()) {
+              <button
+                type="button"
+                foldButton
+                size="sm"
+                emphasis="soft"
+                intent="danger"
+                [disabled]="busy()"
+                (click)="deactivate(activation.groupId)"
+              >
+                Retirer
+              </button>
+            }
+          </li>
+        }
+      </ul>
+    }
+
+    @if (canEdit()) {
+      <div class="activate">
+        <fold-listbox
+          label="Activer un groupe"
+          placeholder="Choisir un groupe d'options"
+          [options]="groupOptions()"
+          [value]="selectedGroupId()"
+          [disabled]="busy()"
+          (selectionChange)="selectGroup($event)"
+        />
+        @if (selectedGroupId() !== null) {
+          <fold-checkbox
+            label="Toutes les déclinaisons"
+            hint="Celles qui viendront comprises, à la pièce comme au poids."
+            [checked]="allVariants()"
+            [disabled]="busy()"
+            (checkedChange)="allVariants.set($event)"
+          />
+          @if (!allVariants()) {
+            <div class="variants" role="group" aria-label="Déclinaisons">
+              @for (variant of store.variants(); track variant.id) {
+                <fold-checkbox
+                  [label]="variantLabel(variant)"
+                  [checked]="isPicked(variant.id)"
+                  [disabled]="busy()"
+                  (checkedChange)="togglePick(variant.id, $event)"
+                />
+              }
+            </div>
+          }
+          <button
+            type="button"
+            foldButton
+            class="submit"
+            [disabled]="!canSubmit()"
+            (click)="activate()"
+          >
+            {{ selectedActivation() === undefined ? 'Activer le groupe' : 'Enregistrer' }}
+          </button>
+        }
+      </div>
+    }
+  </div>
+}

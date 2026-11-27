@@ -1,0 +1,24 @@
+<fold-page-layout icon="sliders" title="Options de commande">
+  <p description>
+    Ce qu'on choisit en commandant un article — <strong>tranché</strong> pour le pain. Un groupe
+    porte ses choix, chacun proposé aux pros, aux particuliers ou aux deux&nbsp;; une fiche active
+    le groupe pour toutes ses déclinaisons ou une sélection.
+  </p>
+
+  @if (canWrite()) {
+    <button pageActions foldButton emphasis="solid" intent="primary" (click)="openCreate()">
+      Ajouter un groupe
+    </button>
+  }
+
+  <app-option-group-table />
+
+  <app-archived-list
+    title="Groupes archivés"
+    restoreMessage="Restaurer ce groupe ? Il se proposera de nouveau sur les fiches qui l'activent."
+    [entries]="archived()"
+    [canRestore]="canWrite()"
+    [busy]="busy()"
+    (restore)="restore($event)"
+  />
+</fold-page-layout>

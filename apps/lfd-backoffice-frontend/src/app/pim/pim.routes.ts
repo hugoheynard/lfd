@@ -110,6 +110,16 @@ export const pimRoutes: Routes = [
           import('./product-settings/allergens-page/allergens-page').then((m) => m.AllergensPage),
       },
       {
+        // Ce qu'on choisit en commandant (« tranché »), au même mur que le reste
+        // du vocabulaire des fiches.
+        path: 'options-de-commande',
+        title: 'Options de commande — LFC B2B admin',
+        loadComponent: () =>
+          import('./product-options/option-groups-page/option-groups-page').then(
+            (m) => m.OptionGroupsPage,
+          ),
+      },
+      {
         path: 'conditionnements',
         title: 'Conditionnements — LFC B2B admin',
         loadComponent: () =>

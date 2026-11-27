@@ -336,6 +336,24 @@
                   <app-cold-requirement-form />
                 </fold-page-section>
               </fold-card>
+              <!-- OPTIONS DE COMMANDE — ce qu'on choisit en commandant (tranché),
+               activé par groupe pour toutes les déclinaisons ou une sélection.
+               Seule, sur ses routes, hors de « Tout enregistrer ». -->
+              <fold-card>
+                <fold-page-section
+                  title="Options de commande"
+                  separator
+                  collapsible
+                  [open]="sectionOpen('options-de-commande')()"
+                  (openChange)="setSectionOpen('options-de-commande', $event)"
+                >
+                  <span sectionSubtitle>
+                    Les choix proposés à la commande, réglés au référentiel. S'enregistre à chaque
+                    geste.
+                  </span>
+                  <app-option-groups-form />
+                </fold-page-section>
+              </fold-card>
             }
           }
           @if (section.key === 'nutrition') {

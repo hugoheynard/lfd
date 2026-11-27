@@ -1,0 +1,28 @@
+<fold-data-table
+  [columns]="columns()"
+  [rows]="groups()"
+  [rowKey]="rowKey"
+  zebra
+  [empty]="emptyState()"
+>
+  <ng-template foldCell="name" let-g
+    ><strong>{{ g.name }}</strong></ng-template
+  >
+
+  <ng-template foldCell="choices" let-g>
+    @for (choice of activeChoices(g); track choice.key) {
+      <fold-badge [content]="choiceLabel(choice)" variant="neutral" />
+    }
+  </ng-template>
+
+  <ng-template foldCell="products" let-g>{{ productsLabel(g) }}</ng-template>
+
+  <ng-template foldCell="actions" let-g>
+    <fold-button-icon
+      icon="more-vertical"
+      size="sm"
+      [tooltip]="'Ouvrir « ' + g.name + ' »'"
+      (clicked)="open(g)"
+    />
+  </ng-template>
+</fold-data-table>

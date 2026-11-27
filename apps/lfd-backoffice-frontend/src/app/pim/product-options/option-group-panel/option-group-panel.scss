@@ -1,0 +1,73 @@
+// Le panneau remplit la hauteur de la coquille : header figé, corps scrollable,
+// pied collé en bas.
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-lg);
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/* Un choix : ses trois champs, et ses gestes de rang à droite. */
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md);
+}
+
+.choice-fields {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.choice-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.add-choice {
+  align-self: flex-start;
+}
+
+.archived {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.archived-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md) var(--fold-space-lg);
+  border-top: 1px solid var(--fold-color-border-subtle);
+}

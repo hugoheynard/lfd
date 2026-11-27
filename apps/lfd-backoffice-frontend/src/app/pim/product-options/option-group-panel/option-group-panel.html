@@ -1,0 +1,131 @@
+<fold-panel-header
+  [title]="heading()"
+  subtitle="Un nom, des choix proposés à la commande. « Sans » est implicite."
+/>
+
+<div class="body">
+  <fold-input
+    label="Nom du groupe"
+    placeholder="ex. Tranchage"
+    required
+    [value]="draftName()"
+    (valueChange)="draftName.set($event)"
+  />
+
+  <section class="choices" aria-label="Choix">
+    @for (choice of choices(); track $index; let i = $index, first = $first, last = $last) {
+      <div class="choice">
+        <div class="choice-fields">
+          <fold-input
+            label="Clé"
+            hint="Minuscules, chiffres, tirets — ne change plus une fois enregistrée."
+            placeholder="ex. tranche"
+            required
+            [readOnly]="choice.saved"
+            [value]="choice.key"
+            (valueChange)="setKey(i, $event)"
+          />
+          <fold-input
+            label="Libellé"
+            placeholder="ex. Tranché"
+            required
+            [value]="choice.label"
+            (valueChange)="setLabel(i, $event)"
+          />
+          <fold-listbox
+            label="Proposé aux"
+            [options]="audienceOptions"
+            [value]="choice.audience"
+            (selectionChange)="setAudience(i, $event)"
+          />
+        </div>
+        <div class="choice-actions">
+          <fold-button-icon
+            icon="chevron-up"
+            size="sm"
+            tooltip="Monter"
+            [disabled]="first"
+            (clicked)="move(i, -1)"
+          />
+          <fold-button-icon
+            icon="chevron-down"
+            size="sm"
+            tooltip="Descendre"
+            [disabled]="last"
+            (clicked)="move(i, 1)"
+          />
+          <fold-button-icon
+            icon="bin"
+            size="sm"
+            tone="critical"
+            tooltip="Retirer ce choix"
+            (clicked)="removeChoice(i)"
+          />
+        </div>
+      </div>
+    }
+
+    <button
+      type="button"
+      foldButton
+      emphasis="soft"
+      size="sm"
+      icon="plus"
+      class="add-choice"
+      (click)="addChoice()"
+    >
+      Ajouter un choix
+    </button>
+  </section>
+
+  @if (problem(); as message) {
+    <fold-callout appearance="inset" variant="info">{{ message }}</fold-callout>
+  }
+
+  @if (removedChoices().length > 0) {
+    <fold-callout appearance="inset" variant="warning">
+      À l'enregistrement, ces choix seront archivés&nbsp;:
+      @for (choice of removedChoices(); track choice.key; let last = $last) {
+        «&nbsp;{{ choice.label }}&nbsp;»{{ last ? '.' : ', ' }}
+      }
+      Les commandes passées gardent leur choix.
+    </fold-callout>
+  }
+
+  @if (archivedChoices().length > 0) {
+    <section class="archived" aria-label="Choix archivés">
+      <strong>Choix archivés</strong>
+      @for (choice of archivedChoices(); track choice.key) {
+        <div class="archived-choice">
+          <span>{{ choice.label }} — {{ audienceLabel(choice.audience) }}</span>
+          <button
+            type="button"
+            foldButton
+            size="sm"
+            emphasis="soft"
+            (click)="bringBack(choice.key)"
+          >
+            Remettre en service
+          </button>
+        </div>
+      }
+    </section>
+  }
+
+  @if (isEdit()) {
+    <fold-danger-zone
+      appearance="section"
+      title="Archiver ce groupe"
+      actionLabel="Archiver le groupe"
+      [message]="archiveMessage()"
+      (confirmed)="archive()"
+    />
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit()" (click)="submit()">
+    {{ isEdit() ? 'Enregistrer' : 'Ajouter le groupe' }}
+  </button>
+</footer>
