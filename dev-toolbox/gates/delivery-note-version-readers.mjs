@@ -43,17 +43,8 @@ export const DEV_PURGES = [
   `${DEV}/scenario/purge/purge-coverage.ts`,
 ];
 
-/**
- * Les opérations après déploiement qui rendent une commande au compte
- * interne : elles réécrivent le rendu figé comme la passation interne l'aurait
- * écrit (décidé par Hugo le 2026-11-26). Se retirent avec l'opération.
- */
-export const POST_DEPLOY_REWRITES = [
-  `${SRC}/lafoliecoffee/orders/infrastructure/ord-35-in-house.operation.ts`,
-];
-
 const ANCHORS = [WRITER, READER];
-const ADMITTED = [...ANCHORS, ...DEV_PURGES, ...POST_DEPLOY_REWRITES];
+const ADMITTED = [...ANCHORS, ...DEV_PURGES];
 
 const TABLE = /\bdeliveryNoteVersion\b|\bdelivery_note_version\b/g;
 

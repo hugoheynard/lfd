@@ -1,6 +1,5 @@
 import { Global, Module } from "@nestjs/common";
 
-import { Ord35InHouseOperation } from "../lafoliecoffee/orders/infrastructure/ord-35-in-house.operation.js";
 import {
   POST_DEPLOY_OPERATIONS,
   type PostDeployOperation,
@@ -23,11 +22,9 @@ import {
 @Global()
 @Module({
   providers: [
-    Ord35InHouseOperation,
     {
       provide: POST_DEPLOY_OPERATIONS,
-      useFactory: (ord35: Ord35InHouseOperation): readonly PostDeployOperation[] => [ord35],
-      inject: [Ord35InHouseOperation],
+      useValue: [] satisfies readonly PostDeployOperation[],
     },
   ],
   exports: [POST_DEPLOY_OPERATIONS],

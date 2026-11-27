@@ -165,5 +165,11 @@ Plus d'URL de production sur le poste pour une reprise.
   adaptateurs (`PrismaOrderDiscountBackfill`, `PrismaOrderDiscountTermsBackfill`),
   parce que le runbook de la reprise des remises
   (`documentation/promotions/promotions.md`, § 2.12) les cite encore.
+- ✅ **ORD-35 passée en commande interne, appliquée en production le
+  2026-11-27 puis retirée** (`orders.ord-35-in-house`, décidé par Hugo) : une
+  commande d'un restaurant maison passée au compte avant son marquage
+  (`documentation/comptabilite/facturation/restaurants-maison.md`). Retirés
+  avec elle : son e2e et son admission à la porte
+  `delivery-note-version-readers`. La liste du module est de nouveau vide.
 - ~~**Le bandeau ne doit apparaître que dans ops**~~ — fait le 2026-11-01 : il vit sur la page santé. (Hugo, 2026-11-01), pas en
   tête de tout le back-office.
