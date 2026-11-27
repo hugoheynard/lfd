@@ -387,7 +387,7 @@ describe('ProductTile', () => {
    */
   it('n’offre que deux arrêts de tabulation : le nom qui ouvre la fiche et le favori', () => {
     const el = fixture.nativeElement as HTMLElement;
-    fixture.componentRef.setInput('quantity', 2);
+    fixture.componentRef.setInput('quantity', 0);
     fixture.detectChanges();
     const opened: string[] = [];
     fixture.componentInstance.opened.subscribe(() => opened.push('fiche'));
@@ -402,6 +402,17 @@ describe('ProductTile', () => {
 
     name?.click();
     expect(opened).toEqual(['fiche']);
+  });
+
+  /**
+   * Au panier, le cœur reste : la pastille de quantité a le haut de la photo,
+   * le cœur le bas (Hugo, 2026-11-27).
+   */
+  it('garde le cœur quand l’article est au panier', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    fixture.componentRef.setInput('quantity', 2);
+    fixture.detectChanges();
+    expect(el.querySelector('app-favorite-toggle')).not.toBeNull();
   });
 
   /**

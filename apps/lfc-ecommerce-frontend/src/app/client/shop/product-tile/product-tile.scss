@@ -500,11 +500,11 @@
   opacity: 0.6;
 }
 
-// Le cœur, en haut à droite de la photo : la pastille de quantité et la
-// mise en avant gardent leurs coins.
+// Le cœur, en bas à droite de la photo, comme dans la fiche : la pastille de
+// quantité et la mise en avant gardent le haut.
 .favorite {
   position: absolute;
-  top: var(--fold-space-sm);
+  bottom: var(--fold-space-sm);
   right: var(--fold-space-sm);
   z-index: 1;
 }
