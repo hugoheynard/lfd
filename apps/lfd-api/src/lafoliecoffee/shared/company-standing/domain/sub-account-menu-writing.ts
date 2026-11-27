@@ -1,5 +1,5 @@
 import type { CompanyStanding } from "./company-standing.js";
-import { INHERITING_PARENT_ROLES } from "./effective-role.js";
+import { MANAGING_ROLES } from "./effective-role.js";
 
 /**
  * **Qui écrit la carte d'un sous-compte, côté client**
@@ -15,7 +15,7 @@ import { INHERITING_PARENT_ROLES } from "./effective-role.js";
  */
 export function canSetMenuOf(standing: CompanyStanding | null): boolean {
   const via = standing?.via ?? null;
-  return via !== null && INHERITING_PARENT_ROLES.includes(via.role);
+  return via !== null && MANAGING_ROLES.includes(via.role);
 }
 
 /**
@@ -46,6 +46,6 @@ export function canSetSitesMenuOf(standing: CompanyStanding | null): boolean {
     standing.companyStatus === "active" &&
     standing.ownAccepted &&
     standing.own !== null &&
-    INHERITING_PARENT_ROLES.includes(standing.own)
+    MANAGING_ROLES.includes(standing.own)
   );
 }

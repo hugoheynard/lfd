@@ -109,8 +109,11 @@ describe("la carte d'un site, réglée depuis son principal", () => {
     expect(await ctx.prisma.subAccountMenu.count({ where: { companyId: site } })).toBe(0);
   });
 
-  it("un `orders` du principal est refusé : il n'ouvre pas le site", async () => {
-    await putAs(PRINCIPAL_ORDERS, await closingFamilyOfX()).expect(404);
+  it("un `orders` du principal atteint le site mais ne règle pas sa carte", async () => {
+    const refused = await putAs(PRINCIPAL_ORDERS, await closingFamilyOfX()).expect(403);
+    expect(jsonBody<{ code: string }>(refused).code).toBe(
+      "account.sub_account_menu.principal_admin_required",
+    );
   });
 
   it("un principal étranger reçoit le refus d'une société inconnue", async () => {

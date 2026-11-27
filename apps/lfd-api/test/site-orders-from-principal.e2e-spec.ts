@@ -141,15 +141,14 @@ describe("l'owner et l'admin du principal sur la commande d'un site (§7.1, §7.
   );
 
   it.each([CustomerRole.orders, CustomerRole.billing])(
-    "%s du principal : 404 sur la commande d'un site (§7.8)",
+    "%s du principal : détail et bon de la commande d'un site (200)",
     async (role) => {
       const g = await group();
       const orderId = await accountOrder(g.site, g.siteOwner);
       const buyer = await principalMember(g, role);
 
-      await detail(buyer, orderId).expect(404);
-      await sheet(buyer, orderId).expect(404);
-      await customerCancel(buyer.sub, orderId).expect(404);
+      await detail(buyer, orderId).expect(200);
+      await sheet(buyer, orderId).expect(200);
     },
   );
 
@@ -272,15 +271,14 @@ describe("la liste agrégée du principal (§2, §7.5, §7.6)", () => {
   });
 
   it.each([CustomerRole.orders, CustomerRole.billing])(
-    "%s du principal : la liste reste celle du principal seul",
+    "%s du principal : la liste du site lui est servie",
     async (role) => {
       const g = await group();
       const buyer = await principalMember(g, role);
-      const mine = await accountOrder(g.principal, buyer);
-      await accountOrder(g.site, g.siteOwner);
+      await accountOrder(g.principal, buyer);
+      const ofSite = await accountOrder(g.site, g.siteOwner);
 
-      expect(idsOf(await list(buyer, g.principal))).toEqual([mine]);
-      expect(await list(buyer, g.principal, g.site)).toEqual([]);
+      expect(idsOf(await list(buyer, g.principal, g.site))).toEqual([ofSite]);
     },
   );
 
@@ -483,9 +481,9 @@ describe("le signalement par le compte principal (§7.3)", () => {
     ).toEqual({ companyId: g.site, userId: boss.id });
   });
 
-  it("orders du principal : 404 sur la commande d'un site", async () => {
+  it("un étranger au groupe : 404 sur la commande d'un site", async () => {
     const g = await group();
-    const buyer = await principalMember(g, CustomerRole.orders);
+    const buyer = await customer();
     const orderId = await accountOrder(g.site, g.siteOwner, { status: OrderStatus.fulfilled });
 
     await ctx

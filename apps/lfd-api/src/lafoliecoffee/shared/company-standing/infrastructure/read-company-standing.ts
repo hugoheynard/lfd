@@ -10,7 +10,6 @@ import {
   type StandingPrincipal,
 } from "../domain/company-standing.js";
 import type { StandingRole } from "../domain/standing-role.js";
-import { INHERITING_PARENT_ROLES } from "../domain/effective-role.js";
 import { isCompanyClosed } from "../domain/company-closure.js";
 import { openCompanyWhere } from "./open-company.js";
 import { openingMembership, staffBuyerMembership } from "./opening-membership.js";
@@ -23,18 +22,17 @@ const SUSPENDED = "suspended";
 /**
  * La membership d'une personne au principal qui OUVRE ses sites : acceptée —
  * une invitation vivante non acceptée n'ouvre rien au-delà de sa société
- * (C1, §7.2) —, au rôle `owner` ou `admin`.
+ * (C1, §7.2) —, quel que soit son rôle (Hugo, 2026-11-27).
  */
 function heirMembership(userId: string): Prisma.MembershipWhereInput {
-  return { userId, acceptedAt: { not: null }, role: { in: [...INHERITING_PARENT_ROLES] } };
+  return { userId, acceptedAt: { not: null } };
 }
 
 /**
  * **Les sites qu'une personne atteint par héritage**, en condition de requête
  * — la même règle que {@link readCompanyStanding}, pour les lectures en liste
  * (« Mes commandes » du principal, sociétés atteignables). Site ouvert et non
- * suspendu, principal ouvert et `active`, membership du principal acceptée
- * `owner`/`admin`.
+ * suspendu, principal ouvert et `active`, membership du principal acceptée.
  */
 export function inheritedSiteWhere(userId: string): Prisma.CompanyWhereInput {
   return {
@@ -57,7 +55,7 @@ export function inheritedSiteWhere(userId: string): Prisma.CompanyWhereInput {
  * - la membership **propre** qui ouvre (`openingMembership` : acceptée, ou
  *   invitation vivante) ;
  * - l'**héritage** du principal ACTUEL de la société (`parent_company_id` relu
- *   à chaque requête, R6) : membership au principal acceptée `owner`/`admin`,
+ *   à chaque requête, R6) : membership au principal acceptée, tout rôle,
  *   principal `active`, site non suspendu. Une membership de site ne donne
  *   rien sur le principal ni sur les frères (R3) : seul le parent de la
  *   société visée est lu, jamais ses enfants.
@@ -117,7 +115,7 @@ export interface StandingRow {
     readonly archivedAt: Date | null;
     readonly enseigne: string;
     readonly raisonSociale: string;
-    /** Déjà filtrées par {@link heirMembership} : acceptées, `owner`/`admin`. */
+    /** Déjà filtrées par {@link heirMembership} : acceptées. */
     readonly memberships: readonly { readonly role: StandingRole }[];
   } | null;
 }
@@ -137,12 +135,9 @@ export function standingFromRow(row: StandingRow): CompanyStanding | null {
   const own = ownRow?.role ?? null;
   const parent = row.parentCompany;
   const parentRole = parent?.memberships[0]?.role;
-  // Le filtre est déjà dans la requête ; la règle le redit : une ligne mal
-  // filtrée n'ouvre pas un site à un `orders` du principal.
   const via: StandingPrincipal | null =
     parent !== null &&
     parentRole !== undefined &&
-    INHERITING_PARENT_ROLES.includes(parentRole) &&
     parent.status === ACTIVE &&
     !isCompanyClosed(parent) &&
     row.status !== SUSPENDED
@@ -164,11 +159,11 @@ export interface ReachableSite {
   readonly companyId: string;
   readonly name: string;
   readonly via: StandingPrincipal;
-  /** Le rôle EFFECTIF de la personne dans le site ({@link standingRole}) : `admin`, plafonné. */
+  /** Le rôle EFFECTIF de la personne dans le site ({@link standingRole}), plafonné à `admin`. */
   readonly role: StandingRole;
   /**
    * Lit-elle factures, impayés et compte bancaire du site ? Oui pour le
-   * détenteur du principal seulement ({@link billingReadingRole}, Q1).
+   * détenteur ou au `billing` du principal ({@link billingReadingRole}).
    */
   readonly readsBilling: boolean;
 }
@@ -207,7 +202,7 @@ export async function readReachableSites(
   return rows.flatMap((row) => {
     const parent = row.parentCompany;
     const role = parent?.memberships[0]?.role;
-    if (parent === null || role === undefined || !INHERITING_PARENT_ROLES.includes(role)) {
+    if (parent === null || role === undefined) {
       return [];
     }
     const via: StandingPrincipal = { companyId: parent.id, name: companyDisplayName(parent), role };

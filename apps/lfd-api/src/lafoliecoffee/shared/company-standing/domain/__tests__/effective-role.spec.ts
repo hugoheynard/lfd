@@ -19,9 +19,19 @@ describe("effectiveRole — le rôle effectif dans une société", () => {
     expect(effectiveRole(null, "admin")).toBe("admin");
   });
 
-  it("orders et billing du principal n'ouvrent rien sur un sous-compte", () => {
-    expect(effectiveRole(null, "orders")).toBeNull();
-    expect(effectiveRole(null, "billing")).toBeNull();
+  it("orders et billing du principal jouent leur rôle sur le site", () => {
+    expect(effectiveRole(null, "orders")).toBe("orders");
+    expect(effectiveRole(null, "billing")).toBe("billing");
+  });
+
+  it("à rang égal, la membership propre au site l'emporte sur l'héritée", () => {
+    expect(effectiveRole("billing", "orders")).toBe("billing");
+    expect(effectiveRole("orders", "billing")).toBe("orders");
+  });
+
+  it("un rôle propre plus large n'est pas rétrogradé par l'héritage", () => {
+    expect(effectiveRole("admin", "orders")).toBe("admin");
+    expect(effectiveRole("owner", "billing")).toBe("owner");
   });
 
   it("sans membership ni principal, aucun rôle", () => {

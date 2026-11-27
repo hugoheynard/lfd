@@ -147,8 +147,8 @@ passée par le staff.
 **7.7 Site suspendu** : le principal voit ses commandes ; les gestes suivent
 la même règle de statut que pour un membre du site (annulation refusée).
 
-**7.8 Q1 tranchée par le code** : `effectiveRole` exclut `orders` et
-`billing` du principal ; on garde la règle. **Q2** se vérifie dans le
+**7.8 Q1** : `orders` et `billing` du principal héritent sur ses sites
+depuis le 2026-11-27 (Hugo) — `sous-comptes.md` § 3. **Q2** se vérifie dans le
 handler d'annulation en C1 : le mail part à l'auteur de la commande et aux
 destinataires habituels du site.
 

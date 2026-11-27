@@ -9,7 +9,7 @@ export interface StandingPrincipal {
   readonly companyId: string;
   /** Son enseigne, sa raison sociale à défaut. */
   readonly name: string;
-  /** Le rôle de la personne au principal — `owner` ou `admin`, seuls à ouvrir. */
+  /** Le rôle de la personne au principal, accepté — tout rôle ouvre ses sites. */
   readonly role: StandingRole;
 }
 
@@ -45,23 +45,27 @@ export function standingRole(standing: CompanyStanding | null): StandingRole | n
   return effectiveRole(standing.own, standing.via?.role ?? null);
 }
 
+/** Les rôles du principal qui lisent la facturation de ses sites. */
+const BILLING_HEIRS: ReadonlySet<StandingRole> = new Set<StandingRole>(["owner", "billing"]);
+
 /**
  * Le rôle qui compte pour **lire** les factures, les impayés et le compte
- * bancaire (Q1, Hugo, 2026-10-23) : le détenteur du principal les voit dans
- * ses sites, un `admin` hérité non.
+ * bancaire : le détenteur (Q1, Hugo, 2026-10-23) et le `billing` (Hugo,
+ * 2026-11-27) du principal les lisent dans ses sites ; un `admin` ou un
+ * `orders` hérité non.
  *
- * Le détenteur hérité lit donc comme `billing` — le rôle que les deux murs
- * de lecture admettent (`invoice-access.ts`, `bank-account-access.ts`,
- * relus le 2026-10-23) —, et seulement pour LIRE : les gestes sur le compte
- * bancaire lisent {@link standingRole}, où il reste `admin`, refusé. Sans
- * héritage du détenteur, c'est la membership propre qui parle, et elle seule :
- * l'`admin` hérité ne lit pas plus qu'un étranger.
+ * L'héritier qui lit vaut `billing` — le rôle que les murs de lecture
+ * admettent (`invoice-access.ts`, `bank-account-access.ts`) —, et seulement
+ * pour LIRE : les gestes sur le compte bancaire lisent la membership propre
+ * (`prisma-bank-account-guard.reader.ts`). Seul un `owner` propre garde son
+ * rôle ; sans héritier qui lit, la membership propre parle seule.
  */
 export function billingReadingRole(standing: CompanyStanding | null): StandingRole | null {
   if (standing === null) {
     return null;
   }
-  if (standing.via?.role === "owner" && standing.own !== "owner") {
+  const via = standing.via?.role ?? null;
+  if (via !== null && BILLING_HEIRS.has(via) && standing.own !== "owner") {
     return "billing";
   }
   return standing.own;

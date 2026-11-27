@@ -330,11 +330,21 @@ en fonction pure — `effectiveRole`
 ```
 rôle effectif dans X =
     max(rôle de membership(X),
-        min(rôle de membership(P), admin)   si X.parent = P, ce rôle ∈ {owner, admin},
+        min(rôle de membership(P), admin)   si X.parent = P, tout rôle,
                                              membership(P) acceptée, P active,
                                              X non suspendu)
   | aucun
 ```
+
+**Tout rôle du principal joue sur ses sites** (Hugo, 2026-11-27) : un
+`orders` du principal commande pour un site, en lit et en annule les
+commandes ; un `billing` en lit la facturation (`billingReadingRole` :
+l'héritier `owner` ou `billing` lit comme `billing`). Un `owner`/`admin`
+hérité vaut `admin`. À rang égal (`orders` propre, `billing` hérité), la
+membership propre au site l'emporte. Ce que l'héritage n'ouvre jamais :
+les gestes sur le RIB et le mandat (membership propre seulement), et la
+carte d'un site, réglée par l'`owner`/`admin` du principal seuls
+(`MANAGING_ROLES`).
 
 Le mur n'avait pas **deux** voies, comme ce paragraphe l'a dit jusqu'au
 2026-10-23, mais **une dizaine** : `resolveCompany`, puis un lecteur de rôle

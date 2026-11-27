@@ -4,7 +4,7 @@
  * — une frontière de sécurité : le mur tenant de la liste, repris tel quel.
  *
  * Ce que seul l'e2e prouve : le récapitulatif lit sous le VRAI mur (un owner
- * du principal agrège ses sites ; un `orders` du principal non ; un site
+ * du principal agrège ses sites ; un `orders` du principal aussi ; un site
  * n'atteint pas son frère), le filtre de jour borne la vraie colonne
  * `@db.Date`, et les refus nommés sortent avec leur statut.
  *
@@ -224,14 +224,12 @@ describe("le récapitulatif sous le mur de la liste (§6.5)", () => {
     });
   });
 
-  it("un `orders` du principal : la commande d'un site est hors de son mur, refus qui la nomme", async () => {
+  it("un `orders` du principal inclut la commande d'un site", async () => {
     const g = await group();
     const buyer = await principalMember(g, CustomerRole.orders);
     const ofSite = await accountOrder(g.site, g.siteOwner);
 
-    const response = await summarize(buyer, g.principal, [ofSite]).expect(404);
-
-    expect(JSON.stringify(response.body)).toContain(ofSite);
+    await summarize(buyer, g.principal, [ofSite]).expect(200);
   });
 
   it("un site ne peut pas inclure une commande de son frère", async () => {

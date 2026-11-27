@@ -10,8 +10,8 @@
 
 - La règle est écrite et testée, jamais importée :
   `lafoliecoffee/shared/company-standing/domain/effective-role.ts` (à l'époque sous `lafoliecoffee/account/domain/services/`) — rôle effectif dans X =
-  membership(X), sinon min(membership(P), admin) si X.parent = P et ce rôle ∈
-  {owner, admin}, sinon aucun ; le cumul se fait par MAX.
+  max(membership(X), min(membership(P), admin)) si X.parent = P, tout rôle
+  du principal (Hugo, 2026-11-27 — `sous-comptes.md` § 3).
 - **Le mur n'a pas deux voies mais une dizaine** : `resolveCompany`
   (`platform/auth/resolve-company.ts`), puis un lecteur de rôle par contexte,
   chacun sur `openingMembership` (10 fichiers l'importent, 37 handlers appellent

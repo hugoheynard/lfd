@@ -1,18 +1,17 @@
 import type { StandingRole } from "./standing-role.js";
 
 /**
- * Les rôles du principal qui ouvrent ses sous-comptes (sous-comptes §3).
- * `orders` et `billing` du principal ne donnent rien sur un sous-compte : ils
- * n'administrent pas le principal lui-même.
+ * Les rôles qui ADMINISTRENT une société : eux seuls règlent la carte d'un
+ * site ou la carte commune (`sub-account-menu-writing.ts`). L'héritage, lui,
+ * n'en dépend pas : tout rôle accepté au principal joue sur ses sites.
  */
-export const INHERITING_PARENT_ROLES: readonly StandingRole[] = ["owner", "admin"];
-
-const INHERITING_ROLES: ReadonlySet<StandingRole> = new Set<StandingRole>(INHERITING_PARENT_ROLES);
+export const MANAGING_ROLES: readonly StandingRole[] = ["owner", "admin"];
 
 /**
  * Le plafond d'un rôle hérité : un `owner` du principal est `admin` dans le
- * sous-compte, et les gestes réservés au détenteur (transfert, second
- * détenteur) lui restent fermés.
+ * site, et les gestes réservés au détenteur (transfert, second détenteur) lui
+ * restent fermés. `orders` et `billing` sont sous le plafond : ils héritent
+ * tels quels.
  */
 const INHERITED_CEILING: StandingRole = "admin";
 
@@ -22,11 +21,15 @@ const INHERITED_CEILING: StandingRole = "admin";
  *
  * ```
  * rôle effectif dans X = max(rôle de membership(X),
- *                          min(rôle dans P, admin) si X.parent = P et ce rôle ∈ {owner, admin})
- *
- * Le MAX (Hugo, 2026-10-05) : un owner du principal qui a aussi `orders` dans
- * le sous-compte y reste admin — sa membership propre ne le rétrograde pas.
+ *                          min(rôle dans P, admin) si X.parent = P)
  * ```
+ *
+ * Tout rôle du principal joue sur ses sites (décidé par Hugo le 2026-11-27) :
+ * un `orders` du principal commande pour eux, un `billing` en suit la
+ * facturation. Le MAX (Hugo, 2026-10-05) : un owner du principal qui a aussi
+ * `orders` dans le site y reste admin. `orders` et `billing` sont de même
+ * rang et ne se comparent pas : à égalité, la membership PROPRE au site
+ * l'emporte, parce qu'elle a été posée pour ce site-là.
  *
  * Jamais dans l'autre sens : une membership dans un sous-compte ne donne rien
  * sur le principal ni sur ses frères — l'appelant ne passe `roleInParent` que
@@ -47,12 +50,15 @@ export function effectiveRole(
   ownRole: StandingRole | null,
   roleInParent: StandingRole | null,
 ): StandingRole | null {
-  const inherited =
-    roleInParent !== null && INHERITING_ROLES.has(roleInParent) ? INHERITED_CEILING : null;
+  const inherited = roleInParent === null ? null : capped(roleInParent);
   if (ownRole === null || inherited === null) {
     return ownRole ?? inherited;
   }
   return RANK[ownRole] >= RANK[inherited] ? ownRole : inherited;
+}
+
+function capped(role: StandingRole): StandingRole {
+  return RANK[role] > RANK[INHERITED_CEILING] ? INHERITED_CEILING : role;
 }
 
 /** Du plus large au plus étroit : `owner` > `admin` > `orders` = `billing`. */

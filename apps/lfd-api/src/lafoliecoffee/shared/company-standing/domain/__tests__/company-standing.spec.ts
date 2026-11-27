@@ -33,6 +33,11 @@ describe("standingRole — le rôle effectif des gestes (S6, R2)", () => {
     expect(standingRole(standing("owner", "admin"))).toBe("owner");
     expect(standingRole(standing("billing", "owner"))).toBe("admin");
   });
+
+  it("orders et billing du principal gardent leur rôle sur le site", () => {
+    expect(standingRole(standing(null, "orders"))).toBe("orders");
+    expect(standingRole(standing(null, "billing"))).toBe("billing");
+  });
 });
 
 describe("billingReadingRole — lire factures, impayés, compte bancaire (Q1)", () => {
@@ -44,6 +49,17 @@ describe("billingReadingRole — lire factures, impayés, compte bancaire (Q1)",
     expect(billingReadingRole(standing(null, "owner"))).toBe("billing");
     expect(billingReadingRole(standing("orders", "owner"))).toBe("billing");
     expect(billingReadingRole(standing("admin", "owner"))).toBe("billing");
+  });
+
+  it("le `billing` du principal lit la facturation du site", () => {
+    expect(billingReadingRole(standing(null, "billing"))).toBe("billing");
+    expect(billingReadingRole(standing("orders", "billing"))).toBe("billing");
+    expect(billingReadingRole(standing("admin", "billing"))).toBe("billing");
+  });
+
+  it("🔴 un `orders` hérité ne lit rien de plus que sa membership propre", () => {
+    expect(billingReadingRole(standing(null, "orders"))).toBeNull();
+    expect(billingReadingRole(standing("orders", "orders"))).toBe("orders");
   });
 
   it("le détenteur du site reste détenteur", () => {

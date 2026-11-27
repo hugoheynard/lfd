@@ -103,8 +103,8 @@ export class ClientCompany {
 
   /**
    * La facturation (factures, impayés, RIB) se LIT-elle ici ? Dans un site
-   * atteint, `canReadBilling` tranche seul — le rôle y vaut `admin` pour le
-   * détenteur du principal comme pour un admin hérité (Q1, 2026-10-23). Dans
+   * atteint, `canReadBilling` tranche seul — le serveur l'ouvre au détenteur
+   * et au `billing` du principal, pas à un `admin` ni un `orders` hérités. Dans
    * une société propre, ce sont les rôles que l'écran nomme.
    */
   readsBilling(roles: ReadonlySet<CompanyMemberRole>): boolean {

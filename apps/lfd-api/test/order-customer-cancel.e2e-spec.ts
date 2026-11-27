@@ -163,26 +163,6 @@ describe("le mur (C6.2)", () => {
     },
   );
 
-  /**
-   * Relu le 2026-10-21 (lot C1 de `plan-commandes-des-sites.md`) : le sens
-   * NE change PAS — ce membre est `orders` du principal (défaut de `member`),
-   * et `orders`/`billing` n'héritent de rien (§7.8). L'`owner`/`admin` du
-   * principal, lui, annule désormais : `site-orders-from-principal.e2e-spec.ts`.
-   */
-  it("membre `orders` de la société mère sans rattachement au site : 404", async () => {
-    const parentId = await company();
-    const site = await ctx.prisma.company.update({
-      where: { id: await company() },
-      data: { parentCompanyId: parentId },
-    });
-    const parentMember = await customer();
-    await member(parentMember.id, parentId);
-    const author = await customer();
-    await member(author.id, site.id);
-    const { orderId } = await seedCustomerOrder({ placedByUserId: author.id, companyId: site.id });
-    await customerCancel(parentMember.sub, orderId).expect(404);
-  });
-
   it("un particulier sur la commande d'un autre particulier : 404", async () => {
     await setCancellation(true);
     const author = await customer();

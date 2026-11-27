@@ -45,9 +45,12 @@ describe("standingFromRow — la règle de R1 sur la ligne lue", () => {
     ).toEqual({ companyStatus: "suspended", own: "orders", ownAccepted: true, via: null });
   });
 
-  it("🔴 un `orders` du principal mal filtré n'ouvre rien", () => {
+  it("un `orders` du principal ouvre le site, à son rôle", () => {
     const parent = { ...PRINCIPAL, memberships: [{ role: "orders" }] } as const;
-    expect(standingFromRow(row({ parentCompany: parent }))).toBeNull();
+    expect(standingFromRow(row({ parentCompany: parent }))).toMatchObject({
+      own: null,
+      via: { role: "orders" },
+    });
   });
 
   it("propre et héritée : les deux, sans arbitrer ici", () => {

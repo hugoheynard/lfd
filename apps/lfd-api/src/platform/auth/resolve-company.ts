@@ -34,8 +34,8 @@ import { UnreachableWorkspaceError } from "./unreachable-workspace.error.js";
  *   ni servie, ni remplacée en silence par une autre société ou par le perso.
  *
  * - **une société atteignable déclarée** (S6, `plan-entrer-dans-ses-sites.md`,
- *   R4) — un site d'un principal dont la personne est détentrice ou
- *   administratrice. Servi SEULEMENT s'il est déclaré : « le seul
+ *   R4) — un site d'un principal dont la personne est membre acceptée, quel
+ *   que soit son rôle. Servi SEULEMENT s'il est déclaré : « le seul
  *   rattachement » ne compte que les rattachements PROPRES, et le prix servi
  *   sans en-tête ne change pas pour qui atteint aussi des sites.
  *
