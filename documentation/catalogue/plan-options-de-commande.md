@@ -1,10 +1,11 @@
 # Plan — les options de commande (« tranché »), gratuites d'abord
 
-> 📐 **Plan v4, rien n'est bâti** (2026-11-19). Demandé par Hugo le
-> 2026-11-19 : « ajouter des options du produit, par exemple tranché pour le
-> pain », qui peuvent être payantes. Après trois contradictions de `vitruve`
-> (§ 7), Hugo a décidé le 2026-11-19 : **les options gratuites d'abord**.
-> Aucun montant ne bouge ; le payant aura sa propre conception.
+> ✅ **G1→G4 bâtis le 2026-11-27, sur `dev`, pas en production.** Demandé
+> par Hugo le 2026-11-19 : « ajouter des options du produit, par exemple
+> tranché pour le pain ». Hugo a décidé le 2026-11-19 : **les options
+> gratuites d'abord** ; aucun montant ne bouge, le payant aura sa propre
+> conception (§ 7). Les décisions prises en bâtissant sont au § 4, ce qui
+> reste au § 6.
 
 ## 1. En deux mots
 
@@ -143,22 +144,38 @@ lecture.
 
 ## 5. Les lots
 
-| Lot | Ce qu'il fait                                                                                          | Coût | Risque                           |
-| --- | ------------------------------------------------------------------------------------------------------ | ---- | -------------------------------- |
-| G1  | Référentiel : groupes, choix, activation par fiche, refus au poids ; écrans du référentiel ; fait v19. | 2 j  | moyen (migration additive, fait) |
-| G2  | Commerce : miroir par audience ; options sur la ligne, `order_line_option`, empreinte, révision.       | 1½ j | moyen (migration additive)       |
-| G3  | Fournil, colisage, bon de livraison : la mention.                                                      | 1 j  | faible                           |
-| G4  | Écrans : boutique (choisir), saisie par l'équipe, panier, commande.                                    | 1½ j | moyen                            |
+| Lot | Ce qu'il fait                                                                                                      | État                    |
+| --- | ------------------------------------------------------------------------------------------------------------------ | ----------------------- |
+| G1  | Référentiel : groupes, choix, activation par fiche (au poids comme à la pièce) ; écrans du référentiel ; fait v19. | ✅ `ace43cac8` + écrans |
+| G2  | Commerce : miroir par audience ; options sur la ligne, `order_line_option`, empreinte, révision.                   | ✅ `ccf716ff0`          |
+| G3  | Fournil, colisage, bon de livraison : la mention ; le reliquat recopie les options.                                | ✅ `94d211b74`          |
+| G4  | Écrans : boutique et saisie par l'équipe (sur la ligne), panier enregistré, détail de commande.                    | ✅ `f65cd66d5`          |
 
-Total : **6 jours**. Les migrations sont additives ; `lecteur-de-migrations`
-avant `main`.
+Trois migrations additives (`20261127100000`, `20261127120000`,
+`20261127150000`) ; `lecteur-de-migrations` avant `main`.
 
-## 6. Ce qui n'est pas vérifié
+## 6. Ce qui reste
 
-- La forme exacte de l'instantané envoyé au fournil et au colisage : canal
-  repéré, non lu.
-- Les écrans de la saisie par l'équipe et de la boutique : non ouverts.
-- La réception d'un réassort : supposée sans option.
+- **Non vérifié** : `pnpm test` à la racine et `lint:gates` en entier n'ont
+  pas tourné (choix de Hugo, 2026-11-27) ; chaque lot a passé ses tests
+  ciblés, ses e2e et ses portes.
+- **À trancher** :
+  - un reliquat ne sait pas quelles pièces manquaient : il retire d'abord le
+    « sans », comme le bon (4 pains dont 2 tranchés, 1 manquant → « dont 1
+    tranché ») ;
+  - un départ incomplet au colisage ne plafonne pas les options de la
+    feuille, quand le bon les plafonne ;
+  - la mention s'écrit « Tranchage : 2 × tranché », pas « dont 2 tranchés » ;
+  - aucun verrou entre l'archive d'un groupe et son activation (au pire, une
+    activation sur un groupe archivé, que le fait n'émet pas) ; aucune
+    unicité du nom d'un groupe.
+- **Pas fait** : le pro ne voit pas les options de ses commandes passées dans
+  la boutique (l'écran ne montre pas les lignes d'un pro) ; pas de choix sur
+  la fiche produit ni à la saisie du comptoir pour un particulier ; une
+  lecture des options en échec laisse la ligne partir sans option, sans
+  message ; la réception d'un réassort reste sans option.
+- **Doc** : ce plan reste cité par une centaine de commentaires ; il deviendra
+  une doc d'état au présent quand le chantier sera déployé.
 
 ## 7. Le supplément payant, pour plus tard
 
