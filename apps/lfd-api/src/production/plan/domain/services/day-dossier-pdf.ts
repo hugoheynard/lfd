@@ -28,7 +28,6 @@ import {
   weekdayShortDate,
   type Doc,
 } from "../../../../platform/pdf/paper-pdf-kit.js";
-import { printRunStamp } from "../../../shared/print/index.js";
 import { contentRightOf, PaperPages } from "../../../../platform/pdf/paper-pages.js";
 import { type PdfOverlay, overlaidPdf } from "../../../../platform/pdf/embedded-pdf.js";
 import {
@@ -266,6 +265,14 @@ export function drawRecapWithCalendars(
  * monter.
  */
 export const DOSSIER_LAYOUT_VERSION = "v16";
+
+/** Le tirage dans le nom : l'arrêt, puis le dernier retirage s'il y en a un. */
+function printRunStamp(closedAt: Date, retakenAt: Date | null): string {
+  const closed = `arret-${closedAt.toISOString().replace(/[:.]/g, "-")}`;
+  return retakenAt === null
+    ? closed
+    : `${closed}-retirage-${retakenAt.toISOString().replace(/[:.]/g, "-")}`;
+}
 
 export function dayDossierPdfKey(
   serviceDay: string,

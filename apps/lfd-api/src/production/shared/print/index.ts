@@ -27,7 +27,6 @@ export { ProductionDisplaySettingsRepository } from "./domain/ports/production-d
 export { ProductionDisplaySettingsVersion } from "./domain/ports/production-display-settings-version.js";
 export {
   atelierSheetPdfKey,
-  printRunStamp,
   productionCountPdfKey,
   renderAtelierSheetPdf,
   renderProductionCountPdf,
