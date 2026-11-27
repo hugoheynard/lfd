@@ -90,7 +90,6 @@ export const CATALOGUE_SNAPSHOT_COLUMNS = {
       "orderLimitStaffMayExceed",
       "withdrawnAt",
       "operationOnly",
-      "variantsAsTiles",
       "productName",
       "customRecipe",
       "detachedFromSku",

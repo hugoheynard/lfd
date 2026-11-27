@@ -65,15 +65,6 @@ model Product {
   /// n'est pas froide tant que personne ne l'a dit sur la fiche.
   requiresCold Boolean @default(false) @map("requires_cold")
 
-  /// **Montrer chaque déclinaison en vignette** (Hugo, 2026-10-29,
-  /// `documentation/catalogue/plan-declinaisons-en-vignette.md`) : cochée,
-  /// chaque déclinaison vivante a sa vignette au rayon de la boutique ;
-  /// décochée, seule la déclinaison par défaut.
-  ///
-  /// `true` par défaut, existant compris : c'est le comportement de base
-  /// voulu, et il s'affine après le déploiement.
-  variantsAsTiles Boolean @default(true) @map("variants_as_tiles")
-
   /// **Sur mesure** — une recette faite pour un ou quelques clients (Hugo,
   /// 2026-11-02, `documentation/catalogue/plan-articles-sur-mesure.md` § 13,
   /// D1). Un fait de la FICHE, toutes déclinaisons comprises ; le référentiel

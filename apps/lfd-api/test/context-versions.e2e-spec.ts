@@ -202,10 +202,7 @@ describe("les versions par contexte — ce qui fait disparaître un article", ()
       "public_by_context (prix public servi)",
       `UPDATE "public"."catalog_items" SET "public_by_context" = NULL`,
     ],
-    [
-      "is_default / variants_as_tiles",
-      `UPDATE "public"."catalog_items" SET "variants_as_tiles" = false`,
-    ],
+    ["is_default", `UPDATE "public"."catalog_items" SET "is_default" = NOT "is_default"`],
     ["operation_only", `UPDATE "public"."catalog_items" SET "operation_only" = true`],
   ])("une écriture SQL à la main sur %s la fait monter", async (_column, sql) => {
     await expectBump(() => ctx.prisma.$executeRawUnsafe(sql));

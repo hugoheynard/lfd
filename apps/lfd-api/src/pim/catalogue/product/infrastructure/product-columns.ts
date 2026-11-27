@@ -39,8 +39,6 @@ export function productColumns(snapshot: ProductSnapshot) {
     requiresCold: snapshot.requiresCold,
     audience: snapshot.audience,
     originVariantId: snapshot.originVariantId ?? null,
-    // `variants_as_tiles` n'est ni lu ni écrit : colonne morte, que son
-    // `DEFAULT true` remplit à la création.
     // `custom_recipe` de la fiche n'est ni lu ni écrit : colonne morte, qui
     // garde sa valeur pour qu'un retour au code d'avant ne rouvre rien.
   };
