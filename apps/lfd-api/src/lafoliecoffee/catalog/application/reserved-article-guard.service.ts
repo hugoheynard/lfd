@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import type { BusinessError } from "../../../platform/shared/errors/app-error.js";
 import { PUBLIC_VIEWER, proViewer } from "../domain/catalog-viewer.js";
 import { ArticleNotServedToPublicError } from "../domain/errors/not-served-to-public.error.js";
 import { unorderableError } from "../domain/errors/reserved-article-refused.error.js";
@@ -47,22 +48,42 @@ export class ReservedArticleGuard {
     if (companyId === null) {
       return this.ensureServedToPublic(skus);
     }
-    const holders = await this.holders.holdersOf(companyId);
+    const refusals = await this.refusalsFor(companyId, skus);
+    const first = [...refusals.values()][0];
+    if (first !== undefined) {
+      throw first;
+    }
+  }
+
+  /**
+   * Le même mur, article par article, pour un pro : le refus que
+   * {@link ensureOpenTo} lèverait pour chaque article fermé, dans l'ordre
+   * demandé. Le planificateur le montre avant la passation (§ 4 bis).
+   */
+  async refusalsFor(
+    companyId: string,
+    skus: readonly string[],
+  ): Promise<ReadonlyMap<string, BusinessError>> {
+    const refusals = new Map<string, BusinessError>();
     const wanted = [...new Set(skus)];
+    if (wanted.length === 0) {
+      return refusals;
+    }
+    const holders = await this.holders.holdersOf(companyId);
     // La carte du site vient avec les porteurs, de la même lecture
     // (`carte-des-sites.md`, § 3.5) : un hors-carte est refusé ici.
     const viewer = proViewer(holders, "served_and_locked", holders.menu);
     const seen = await this.catalog.resolveMany(wanted, viewer);
     for (const sku of wanted) {
       const item = seen.get(sku);
+      const cause = item === undefined ? null : unorderableCause(item);
       if (item === undefined) {
-        throw new ArticleNotServedToCompanyError(sku);
-      }
-      const cause = unorderableCause(item);
-      if (cause !== null) {
-        throw unorderableError(sku, cause);
+        refusals.set(sku, new ArticleNotServedToCompanyError(sku));
+      } else if (cause !== null) {
+        refusals.set(sku, unorderableError(sku, cause));
       }
     }
+    return refusals;
   }
 
   private async ensureServedToPublic(skus: readonly string[]): Promise<void> {

@@ -101,3 +101,59 @@ model Occurrence {
   @@map("occurrence")
   @@schema("recurring")
 }
+
+// ─── Le planificateur de commandes des pros ─────────────────────────────────
+//
+// Contexte `src/recurring/planned/` (plan
+// `documentation/commandes/planificateur/plan-planificateur-de-commandes.md`).
+// Pros seulement : `company_id` non nul. Ce que Prisma ne sait pas dire vit
+// dans le `migration.sql` (`20261127180000_le_planificateur_de_commandes`) :
+// les `CHECK` de forme, l'index partiel `planned_columns_draft_idx`, et
+// l'unicité PARTIELLE `planned_columns_one_per_window` (une colonne vivante par
+// société (le site), jour et créneau, créneau sans début compris), admise par
+// `schema-drift-admitted.json`.
+
+/// **Une colonne planifiée** : un brouillon de commande pour une société (un site est une société), un jour
+/// servi et un créneau — un jour peut en porter plusieurs, une par créneau
+/// (Hugo, 2026-11-27). Le mur de toute lecture et de tout geste est `company_id`.
+model PlannedColumn {
+  id            String    @id
+  /// La personne qui a écrit la colonne en dernier : l'acheteur à la conversion.
+  userId        String    @map("user_id")
+  companyId     String    @map("company_id")
+  serviceDay    DateTime  @map("service_day") @db.Date
+  /// Le créneau, sorti de `routing` pour l'unicité : `null` = « avant `window_end` ».
+  windowStart   String?   @map("window_start")
+  windowEnd     String    @map("window_end")
+  /// `{ method, deliveryAddress, pickupAddressId, window }`, recopié à chaque écriture.
+  routing       Json
+  /// `[{ sku, quantity }]`, dans l'ordre de la colonne.
+  lines         Json
+  /// draft | placed | refused | missed | withdrawn — CHECK en base.
+  status        String    @default("draft")
+  /// L'instant de gel et de conversion ; `null` tant qu'il n'est pas calculé.
+  convertsAt    DateTime? @map("converts_at") @db.Timestamptz(6)
+  orderId       String?   @map("order_id")
+  refusalCause  String?   @map("refusal_cause")
+  refusalReason String?   @map("refusal_reason")
+  /// Monte à chaque écriture : deux onglets ne s'écrasent pas en silence.
+  version       Int
+  createdAt     DateTime  @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @map("updated_at") @db.Timestamptz(6)
+
+  @@index([companyId, serviceDay])
+  @@map("planned_columns")
+  @@schema("recurring")
+}
+
+/// **Un article de la liste d'envies** d'une personne dans une société (Q3).
+model WishlistItem {
+  userId    String   @map("user_id")
+  companyId String   @map("company_id")
+  sku       String
+  addedAt   DateTime @map("added_at") @db.Timestamptz(6)
+
+  @@id([userId, companyId, sku])
+  @@map("wishlist_items")
+  @@schema("recurring")
+}

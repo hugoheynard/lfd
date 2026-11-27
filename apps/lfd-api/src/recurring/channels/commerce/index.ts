@@ -17,6 +17,13 @@ export { BasketArticles, type BasketArticlesReview } from "./basket-articles.js"
 export { BasketPickupPoints } from "./basket-pickup-points.js";
 export { BasketSalesTerms, type SalesTermsInForce } from "./basket-sales-terms.js";
 export { BasketBuyerContacts } from "./basket-buyer-contacts.js";
+export {
+  PlannedBasketCheck,
+  type PlannedBasketCheckItem,
+  type PlannedBasketCheckRequest,
+  type PlannedLineBlocking,
+  type PlannedLineCheck,
+} from "./planned-basket-check.js";
 /**
  * Ce que le bloc écoute (déclaré ici, émis par le contenu du commerce au
  * dépôt du PDF des CGV, § 7) :

@@ -21,6 +21,21 @@ import { PrismaRecurringBasketCounts } from "./basket/infrastructure/prisma-recu
 import { PrismaRecurringSkuUsage } from "./basket/infrastructure/prisma-recurring-sku-usage.js";
 import { RecurringBasketCounts } from "./channels/commerce/recurring-basket-counts.js";
 import { RecurringSkuUsage } from "./channels/commerce/recurring-sku-usage.js";
+import { AddWishlistItemHandler } from "./planned/application/commands/add-wishlist-item.handler.js";
+import { OpenPlannedColumnHandler } from "./planned/application/commands/open-planned-column.handler.js";
+import { PutPlannedColumnHandler } from "./planned/application/commands/put-planned-column.handler.js";
+import { RemoveWishlistItemHandler } from "./planned/application/commands/remove-wishlist-item.handler.js";
+import { WithdrawPlannedColumnHandler } from "./planned/application/commands/withdraw-planned-column.handler.js";
+import { GetPlannerHandler } from "./planned/application/queries/get-planner.handler.js";
+import { PlannerWall } from "./planned/application/services/planner-wall.js";
+import { PlannedColumnRepository } from "./planned/domain/ports/planned-column.repository.js";
+import { PlannedColumnsReader } from "./planned/domain/ports/planned-columns.reader.js";
+import { WishlistReader } from "./planned/domain/ports/wishlist.reader.js";
+import { WishlistWriter } from "./planned/domain/ports/wishlist.writer.js";
+import { PlannerController } from "./planned/http/planner.controller.js";
+import { PrismaPlannedColumnRepository } from "./planned/infrastructure/prisma-planned-column.repository.js";
+import { PrismaPlannedColumnsReader } from "./planned/infrastructure/prisma-planned-columns.reader.js";
+import { PrismaWishlistStore } from "./planned/infrastructure/prisma-wishlist.store.js";
 import { OverrideOccurrenceHandler } from "./occurrence/application/commands/override-occurrence.handler.js";
 import { RestoreOccurrenceHandler } from "./occurrence/application/commands/restore-occurrence.handler.js";
 import { SweepDueOccurrencesHandler } from "./occurrence/application/commands/sweep-due-occurrences.handler.js";
@@ -38,7 +53,8 @@ import {
 
 /**
  * **Le bloc des paniers récurrents** : le panier, ses échéances, leur
- * balayage, dans le schéma `recurring` (plan `plan-bloc-recurrent.md`).
+ * balayage, et le planificateur de commandes des pros (`planned/`), dans le
+ * schéma `recurring` (plan `plan-bloc-recurrent.md`).
  *
  * Ce qu'il demande au commerce (`channels/commerce/`) est relié par
  * `appBootstrap/recurring-feed.module.ts`. **Global**, comme le panier de la
@@ -51,6 +67,7 @@ import {
     SubscriptionsController,
     AdminSubscriptionsController,
     RecurringOccurrencesSweepController,
+    PlannerController,
   ],
   providers: [
     OpenBasketHandler,
@@ -70,6 +87,19 @@ import {
     OccurrenceIssueBell,
     RingOnOccurrenceRefused,
     RingOnOccurrenceMissed,
+    // Le planificateur de commandes des pros (`planned/`).
+    PlannerWall,
+    GetPlannerHandler,
+    OpenPlannedColumnHandler,
+    PutPlannedColumnHandler,
+    WithdrawPlannedColumnHandler,
+    AddWishlistItemHandler,
+    RemoveWishlistItemHandler,
+    PrismaWishlistStore,
+    { provide: WishlistReader, useExisting: PrismaWishlistStore },
+    { provide: WishlistWriter, useExisting: PrismaWishlistStore },
+    { provide: PlannedColumnRepository, useClass: PrismaPlannedColumnRepository },
+    { provide: PlannedColumnsReader, useClass: PrismaPlannedColumnsReader },
     {
       provide: BasketMailOrigins,
       inject: [AppConfig],

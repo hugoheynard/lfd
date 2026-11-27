@@ -149,6 +149,7 @@ import { DiscardOrderDraftHandler } from "./application/commands/discard-order-d
 import { PlaceOrderForCustomerHandler } from "./application/commands/place-order-for-customer.handler.js";
 import { SaveOrderDraftHandler } from "./application/commands/save-order-draft.handler.js";
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
+import { CommercePlannedBasketCheck } from "./application/services/commerce-planned-basket-check.js";
 import { RecurringOccurrencePlacement } from "./application/services/recurring-occurrence-placement.js";
 import { OrdersBasketSalesTerms } from "./application/services/orders-basket-sales-terms.js";
 import { OccurrenceOrderReader } from "./domain/ports/occurrence-order.reader.js";
@@ -483,6 +484,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // (`recurring/channels/commerce/`), relié par `appBootstrap/recurring-feed.module.ts`.
     RecurringOccurrencePlacement,
     OrdersBasketSalesTerms,
+    CommercePlannedBasketCheck,
     { provide: OccurrenceOrderReader, useClass: PrismaOccurrenceOrderReader },
     PlaceOrderForCustomerHandler,
     PlaceParticularOrderAtCounterHandler,
@@ -789,6 +791,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // La passation d'une échéance et les CGV d'un panier, pour le fil des paniers récurrents.
     RecurringOccurrencePlacement,
     OrdersBasketSalesTerms,
+    // Ce que dirait la passation d'un panier planifié, pour le planificateur.
+    CommercePlannedBasketCheck,
     // La source du journal du commerce, reliée au registre par `appBootstrap/day-version-sources.module.ts`.
     OrdersDayVersionSource,
     // Le numéro de toutes les commandes, relié au registre au même endroit.

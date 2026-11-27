@@ -1,0 +1,12 @@
+-- RETOUR ARRIÈRE de 20261127180000_le_planificateur_de_commandes
+-- (documentation/commandes/planificateur/plan-planificateur-de-commandes.md, lot L1).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant ignore les deux tables : le retour arrière est le retour du
+-- code seul. Les retirer perdrait les colonnes et les listes d'envies des
+-- clients ; à faire seulement sur décision de Hugo :
+--
+--   DROP TABLE "recurring"."wishlist_items";
+--   DROP TABLE "recurring"."planned_columns";

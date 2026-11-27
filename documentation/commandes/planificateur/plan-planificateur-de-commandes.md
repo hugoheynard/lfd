@@ -125,7 +125,8 @@ recurring.planned_days
   order_id           opaque, posé à la conversion
   refusal_cause      code stable, refusal_reason la phrase
   version            entier, pour l'écriture concurrente (deux onglets)
-  UNIQUE (company_id, site_key, service_day)
+  window_start, window_end   le créneau, sorti du routing pour l'unicité
+  UNIQUE (company_id, site_key, service_day, window_start, window_end)
 
 recurring.wishlist_items
   user_id, company_id, sku, added_at
@@ -137,6 +138,37 @@ première ligne de l'écran le choisit pour tout le planificateur, mais chaque
 colonne le recopie à son écriture. Changer de site ou de créneau ne réécrit
 pas en silence les jours déjà remplis : l'écran propose « appliquer aux jours
 ouverts ».
+
+**Plusieurs commandes dans une journée (Hugo, 2026-11-27).** Un pro qui a
+deux créneaux le même jour (7 h – 9 h et 11 h – 12 h, par exemple) a deux
+colonnes ce jour-là. Chacune devient sa propre commande, à sa propre
+fermeture. Une colonne est donc identifiée par son id, et l'unicité porte sur
+le jour **et** le créneau : deux colonnes au même créneau seraient deux
+commandes indiscernables.
+
+**À l'écran, un créneau est une rangée** (Hugo, 2026-11-27) : les jours
+restent en colonnes, et chaque créneau ajoute une rangée sous la première.
+Chaque case (jour × créneau) est un panier, et devient une commande.
+
+```
+              │ lun. 1 déc.     │ mar. 2 déc.     │ mer. 3 déc.     │
+──────────────┼─────────────────┼─────────────────┼─────────────────┤
+ 7 h – 9 h    │ 84,20 € HT      │ 0,00 € HT       │ 61,00 € HT      │
+              │ Croissant ×40   │                 │ Baguette ×30    │
+──────────────┼─────────────────┼─────────────────┼─────────────────┤
+ 11 h – 12 h  │ 31,50 € HT      │                 │                 │
+              │ Baguette ×15    │                 │                 │
+──────────────┴─────────────────┴─────────────────┴─────────────────┘
+ ＋ un créneau (une rangée de plus)
+```
+
+Une rangée vide n'est qu'un emplacement : rien n'est enregistré tant que la
+case n'a pas de ligne. La liste d'envies reste une colonne à gauche, sur
+toute la hauteur.
+
+Les routes suivent : `POST /planner/columns` (jour + créneau),
+`PUT /planner/columns/:id`, `DELETE /planner/columns/:id` (colonne encore en
+brouillon et non gelée).
 
 ### 3.3 L'agrégat `PlannedDay`
 
@@ -328,7 +360,9 @@ Le commerce implémente `PlannedDayPlacement`, sur le modèle exact de
 - **Ligne 2** : la colonne « Liste d'envies », puis une colonne par jour à
   partir de la date de départ, puis « ＋ » qui ajoute le jour suivant.
   L'écran s'ouvre sur un seul jour, comme demandé.
-- **En tête de chaque jour** : la date et le total HT du devis, marqué
+- **« ＋ un créneau »** sous la grille ajoute une rangée, sur un créneau du
+  site pas encore pris. La rangée porte son créneau à gauche.
+- **En tête de chaque jour** : la date ; **en tête de chaque case** : le total HT du devis, marqué
   indicatif. Les lignes bloquantes sont en avertissement, avec leur
   explication (§ 4 bis). En pied : l'heure de conversion, ou l'état
   (« Commandée », avec un lien vers la commande, « Non passée », « Manquée »).
@@ -360,6 +394,49 @@ d'envies » : la grille branche `StorefrontActions.productAdded` vers la
 liste au lieu du panier. Le panier n'est pas touché, et un bandeau rappelle le
 mode avec un bouton « Retour au planificateur ».
 
+### 6.2 bis Le prévisionnel du fournil (Hugo, 2026-11-27)
+
+**Une colonne n'est jamais commandée avant sa propre fermeture.** Le client
+garde la main jusque-là, et peut changer ses quantités la veille. Le jour du
+surlendemain reste donc un brouillon tant que ses commandes ne ferment pas.
+
+En revanche, le Prod manager voit ces brouillons dans le **prévisionnel**
+(`/prod-manager/previsionnel`, [`le-previsionnel.md`](../../fournil/le-previsionnel.md)),
+pour se faire une idée :
+
+```
+                  lun. 1   mar. 2   mer. 3
+Croissant          320      280      300
+  dont planifié    +40      +40       —     ← en italique, couleur atténuée
+Baguette           210      190      205
+  dont planifié      —      +30      +30
+──────────────────────────────────────────
+Total              980      910      940
+Planifié, non commandé : +70 · +70 · +30 pièces
+```
+
+- **Une couche à part, jamais mélangée.** Les quantités planifiées
+  s'affichent à côté de la demande du commerce, marquées « planifié, non
+  commandé ». Elles n'entrent ni dans `totalUnits`, ni dans l'arrêt du plan,
+  ni dans le dossier du jour, ni dans les tranches. Elles ne deviennent de la
+  production qu'en devenant des commandes.
+- **Colonnes ouvertes seulement.** Une journée arrêtée montre un compte figé :
+  la couche n'y apparaît pas. Une colonne convertie n'est plus un brouillon,
+  et sa commande est déjà dans la demande.
+- **Le chemin.** La production lit le commerce par
+  `ExpectedProductionReader` (`production/channels/commerce/`). Le commerce
+  lit les brouillons par une lecture que le bloc des paniers DÉCLARE et
+  IMPLÉMENTE lui-même dans `recurring/channels/commerce/`
+  (`PlannedQuantitiesReader` : par jour et par SKU, les quantités des
+  colonnes `draft`, en une requête agrégée sur la fenêtre). C'est la figure
+  d'`OrderHandoverHistoryReader`. Ni la production ni le commerce ne lisent
+  `recurring.planned_days`.
+- **Le contrat** du prévisionnel (`packages/contracts/src/production-forecast.ts`)
+  gagne `plannedQuantities` par ligne (même longueur que `days`) et
+  `plannedUnits` par jour. Ces champs sont additifs : l'écran les ignore tant
+  qu'il n'est pas mis à jour.
+- **Aucun montant**, comme le reste du prévisionnel.
+
 ### 6.3 Le back-office
 
 Lot facultatif (L5) : sur la fiche client, les jours planifiés à venir en
@@ -367,13 +444,14 @@ lecture seule, et les refus mis en évidence, comme les paniers récurrents.
 
 ## 7. Les lots
 
-| Lot    | Contenu                                                                                                                                                                                                                                                                                                                                           | Migration |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **L1** | Les tables dans le schéma `recurring`, `PlannedBasketCheck` servi avec les colonnes, l'agrégat `PlannedDay`, la liste d'envies, les routes `GET /planner?from&site`, `PUT /planner/days/:day`, `PUT`/`DELETE /planner/wishlist/:sku` (pros seulement, mur `company_id`, `@Idempotent`) ; tests aux trois niveaux, dont le mur entre deux sociétés | additive  |
-| **L2** | `converts_at` et le gel, la provenance `planned_day` dans le port de passation existant, la provenance sur la commande, le balayage des cinq minutes sur les deux prochains jours, la cloche du staff ; e2e : convertie, double balayage, édition refusée après le gel, article fermé plus tôt, acheteur parti, sans crédit, manquée              | additive  |
-| **L3** | La page du planificateur : date de départ, ligne du site, colonnes, « ＋ », totaux par devis, lignes bloquantes en avertissement avec leur explication et leurs gestes de sortie, colonnes grisées et callout pendant un glisser, états, glisser-déposer et son équivalent clavier, affichage au téléphone                                        | —         |
-| **L4** | La boutique en mode liste d'envies, et l'onglet qui l'ouvre                                                                                                                                                                                                                                                                                       | —         |
-| **L5** | (facultatif) la lecture au back-office                                                                                                                                                                                                                                                                                                            | —         |
+| Lot                      | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Migration |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| ~~**L1**~~ ✅ 2026-11-27 | Bâti sous le nom `PlannedColumn` (table `recurring.planned_columns`, une ligne par jour × créneau ; le site est la société de l'espace, pas de `site_key`). Les tables dans le schéma `recurring`, `PlannedBasketCheck` servi avec les colonnes, l'agrégat `PlannedDay`, la liste d'envies, les routes `GET /planner?from&site`, `PUT /planner/days/:day`, `PUT`/`DELETE /planner/wishlist/:sku` (pros seulement, mur `company_id`, `@Idempotent`) ; tests aux trois niveaux, dont le mur entre deux sociétés | additive  |
+| **L2**                   | `converts_at` et le gel, la provenance `planned_day` dans le port de passation existant, la provenance sur la commande, le balayage des cinq minutes sur les deux prochains jours, la cloche du staff ; e2e : convertie, double balayage, édition refusée après le gel, article fermé plus tôt, acheteur parti, sans crédit, manquée                                                                                                                                                                          | additive  |
+| **L3**                   | La page du planificateur : date de départ, ligne du site, colonnes, « ＋ », totaux par devis, lignes bloquantes en avertissement avec leur explication et leurs gestes de sortie, colonnes grisées et callout pendant un glisser, états, glisser-déposer et son équivalent clavier, affichage au téléphone                                                                                                                                                                                                    | —         |
+| **L4**                   | La boutique en mode liste d'envies, et l'onglet qui l'ouvre                                                                                                                                                                                                                                                                                                                                                                                                                                                   | —         |
+| **L4 bis**               | Le prévisionnel : `PlannedQuantitiesReader` (déclaré et fait par le bloc), le commerce le joint à `ExpectedProductionReader`, le contrat gagne `plannedQuantities` / `plannedUnits`, l'écran les montre à part (§ 6.2 bis) ; test : un brouillon n'entre jamais dans `totalUnits` ni dans l'arrêt                                                                                                                                                                                                             | —         |
+| **L5**                   | (facultatif) la lecture au back-office                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | —         |
 
 L1 et L2 d'abord, parce que l'écran sans conversion serait un tableau qui
 promet une commande qu'il ne passe pas.
