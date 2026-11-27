@@ -27,6 +27,7 @@ export const ERASED_ON_SIGN_OUT: readonly KeyRule[] = [
   exact('lfc.cart'),
   exact('lfc.cart.savedAt'),
   exact('lfc.cart.units'),
+  exact('lfc.cart.options'),
   prefix('lfc.cart.ws.'),
   // Le mode de service et le brouillon d'une maison désignée (`client/order-context.store.ts`).
   exact('lfc.order.choice'),

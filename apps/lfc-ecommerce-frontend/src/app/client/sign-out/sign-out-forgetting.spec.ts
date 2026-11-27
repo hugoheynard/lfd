@@ -11,6 +11,7 @@ const ERASED_LOCAL = [
   'lfc.cart',
   'lfc.cart.savedAt',
   'lfc.cart.units',
+  'lfc.cart.options',
   'lfc.cart.ws.cmp_a',
   'lfc.cart.ws.cmp_a.savedAt',
   'lfc.cart.ws.cmp_a.units',
