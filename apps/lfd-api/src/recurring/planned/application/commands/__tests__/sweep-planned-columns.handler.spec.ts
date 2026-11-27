@@ -22,6 +22,10 @@ const TODAY = IsoDate.fromString("2026-12-01");
 const RYE_CLOSES = new Date("2026-12-01T08:10:00.000Z");
 /** Le croissant ferme le lendemain à 13 h. */
 const CRO_CLOSES = new Date("2026-12-02T12:00:00.000Z");
+/** Une fermeture rangée vingt minutes avant l'horloge : manquée. */
+const LATE_CONVERTS_AT = new Date(NOW.getTime() - 20 * 60_000);
+/** Un instant rangé cinq minutes avant l'horloge : atteint. */
+const DUE_CONVERTS_AT = new Date(NOW.getTime() - 5 * 60_000);
 
 /** Une passation écrite à la main : rend la réponse du SKU de la première ligne. */
 class ScriptedPlacement extends PlannedColumnPlacement {
@@ -146,7 +150,7 @@ describe("SweepPlannedColumnsHandler", () => {
 
   it("une fermeture rangée passée sans conversion : manquée, jamais présentée", async () => {
     const { columns, handler, placement, durable } = scene();
-    await seed(columns, "late", ["CRO"], { convertsAt: new Date("2026-12-01T07:40:00.000Z") });
+    await seed(columns, "late", ["CRO"], { convertsAt: LATE_CONVERTS_AT });
     expect(await handler.execute()).toMatchObject({ missed: 1, placed: 0 });
     expect(placement.asked).toEqual([]);
     expect(columns.rows.get("late")?.snapshot().status).toBe("missed");
@@ -176,7 +180,7 @@ describe("SweepPlannedColumnsHandler", () => {
     const { columns, handler, placement } = scene();
     await seed(columns, "far", ["SEIGLE"], {
       inDays: 5,
-      convertsAt: new Date("2026-12-01T07:55:00.000Z"),
+      convertsAt: DUE_CONVERTS_AT,
     });
     expect(await handler.execute()).toMatchObject({ due: 1, placed: 1 });
     expect(placement.asked[0]).toMatchObject({ columnId: "far" });

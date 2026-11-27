@@ -525,6 +525,8 @@
   "test/pim-variant-rename.e2e-spec.ts": 3926,
   "test/pim-vat-rates.e2e-spec.ts": 4486,
   "test/pim-wall.e2e-spec.ts": 3606,
+  "test/planner-conversion.e2e-spec.ts": 12000,
+  "test/planner.e2e-spec.ts": 8000,
   "test/platform-content.e2e-spec.ts": 3343,
   "test/position-checks.e2e-spec.ts": 5372,
   "test/price-floor-carry-over.e2e-spec.ts": 3060,
