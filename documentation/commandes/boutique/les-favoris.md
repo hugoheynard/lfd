@@ -1,9 +1,9 @@
 # Les favoris de la boutique
 
-> 📐 Plan, 2026-11-26. Décidé par Hugo le 2026-11-26 : les favoris sont gardés
-> **par espace** (une société, ou l'espace personnel du particulier) ; un
-> visiteur non connecté peut en mettre, gardés dans son navigateur et rattachés
-> à l'espace à la connexion.
+> ✅ En production depuis le 2026-11-27. Décidé par Hugo le 2026-11-26 : les
+> favoris sont gardés **par espace** (une société, ou l'espace personnel du
+> particulier) ; un visiteur non connecté peut en mettre, gardés dans son
+> navigateur et rattachés à l'espace à la connexion.
 
 ## En simple
 
@@ -62,23 +62,27 @@ le référentiel pour une préférence.
 - `FAVORITES_SHELF = 'vitrine:favorites'` dans `shelves.ts`, à côté de
   `FEATURED_SHELF` ; `shelf-nav.ts` et `shelf-address.ts` l'ajoutent **avant**
   l'onglet des incontournables, seulement si un article servi est en favori.
-- Un magasin des favoris, clé par l'espace (`client/context-keyed/`, porte
+- `ShopFavorites` (`shop/shop-favorites.store.ts`), clé par l'espace (`client/context-keyed/`, porte
   `lint:context-keyed-readers`) : connecté → les routes ; visiteur →
   `localStorage` (clé `lfc.favorites`, lue en `try/catch`, inscrite au
   [registre des traceurs](../../legal/registre-des-traceurs.md)).
 - À la connexion, les SKU locaux sont posés dans l'espace courant (un `PUT` par
-  SKU, idempotent) puis la clé locale est vidée.
-- Le cœur sur la vignette (`product-tile`) et la fiche : un bouton
+  SKU, idempotent) puis la clé locale est vidée ; un SKU dont l'envoi échoue
+  reste en local pour la fois suivante. La clé est aussi effacée à la
+  déconnexion (`sign-out/stored-keys.ts`). Le cœur bascule tout de suite et
+  revient en arrière si l'appel échoue.
+- Le cœur (`shop/favorite-toggle/`, qui compose `fold-toggle-icon`) est en bas
+  à droite de la photo, sur la vignette (`product-tile`) comme dans la fiche :
+  la pastille de quantité au panier et la mise en avant gardent le haut, et le
+  cœur reste visible quand l'article est au panier (Hugo, 2026-11-27). Bouton
   `aria-pressed`, libellé « Ajouter aux favoris » / « Retirer des favoris »
-  dans les dictionnaires (FR, EN, IT), puis `pnpm tool copy:digest`.
-  Sur la vignette, il est le second arrêt de tabulation, à côté du nom qui
-  ouvre la fiche (décidé par Hugo le 2026-11-26, entorse assumée au « un seul
-  arrêt par produit » du lot RGAA A2).
-- `legacy/data/favorites.service.ts` (le POC en mémoire) est retiré ou laissé
-  tel quel s'il sert encore au legacy — il ne sert pas à la boutique.
+  dans les dictionnaires (FR, EN, IT). Sur la vignette, il est le second arrêt
+  de tabulation, à côté du nom qui ouvre la fiche (décidé par Hugo le
+  2026-11-26, entorse assumée au « un seul arrêt par produit » du lot RGAA A2).
+- `legacy/data/favorites.service.ts` (le POC en mémoire) ne sert pas à la
+  boutique.
 
 ### Reste à faire
 
-- ~~B1 (table, contexte, routes, e2e du mur)~~ — bâti le 2026-11-26, non commité
-  (`src/lafoliecoffee/shop-favorites/`, migration `20261126190000_les_favoris_de_la_boutique`).
-- F1 (magasin, onglet, cœur).
+- Inscrire `lfc.favorites` dans la politique cookies, texte édité à l'écran
+  (Réglages › Légal › Cookies) : le registre des traceurs la porte déjà.
