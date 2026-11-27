@@ -17,7 +17,7 @@ import { WORKSPACE_HEADER } from "@lfd/contracts";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { poseSiteDiscount } from "./promotion-fixtures.js";
-import { bootCustomerScene, company, member } from "./order-customer-cancel-scene.js";
+import { bootCustomerScene, company, customer, member } from "./order-customer-cancel-scene.js";
 import { resetScene } from "./order-staff-cancel-scene.js";
 import { detach, family, type Person, setStatus } from "./company-standing-scene.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
@@ -225,9 +225,62 @@ describe("le RIB d'un site atteint — l'héritage n'ouvre aucun geste", () => {
     expect(await ctx.prisma.companyBankAccount.count({ where: { companyId: f.site } })).toBe(0);
   });
 
+  it("🔴 le `orders` et le `billing` du principal sont refusés (403), rien n'est écrit", async () => {
+    const f = await family();
+    for (const role of [CustomerRole.orders, CustomerRole.billing]) {
+      const heir = await customer();
+      await member(heir.id, f.principal, { role });
+      await ctx.asSub(heir.sub).put(`/companies/${f.site}/bank-account`).send(RIB).expect(403);
+    }
+    expect(await ctx.prisma.companyBankAccount.count({ where: { companyId: f.site } })).toBe(0);
+  });
+
   it("l'admin PROPRE du site, lui, pose le RIB", async () => {
     const f = await family();
     await member(f.adminHeir.id, f.site, { role: CustomerRole.admin });
     await ctx.asSub(f.adminHeir.sub).put(`/companies/${f.site}/bank-account`).send(RIB).expect(204);
   });
+});
+
+/**
+ * Les rôles du principal jouent sur ses sites (Hugo, 2026-11-27) : un `orders`
+ * ou un `billing` hérité y vaut son rôle, jamais `admin`. Les gestes
+ * d'administration du site lui restent fermés.
+ */
+describe("un `orders` ou un `billing` du principal sur l'administration d'un site", () => {
+  const ADDRESS = {
+    label: "Boutique",
+    ligne1: "9 rue de la Roquette",
+    ligne2: "",
+    codePostal: "75011",
+    ville: "Paris",
+    pays: "France",
+    isDefault: false,
+    specs: {
+      signatureRequired: false,
+      note: "",
+      slotList: { mode: "everyday", slots: [] },
+      deliveryContact: null,
+      gps: null,
+    },
+  };
+
+  it.each([CustomerRole.orders, CustomerRole.billing])(
+    "%s du principal : lit les adresses du site, n'en ajoute pas (403)",
+    async (role) => {
+      const f = await family();
+      const heir = await customer();
+      await member(heir.id, f.principal, { role });
+      const before = await ctx.prisma.address.count({ where: { companyId: f.site } });
+
+      await ctx.asSub(heir.sub).get(`/companies/${f.site}/addresses`).expect(200);
+      await ctx
+        .asSub(heir.sub)
+        .post(`/companies/${f.site}/delivery-addresses`)
+        .set(INTENT_KEY, freshIntent())
+        .send(ADDRESS)
+        .expect(403);
+      expect(await ctx.prisma.address.count({ where: { companyId: f.site } })).toBe(before);
+    },
+  );
 });
