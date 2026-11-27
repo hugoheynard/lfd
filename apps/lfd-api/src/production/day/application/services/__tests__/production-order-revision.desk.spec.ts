@@ -16,7 +16,9 @@ import {
   InMemoryRevisionNotices,
 } from "../../__tests__/revision-notice-doubles.js";
 import { FixedInscriptions } from "../../../../channels/commerce/__tests__/order-inscription-doubles.js";
+import type { DeskActor } from "../../../../channels/commerce/desk-actor.js";
 import { ProductionOrderRevisionDesk } from "../production-order-revision.desk.js";
+import { PlanVersionStore, planVersionRecorder } from "./plan-version-doubles.js";
 
 /**
  * Le guichet de la révision (voir `documentation/commandes/modification/modifier-une-commande.md`,
@@ -29,6 +31,7 @@ const NOW = new Date("2026-10-23T15:00:00.000Z");
 const EARLY = ServiceDay.of("2026-10-24");
 const LATE = ServiceDay.of("2026-10-25");
 
+const STAFF: DeskActor = { kind: "staff", staffId: "staff-1" };
 const LINES = [{ sku: "BAG", quantity: 10, options: [] }];
 
 function subject(
@@ -40,6 +43,7 @@ function subject(
   const days = new SavedDays(plan, trace);
   const events = new RecordingPublisher();
   const durable = new RecordingDurable(trace);
+  const versions = new PlanVersionStore();
   const desk = new ProductionOrderRevisionDesk(
     new RecordingDayLock(trace),
     new FixedInscriptions(inscribed, trace),
@@ -49,15 +53,16 @@ function subject(
     days,
     events,
     durable,
+    planVersionRecorder(days, versions),
   );
-  return { desk, trace, notices, days, events, durable };
+  return { desk, trace, notices, days, events, durable, versions };
 }
 
 describe("ProductionOrderRevisionDesk", () => {
   it("verrouille les deux journées, la plus ancienne d'abord, PUIS l'inscription, PUIS les notes", async () => {
     const { desk, trace } = subject();
 
-    const outcome = await desk.note([LATE, EARLY], "ord_1", 2, LINES, "before_inscription");
+    const outcome = await desk.note([LATE, EARLY], "ord_1", 2, LINES, "before_inscription", STAFF);
 
     expect(outcome).toBe("noted");
     expect(trace).toEqual([
@@ -72,7 +77,7 @@ describe("ProductionOrderRevisionDesk", () => {
   it("une même journée citée deux fois ne se verrouille et ne se note qu'une fois", async () => {
     const { desk, trace } = subject();
 
-    await desk.note([EARLY, EARLY], "ord_1", 1, LINES, "before_inscription");
+    await desk.note([EARLY, EARLY], "ord_1", 1, LINES, "before_inscription", STAFF);
 
     expect(trace.filter((step) => step.startsWith("lock:"))).toEqual([`lock:${EARLY.value}`]);
     expect(trace.filter((step) => step.startsWith("note:"))).toHaveLength(1);
@@ -81,7 +86,7 @@ describe("ProductionOrderRevisionDesk", () => {
   it("une commande déjà inscrite : « inscribed », et rien n'est noté", async () => {
     const { desk, notices } = subject(new Map([["ord_1", EARLY.value]]));
 
-    const outcome = await desk.note([EARLY], "ord_1", 1, LINES, "before_inscription");
+    const outcome = await desk.note([EARLY], "ord_1", 1, LINES, "before_inscription", STAFF);
 
     expect(outcome).toBe("inscribed");
     expect(notices.rows).toEqual([]);
@@ -91,7 +96,7 @@ describe("ProductionOrderRevisionDesk", () => {
     const { desk, notices } = subject();
     const before = await notices.markerOf(LATE);
 
-    await desk.note([EARLY], "ord_1", 1, LINES, "before_inscription");
+    await desk.note([EARLY], "ord_1", 1, LINES, "before_inscription", STAFF);
 
     expect(await notices.markerOf(EARLY)).not.toBeNull();
     expect(await notices.markerOf(LATE)).toBe(before);
@@ -128,6 +133,7 @@ describe("ProductionOrderRevisionDesk — plan A2, `staff_quantities`", () => {
       3,
       [{ sku: "BAG", quantity: 12, options: [] }],
       "staff_quantities",
+      STAFF,
     );
 
     expect(outcome).toBe("raised");
@@ -153,6 +159,7 @@ describe("ProductionOrderRevisionDesk — plan A2, `staff_quantities`", () => {
       3,
       [{ sku: "BAG", quantity: 4, options: [] }],
       "staff_quantities",
+      STAFF,
     );
 
     expect(outcome).toBe("unchanged");
@@ -165,7 +172,7 @@ describe("ProductionOrderRevisionDesk — plan A2, `staff_quantities`", () => {
   it("deux journées (la date change) : « inscribed », rien n'est relu ni écrit", async () => {
     const { desk, days } = subject(INSCRIBED, closedPlan());
 
-    const outcome = await desk.note([EARLY, LATE], "ord_1", 3, LINES, "staff_quantities");
+    const outcome = await desk.note([EARLY, LATE], "ord_1", 3, LINES, "staff_quantities", STAFF);
 
     expect(outcome).toBe("inscribed");
     expect(days.saved).toBe(0);
@@ -185,6 +192,7 @@ describe("ProductionOrderRevisionDesk — plan A2, `staff_quantities`", () => {
       3,
       [{ sku: "BAG", quantity: 12, options: [] }],
       "staff_quantities",
+      STAFF,
     );
 
     await expect(revising).rejects.toThrow(RevisedOrderInscribedElsewhereError);
@@ -204,6 +212,7 @@ describe("ProductionOrderRevisionDesk — plan A2, `staff_quantities`", () => {
       3,
       [{ sku: "BAG", quantity: 12, options: [] }],
       "before_inscription",
+      STAFF,
     );
 
     expect(outcome).toBe("inscribed");
@@ -213,10 +222,52 @@ describe("ProductionOrderRevisionDesk — plan A2, `staff_quantities`", () => {
   it("une commande pas encore inscrite est seulement notée, même sous `staff_quantities`", async () => {
     const { desk, days, notices } = subject(new Map(), closedPlan());
 
-    const outcome = await desk.note([EARLY], "ord_1", 3, LINES, "staff_quantities");
+    const outcome = await desk.note([EARLY], "ord_1", 3, LINES, "staff_quantities", STAFF);
 
     expect(outcome).toBe("noted");
     expect(notices.rows).toHaveLength(1);
     expect(days.saved).toBe(0);
+  });
+
+  describe("la version du plan (plan-historique-des-tirages, H1)", () => {
+    it("une hausse : la journée garde une version `order_revised`, signée du staff", async () => {
+      const { desk, days, versions } = subject(INSCRIBED, closedPlan());
+
+      await desk.note(
+        [EARLY],
+        "ord_1",
+        3,
+        [{ sku: "BAG", quantity: 12, options: [] }],
+        "staff_quantities",
+        STAFF,
+      );
+
+      expect(versions.appended.map((version) => version.cause)).toEqual(["order_revised"]);
+      expect(versions.appended[0]?.toRecord().recordedBy).toEqual({
+        kind: "staff",
+        staffId: "staff-1",
+        name: null,
+      });
+      expect(days.day.planVersion).toBe(1);
+    });
+
+    it("une révision qui ne change rien au plan (mêmes quantités) : « unchanged », aucune version de plus", async () => {
+      const { desk, versions } = subject(INSCRIBED, closedPlan());
+      const twelve = [{ sku: "BAG", quantity: 12, options: [] }];
+      await desk.note([EARLY], "ord_1", 3, twelve, "staff_quantities", STAFF);
+
+      const outcome = await desk.note([EARLY], "ord_1", 4, twelve, "staff_quantities", STAFF);
+
+      expect(outcome).toBe("unchanged");
+      expect(versions.appended.map((version) => version.version)).toEqual([1]);
+    });
+
+    it("une révision notée avant l'inscription ne touche pas le plan : aucune version", async () => {
+      const { desk, versions } = subject();
+
+      await desk.note([EARLY], "ord_1", 1, LINES, "before_inscription", STAFF);
+
+      expect(versions.appended).toEqual([]);
+    });
   });
 });

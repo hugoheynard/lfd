@@ -1,5 +1,9 @@
 import { OrderWithdrawalLedger } from "../../domain/ports/order-withdrawal.ledger.js";
 import { OrderWithdrawalsReader } from "../../domain/ports/order-withdrawals.reader.js";
+import {
+  type WithdrawalAfterInscription,
+  WithdrawalsAfterInscriptionReader,
+} from "../../domain/ports/withdrawals-after-inscription.reader.js";
 import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 
 /**
@@ -42,5 +46,20 @@ export class InMemoryWithdrawalLedger extends OrderWithdrawalLedger {
       this.withdrawals.rows.set(orderId, { day: day.value, at, afterInscription });
     }
     return Promise.resolve();
+  }
+}
+
+/** Les retraits après inscription, lus dans la même mémoire que {@link InMemoryWithdrawals}. */
+export class InMemoryWithdrawalsAfterInscription extends WithdrawalsAfterInscriptionReader {
+  constructor(private readonly withdrawals: InMemoryWithdrawals) {
+    super();
+  }
+
+  afterInscriptionOn(day: ServiceDay): Promise<readonly WithdrawalAfterInscription[]> {
+    return Promise.resolve(
+      [...this.withdrawals.rows.entries()]
+        .filter(([, row]) => row.day === day.value && row.afterInscription)
+        .map(([orderId, row]) => ({ orderId, at: row.at })),
+    );
   }
 }

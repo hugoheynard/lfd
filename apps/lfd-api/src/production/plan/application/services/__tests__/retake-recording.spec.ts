@@ -4,6 +4,7 @@ import { producibleOrder } from "../../../../channels/commerce/__tests__/produci
 import { ProductionDay } from "../../../../day/domain/entities/production-day.js";
 import { ServiceDay } from "../../../../day/index.js";
 import { RetakeRecording } from "../retake-recording.js";
+import { SavingPlanVersions } from "./saving-plan-versions.js";
 
 /** `RetakeRecording` — écrire un retirage et annoncer ses seules arrivées. */
 const DAY = ServiceDay.of("2026-09-08");
@@ -29,7 +30,10 @@ describe("écrire un retirage", () => {
   it("écrit la journée, puis la liste des seules arrivées et le fait du retirage", async () => {
     const trace: string[] = [];
     const durable = new RecordingDurable(trace);
-    const recording = new RetakeRecording(new SavedDays(ProductionDay.open(DAY), trace), durable);
+    const recording = new RetakeRecording(
+      new SavingPlanVersions(new SavedDays(ProductionDay.open(DAY), trace)),
+      durable,
+    );
     const { day, before, absorbed } = retaken();
 
     await recording.record({ day: DAY, before, current: day, at: RETAKEN_AT, absorbed });

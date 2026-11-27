@@ -4,7 +4,7 @@ import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.
 import type { PlacedResupply } from "../../../channels/commerce/day-resupplies.reader.js";
 import { ResupplyLaunchedEvent } from "../../../channels/commerce/resupply-launched.event.js";
 import type { ProductionDay, ResupplyLaunchGesture } from "../../../day/index.js";
-import { ProductionDayRepository } from "../../../day/index.js";
+import { PlanVersionRecorder } from "../../../day/index.js";
 import type { ServiceDay } from "../../../day/index.js";
 
 /** Un lancement décidé par l'agrégat, prêt à écrire. */
@@ -22,7 +22,8 @@ export interface DecidedLaunch {
  * écoute (l'affichage, le colisage, la livraison). Sorti de
  * `LaunchResupplyHandler` (audit du réassort, 2026-11-02) ; à appeler dans
  * l'unité de travail du handler, sous le verrou de la journée. Le journal
- * reste au handler : c'est lui que la porte `lint:journal-tracked` lit.
+ * reste au handler : c'est lui que la porte `lint:journal-tracked` lit. La
+ * journée est sauvée avec la version de son plan.
  *
  * Il ne publie pas `production.day_closed`, même quand le lancement ouvre la
  * journée : le fait déclencherait l'envoi du dossier du jour (abonné du
@@ -33,13 +34,18 @@ export interface DecidedLaunch {
 @Injectable()
 export class ResupplyLaunchRecording {
   constructor(
-    private readonly days: ProductionDayRepository,
+    private readonly versions: PlanVersionRecorder,
     private readonly durable: DurablePublisher,
   ) {}
 
   async record(launch: DecidedLaunch): Promise<void> {
     const { day, current, resupply, gesture, openedPlan } = launch;
-    await this.days.save(current);
+    // La version du lancement ; celui qui arrête la journée l'ouvre.
+    await this.versions.save(current, openedPlan ? "opened_by_resupply" : "resupply_launched", {
+      kind: "staff",
+      staffId: gesture.staffUserId,
+      name: gesture.name,
+    });
     const reopenedAt = current.reopened?.at ?? null;
     await this.durable.publish(
       new ResupplyLaunchedEvent(

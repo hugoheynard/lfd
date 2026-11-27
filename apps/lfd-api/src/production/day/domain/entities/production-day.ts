@@ -5,6 +5,7 @@ import {
   ProductionDayEmptyError,
   ProductionDayNotClosedError,
 } from "../errors/production-errors.js";
+import { PlanVersionOutOfSequenceError } from "../errors/plan-version-errors.js";
 import { LEGACY_PACKING_OWNER, PACKING_PACKING_OWNER } from "../value-objects/packing-owner.js";
 import { ServiceDay } from "../value-objects/service-day.value-object.js";
 import { ProductionDayState } from "./production-day.state.js";
@@ -60,7 +61,19 @@ export class ProductionDay extends ProductionDayState {
    */
   static open(day: ServiceDay): ProductionDay {
     const plan = DayPlan.of(DayPlan.EMPTY);
-    return new ProductionDay(day, null, null, null, null, LEGACY_PACKING_OWNER, plan, [], null, 0);
+    return new ProductionDay(
+      day,
+      null,
+      null,
+      null,
+      null,
+      LEGACY_PACKING_OWNER,
+      plan,
+      [],
+      null,
+      0,
+      null,
+    );
   }
 
   /**
@@ -101,6 +114,7 @@ export class ProductionDay extends ProductionDayState {
       snapshot.batches,
       snapshot.reopened ?? null,
       snapshot.retakeCount ?? 0,
+      snapshot.planVersion ?? null,
     );
   }
 
@@ -237,6 +251,22 @@ export class ProductionDay extends ProductionDayState {
       this.packingOwnerValue = PACKING_PACKING_OWNER;
     }
     return opening;
+  }
+
+  /**
+   * **Numérote la version du plan** que l'écrivain va garder : le `save`
+   * qui suit écrit l'état et son numéro ensemble
+   * (`documentation/fournil/plan-historique-des-tirages.md`, § 1.3). Les
+   * numéros se suivent, réouverture comprise.
+   *
+   * @throws {PlanVersionOutOfSequenceError} le numéro ne suit pas le courant.
+   */
+  numberPlanVersion(version: number): void {
+    const expected = (this.planVersionValue ?? 0) + 1;
+    if (version !== expected) {
+      throw new PlanVersionOutOfSequenceError(this.day.value, version, expected);
+    }
+    this.planVersionValue = version;
   }
 
   /**

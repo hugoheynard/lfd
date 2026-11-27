@@ -32,6 +32,7 @@ import { ResupplyLaunchReading } from "../../services/resupply-launch-reading.js
 import { ResupplyLaunchRecording } from "../../services/resupply-launch-recording.js";
 import { LaunchResupplyCommand } from "../launch-resupply.command.js";
 import { LaunchResupplyHandler } from "../launch-resupply.handler.js";
+import { SavingPlanVersions } from "../../services/__tests__/saving-plan-versions.js";
 
 /**
  * « Lancer » un réassort « au plus tôt » (R4a, `reassort-boutiques/au-plus-tot.md`) :
@@ -101,6 +102,7 @@ function closedDay(): ProductionDay {
 function subject(day: ProductionDay, orders: readonly ProducibleOrder[] = [ORDER]) {
   const trace: string[] = [];
   const days = new Days(day, trace);
+  const versions = new SavingPlanVersions(days);
   const resupplies = new DayResupplies([], trace);
   resupplies.asap = [ASAP];
   const events = new RecordingPublisher();
@@ -120,10 +122,10 @@ function subject(day: ProductionDay, orders: readonly ProducibleOrder[] = [ORDER
       new Commerce(orders, trace),
       new InMemoryWithdrawals(trace),
     ),
-    new ResupplyLaunchRecording(days, durable),
+    new ResupplyLaunchRecording(versions, durable),
     events,
   );
-  return { handler, days, resupplies, events, durable, trace };
+  return { handler, days, versions, resupplies, events, durable, trace };
 }
 
 const LAUNCH = new LaunchResupplyCommand(DAY, "rs_asap", "s_max");
@@ -257,5 +259,35 @@ describe("LaunchResupplyHandler — journée jamais arrêtée (Q5)", () => {
 
     await expect(handler.execute(LAUNCH)).rejects.toThrow(ResupplyLaunchOnUnarrestedPlanError);
     expect(days.saved).toBeNull();
+  });
+});
+
+describe("LaunchResupplyHandler — la version du plan (plan-historique-des-tirages, H1)", () => {
+  it("un lancement sur une journée arrêtée garde une version `resupply_launched`, signée de qui lance", async () => {
+    const { handler, versions } = subject(closedDay());
+
+    await handler.execute(LAUNCH);
+
+    expect(versions.requested).toEqual([
+      {
+        cause: "resupply_launched",
+        by: { kind: "staff", staffId: "s_max", name: "Max Martin" },
+      },
+    ]);
+  });
+
+  it("un lancement qui arrête la journée garde une version `opened_by_resupply`", async () => {
+    const { handler, versions } = subject(ProductionDay.open(ServiceDay.of(DAY)), []);
+
+    await handler.execute(LAUNCH);
+
+    expect(versions.requested.map((request) => request.cause)).toEqual(["opened_by_resupply"]);
+  });
+
+  it("un lancement refusé ne demande aucune version", async () => {
+    const { handler, versions } = subject(ProductionDay.open(ServiceDay.of(DAY)), [ORDER]);
+
+    await expect(handler.execute(LAUNCH)).rejects.toThrow(ResupplyLaunchOnUnarrestedPlanError);
+    expect(versions.requested).toEqual([]);
   });
 });

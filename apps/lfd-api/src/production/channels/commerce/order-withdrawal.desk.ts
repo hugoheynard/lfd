@@ -1,4 +1,5 @@
 import type { ServiceDay } from "../../day/domain/value-objects/service-day.value-object.js";
+import type { DeskActor } from "./desk-actor.js";
 
 /**
  * Ce que le retrait a constaté :
@@ -52,11 +53,13 @@ export abstract class OrderWithdrawalDesk {
   /**
    * Verrouille la journée, regarde si la commande y est inscrite, et sinon —
    * ou si l'autorisation va jusqu'au colisage — écrit le retrait (idempotent
-   * sur la commande).
+   * sur la commande). Un retrait après l'inscription garde une version du
+   * plan, signée de `actor`.
    */
   abstract withdraw(
     day: ServiceDay,
     orderId: string,
     allowance: OrderWithdrawalAllowance,
+    actor: DeskActor,
   ): Promise<OrderWithdrawalOutcome>;
 }

@@ -7,6 +7,7 @@ import {
 import {
   OrderInscriptionReader,
   OrderWithdrawalDesk,
+  type DeskActor,
   type OrderWithdrawalAllowance,
   type OrderWithdrawalOutcome,
   type ServiceDay,
@@ -158,6 +159,8 @@ export class ScriptedCancelGateway extends OrderCardCancellation {
 export class ScriptedDesk extends OrderWithdrawalDesk {
   /** L'autorisation reçue à chaque retrait (plan A1). */
   readonly allowances: OrderWithdrawalAllowance[] = [];
+  /** L'auteur que le fournil reçoit, réduit (plan-historique-des-tirages, H1). */
+  readonly actors: DeskActor[] = [];
 
   constructor(
     private readonly outcome: OrderWithdrawalOutcome = "withdrawn",
@@ -170,9 +173,11 @@ export class ScriptedDesk extends OrderWithdrawalDesk {
     day: ServiceDay,
     orderId: string,
     allowance: OrderWithdrawalAllowance,
+    actor: DeskActor,
   ): Promise<OrderWithdrawalOutcome> {
     this.trace.push(`withdraw:${day.value}:${orderId}`);
     this.allowances.push(allowance);
+    this.actors.push(actor);
     return Promise.resolve(this.outcome);
   }
 }

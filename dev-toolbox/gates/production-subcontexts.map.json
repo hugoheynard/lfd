@@ -3,6 +3,7 @@
   "models": {
     "OrderRevisionNotice": "day",
     "OrderWithdrawal": "day",
+    "PlanVersion": "day",
     "ProductionAutoCloseAttempt": "plan",
     "ProductionBatch": "day",
     "ProductionBatchShortcut": "atelier",

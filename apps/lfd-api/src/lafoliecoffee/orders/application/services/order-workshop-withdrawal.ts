@@ -4,6 +4,7 @@ import { PackingWithdrawalDesk } from "../../../../packing/channels/commerce/ind
 import {
   OrderWithdrawalDesk,
   ServiceDay,
+  type DeskActor,
   type OrderWithdrawalAllowance,
 } from "../../../../production/channels/commerce/index.js";
 import { OrderNotCancellableError } from "../../cancellation/domain/errors/order-cancellation-errors.js";
@@ -57,6 +58,7 @@ export class OrderWorkshopWithdrawal {
       ServiceDay.of(day),
       locked.orderId,
       bakeryAllowanceOf(locked, allowance),
+      deskActorOf(actor),
     );
     switch (outcome) {
       case "withdrawn":
@@ -96,6 +98,16 @@ function bakeryAllowanceOf(
   allowance: CancellationAllowance,
 ): OrderWithdrawalAllowance {
   return locked.fulfillmentMethod === "delivery" ? "before_inscription" : allowance.allowance;
+}
+
+/**
+ * L'auteur que le fournil garde sur la version du plan : la fiche staff, ou
+ * la seule nature d'un client — son identifiant ne passe pas au fournil.
+ */
+function deskActorOf(actor: CancellationActor): DeskActor {
+  return actor.kind === "staff"
+    ? { kind: "staff", staffId: actor.staffUserId }
+    : { kind: actor.kind };
 }
 
 /** L'auteur recopié sur les contenants annulés : la fiche staff, ou le client. */

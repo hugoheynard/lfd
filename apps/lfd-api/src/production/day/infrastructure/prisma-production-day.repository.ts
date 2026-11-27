@@ -92,6 +92,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
         ...signerColumns(snapshot.closedBy),
         retakenByName: snapshot.retakenByName,
         retakeCount: snapshot.retakeCount ?? 0,
+        planVersion: snapshot.planVersion ?? null,
         packingOwner: snapshot.packingOwner,
       };
       await tx.productionDay.upsert({

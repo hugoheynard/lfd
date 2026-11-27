@@ -88,6 +88,12 @@ export { ProductionDayLock } from "./domain/ports/production-day.lock.js";
 export { ProductionBatchRepository } from "./domain/ports/production-batch.repository.js";
 export { ProductionHandoffLedger } from "./domain/ports/production-handoff.ledger.js";
 export { ProductionReturnRequests } from "./domain/ports/production-return.requests.js";
+/**
+ * Ce que la journée sait garder : un geste qui change le plan figé sauve la
+ * journée par cet écrivain, qui ajoute la version du plan quand il a changé
+ * (`documentation/fournil/plan-historique-des-tirages.md`).
+ */
+export { PlanVersionRecorder } from "./domain/ports/plan-version.recorder.js";
 export { ProductionTrancheSettingsRepository } from "./domain/ports/production-tranche-settings.repository.js";
 export type { TrancheSettingsAuthor } from "./domain/ports/production-tranche-settings.repository.js";
 

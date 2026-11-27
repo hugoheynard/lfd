@@ -77,6 +77,8 @@ export { ExpectedPlannedReader, type ExpectedDayPlanned } from "./expected-plann
 // 2026-10-12) : deux ports que le fournil DÉCLARE et IMPLÉMENTE pour le
 // commerce — retirer une commande sous le verrou de la journée, et dire si
 // elle est inscrite (affichage).
+// L'auteur que les deux guichets ci-dessous reçoivent : la version du plan le garde.
+export type { DeskActor } from "./desk-actor.js";
 export {
   OrderWithdrawalDesk,
   type OrderWithdrawalAllowance,

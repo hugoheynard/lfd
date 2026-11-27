@@ -4,18 +4,22 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import type { DeskActor } from "../../../channels/commerce/desk-actor.js";
 import { OrderInscriptionReader } from "../../../channels/commerce/order-inscription.reader.js";
 import {
   OrderWithdrawalDesk,
   type OrderWithdrawalAllowance,
   type OrderWithdrawalOutcome,
 } from "../../../channels/commerce/order-withdrawal.desk.js";
+import type { ProductionDay } from "../../domain/entities/production-day.js";
 import { OrderWithdrawnAfterCloseEvent } from "../../domain/events/order-withdrawn-after-close.events.js";
 import { OrderWithdrawalLedger } from "../../domain/ports/order-withdrawal.ledger.js";
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { FIRST_SHIPMENT_RANK } from "../../domain/value-objects/shipment-ref.value-object.js";
+import { deskAuthorOf } from "./desk-author.js";
+import { PlanVersionRecorder } from "../../domain/ports/plan-version.recorder.js";
 
 /**
  * Le guichet du retrait, tel que le fournil l'implémente — cf.
@@ -31,6 +35,8 @@ import { FIRST_SHIPMENT_RANK } from "../../domain/value-objects/shipment-ref.val
  * au fournil — ni le compte à produire, ni les fournées. Le fait
  * `production.order_withdrawn_after_close` part alors, durable et journalisé
  * (lot A1.3) : c'est lui qui explique un compte plus grand que les feuilles.
+ * La journée, rechargée sous le verrou, est alors sauvée avec la version de
+ * son plan, signée de `actor` : le retrait y est gardé à part.
  *
  * L'unité de travail REJOINT celle de l'appelant (`PrismaUnitOfWork.run`) :
  * appelé hors transaction, il en ouvrirait une à lui, et le verrou n'aurait
@@ -48,6 +54,7 @@ export class ProductionOrderWithdrawalDesk extends OrderWithdrawalDesk {
     private readonly days: ProductionDayRepository,
     private readonly events: DomainEventPublisher,
     private readonly durable: DurablePublisher,
+    private readonly versions: PlanVersionRecorder,
   ) {
     super();
   }
@@ -56,6 +63,7 @@ export class ProductionOrderWithdrawalDesk extends OrderWithdrawalDesk {
     day: ServiceDay,
     orderId: string,
     allowance: OrderWithdrawalAllowance,
+    actor: DeskActor,
   ): Promise<OrderWithdrawalOutcome> {
     return this.uow.run(async () => {
       await this.lock.lock(day);
@@ -69,7 +77,13 @@ export class ProductionOrderWithdrawalDesk extends OrderWithdrawalDesk {
       }
       const now = this.clock.now();
       await this.ledger.record(day, orderId, now, true);
-      await this.announce(day, orderId, now);
+      const plan = await this.days.load(day);
+      // Une journée qui n'est pas arrêtée n'a pas de plan à versionner, et
+      // ne s'écrit pas : la sauver créerait sa ligne.
+      if (plan.isClosed) {
+        await this.versions.save(plan, "order_withdrawn", deskAuthorOf(actor), orderId);
+      }
+      await this.announce(day, plan, orderId, now);
       return "withdrawn_after_inscription";
     });
   }
@@ -81,8 +95,12 @@ export class ProductionOrderWithdrawalDesk extends OrderWithdrawalDesk {
    * attend le sien. Une commande absente du plan garde le fait de rang 1, sans
    * référence, comme avant.
    */
-  private async announce(day: ServiceDay, orderId: string, at: Date): Promise<void> {
-    const plan = await this.days.load(day);
+  private async announce(
+    day: ServiceDay,
+    plan: ProductionDay,
+    orderId: string,
+    at: Date,
+  ): Promise<void> {
     const planned = plan.orders.filter((order) => order.orderId === orderId);
     const shipments =
       planned.length === 0

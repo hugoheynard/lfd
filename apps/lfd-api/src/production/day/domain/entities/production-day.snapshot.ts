@@ -236,6 +236,11 @@ export interface ProductionDaySnapshot {
    */
   readonly retakeCount?: number;
   /**
+   * Le numéro de la version courante du plan — `null` : jamais versionnée.
+   * Facultatif à la RÉHYDRATATION (absent vaut `null`) ; `toSnapshot` le rend toujours.
+   */
+  readonly planVersion?: number | null;
+  /**
    * La dernière réouverture (2026-10-14) — `null` : jamais rouverte.
    * Facultative à la RÉHYDRATATION seulement (absente vaut `null`) ;
    * `toSnapshot` la rend toujours.

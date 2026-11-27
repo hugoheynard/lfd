@@ -4,6 +4,7 @@ import { PackingRevisionDesk } from "../../../../../packing/channels/commerce/in
 import {
   OrderRevisionDesk,
   ServiceDay,
+  type DeskActor,
 } from "../../../../../production/channels/commerce/index.js";
 import type {
   OrderRevisionToSave,
@@ -80,6 +81,7 @@ export class OrderWorkshopRevision {
       revision.toRevision,
       revisedQuantitiesOf(revision),
       quantities ? "staff_quantities" : "before_inscription",
+      deskActorOf(actor),
     );
     switch (outcome) {
       case "noted":
@@ -120,6 +122,14 @@ export class OrderWorkshopRevision {
         throw new OrderNotRevisableError(revision.orderId, { kind: outcome });
     }
   }
+}
+
+/**
+ * L'auteur que le fournil garde sur la version du plan : la fiche staff, ou
+ * la seule nature d'un client — son identifiant ne passe pas au fournil.
+ */
+function deskActorOf(actor: RevisionActor): DeskActor {
+  return actor.kind === "staff" ? { kind: "staff", staffId: actor.staffId } : { kind: "customer" };
 }
 
 /** L'auteur recopié par le colisage sur une ligne qui devient complète. */

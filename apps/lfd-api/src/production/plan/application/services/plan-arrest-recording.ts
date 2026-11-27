@@ -2,8 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { ProductionDayClosedEvent } from "../../../channels/commerce/production-day-closed.event.js";
-import type { ProductionDay } from "../../../day/index.js";
-import { ProductionDayRepository } from "../../../day/index.js";
+import type { PlanSigner, ProductionDay } from "../../../day/index.js";
+import { PlanVersionRecorder } from "../../../day/index.js";
 import type { ServiceDay } from "../../../day/index.js";
 import { packingListFactsOf, resupplyListFactsOf } from "./packing-list-facts.js";
 
@@ -15,19 +15,23 @@ import { packingListFactsOf, resupplyListFactsOf } from "./packing-list-facts.js
  * le verrou de la journée. Le journal reste au handler : c'est lui que la
  * porte `lint:journal-tracked` lit.
  *
+ * La journée est sauvée par l'écrivain des versions : l'arrêt garde la
+ * version de son plan (`auto_closed` pour l'arrêt automatique, signé du
+ * système ; un arrêt sans signataire connu, celui d'un semis, aussi).
+ *
  * Les faits portent l'instant du TIRAGE d'origine, jamais celui d'un rejeu ;
  * la réannonce ajoute le sien à la clé seulement.
  */
 @Injectable()
 export class PlanArrestRecording {
   constructor(
-    private readonly days: ProductionDayRepository,
+    private readonly versions: PlanVersionRecorder,
     private readonly durable: DurablePublisher,
   ) {}
 
-  /** L'arrêt qui vient d'être décidé : la journée, le fait, la liste. */
+  /** L'arrêt qui vient d'être décidé : la journée et sa version, le fait, la liste. */
   async record(day: ServiceDay, current: ProductionDay, closedAt: Date): Promise<void> {
-    await this.days.save(current);
+    await this.saveWithVersion(current);
     await this.publish(day, current, closedAt, null);
   }
 
@@ -54,6 +58,21 @@ export class PlanArrestRecording {
       return;
     }
     await this.publish(day, current, closedAt, reannouncedAt);
+  }
+
+  private async saveWithVersion(current: ProductionDay): Promise<void> {
+    const signer: PlanSigner | null = current.closedBy;
+    if (signer?.kind === "staff") {
+      await this.versions.save(current, "closed", {
+        kind: "staff",
+        staffId: signer.staffUserId,
+        name: signer.name,
+      });
+      return;
+    }
+    await this.versions.save(current, signer === null ? "closed" : "auto_closed", {
+      kind: "system",
+    });
   }
 
   private async publish(

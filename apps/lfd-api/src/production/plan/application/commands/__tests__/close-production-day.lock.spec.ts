@@ -20,6 +20,7 @@ import { InMemoryWithdrawals } from "../../../../day/application/__tests__/withd
 import { RecordingDayLock } from "../../../../day/application/__tests__/batch-doubles.js";
 import { CloseProductionDayCommand } from "../close-production-day.command.js";
 import { CloseProductionDayHandler } from "../close-production-day.handler.js";
+import { SavingPlanVersions } from "../../services/__tests__/saving-plan-versions.js";
 
 /**
  * Le verrou de la clôture (lot A0 du plan d'arrêt, B1, 2026-10-06) : la
@@ -105,7 +106,7 @@ function subject(sequence: ProductionDay[], status?: ProductionDayStatusReader) 
   const handler = new CloseProductionDayHandler(
     admissionOf({ days, clock, ...(status === undefined ? {} : { status }) }),
     reading,
-    new PlanArrestRecording(days, durable),
+    new PlanArrestRecording(new SavingPlanVersions(days), durable),
     events,
     clock,
     new DirectUnitOfWork(),

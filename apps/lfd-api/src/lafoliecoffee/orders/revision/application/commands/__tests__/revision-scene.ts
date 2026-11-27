@@ -20,6 +20,7 @@ import {
 } from "../../../../../../packing/channels/commerce/index.js";
 import {
   OrderRevisionDesk,
+  type DeskActor,
   type OrderRevisionAllowance,
   type OrderRevisionOutcome,
   type RevisedOrderLine,
@@ -493,6 +494,8 @@ export class RecordingRevisionDesk extends OrderRevisionDesk {
     lines: readonly RevisedOrderLine[];
     allowance: OrderRevisionAllowance;
   }[] = [];
+  /** L'auteur que le fournil reçoit, réduit (plan-historique-des-tirages, H1). */
+  readonly actors: DeskActor[] = [];
 
   constructor(
     private readonly outcome: OrderRevisionOutcome = "noted",
@@ -507,9 +510,11 @@ export class RecordingRevisionDesk extends OrderRevisionDesk {
     revision: number,
     lines: readonly RevisedOrderLine[],
     allowance: OrderRevisionAllowance,
+    actor: DeskActor,
   ): Promise<OrderRevisionOutcome> {
     this.trace.push(`desk:${days.map((day) => day.value).join(",")}`);
     this.noted.push({ days: days.map((day) => day.value), orderId, revision, lines, allowance });
+    this.actors.push(actor);
     // Le guichet réel ne révise que sous `staff_quantities` ; sinon, inscrite reste inscrite.
     if (
       (this.outcome === "raised" || this.outcome === "unchanged") &&

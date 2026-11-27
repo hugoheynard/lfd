@@ -7,6 +7,8 @@ import { OnPackingReturned } from "./application/handlers/on-packing-returned.ha
 import { GetProductionDueThresholdsHandler } from "./application/queries/get-production-due-thresholds.handler.js";
 import { DayInscribedOrderHeaderReader } from "./application/services/day-inscribed-order-header.reader.js";
 import { DayPlannedDestinationsReader } from "./application/services/day-planned-destinations.reader.js";
+import { LedgerPlanVersionRecorder } from "./application/services/ledger-plan-version-recorder.js";
+import { PlanVersionRecorder } from "./domain/ports/plan-version.recorder.js";
 import { ProductionDayVersionSource } from "./application/services/production-day-version.source.js";
 import { ProductionOrderRevisionDesk } from "./application/services/production-order-revision.desk.js";
 import { ProductionOrderWithdrawalDesk } from "./application/services/production-order-withdrawal.desk.js";
@@ -17,6 +19,9 @@ import { OrderRevisionNoticeLedger } from "./domain/ports/order-revision-notice.
 import { OrderRevisionNoticesReader } from "./domain/ports/order-revision-notices.reader.js";
 import { OrderWithdrawalLedger } from "./domain/ports/order-withdrawal.ledger.js";
 import { OrderWithdrawalsReader } from "./domain/ports/order-withdrawals.reader.js";
+import { PlanVersionLedger } from "./domain/ports/plan-version.ledger.js";
+import { PlanVersionsReader } from "./domain/ports/plan-versions.reader.js";
+import { WithdrawalsAfterInscriptionReader } from "./domain/ports/withdrawals-after-inscription.reader.js";
 import { PlannedOrderLinesReader } from "./domain/ports/planned-order-lines.reader.js";
 import { ProductionBatchRepository } from "./domain/ports/production-batch.repository.js";
 import { ProductionDayChangePruner } from "./domain/ports/production-day-change.pruner.js";
@@ -45,6 +50,11 @@ import { PrismaOrderRevisionNoticeLedger } from "./infrastructure/prisma-order-r
 import { PrismaOrderRevisionNoticesReader } from "./infrastructure/prisma-order-revision-notices.reader.js";
 import { PrismaOrderWithdrawalLedger } from "./infrastructure/prisma-order-withdrawal.ledger.js";
 import { PrismaOrderWithdrawalsReader } from "./infrastructure/prisma-order-withdrawals.reader.js";
+import {
+  PrismaPlanVersionLedger,
+  PrismaPlanVersionsReader,
+} from "./infrastructure/prisma-plan-versions.js";
+import { PrismaWithdrawalsAfterInscriptionReader } from "./infrastructure/prisma-withdrawals-after-inscription.reader.js";
 import { PrismaPlannedOrderLinesReader } from "./infrastructure/prisma-planned-order-lines.reader.js";
 import { PrismaProductionBatchRepository } from "./infrastructure/prisma-production-batch.repository.js";
 import { PrismaProductionDayChangePruner } from "./infrastructure/prisma-production-day-change.pruner.js";
@@ -107,6 +117,16 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
     { provide: OrderRevisionNoticeLedger, useClass: PrismaOrderRevisionNoticeLedger },
     { provide: OrderRevisionNoticesReader, useClass: PrismaOrderRevisionNoticesReader },
     ProductionOrderRevisionDesk,
+    // Les versions du plan : écrire et lire sont deux ports (ISP), les
+    // retraits après inscription un troisième ; les gestes qui changent le
+    // plan figé sauvent la journée par l'écrivain des versions.
+    { provide: PlanVersionLedger, useClass: PrismaPlanVersionLedger },
+    { provide: PlanVersionsReader, useClass: PrismaPlanVersionsReader },
+    {
+      provide: WithdrawalsAfterInscriptionReader,
+      useClass: PrismaWithdrawalsAfterInscriptionReader,
+    },
+    { provide: PlanVersionRecorder, useClass: LedgerPlanVersionRecorder },
     // Publiés pour le colisage et la pierre tombale ; reliés par `PackingFeedModule`.
     DayPlannedDestinationsReader,
     DayInscribedOrderHeaderReader,
@@ -136,6 +156,7 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
     ProductionDayRepository,
     ProductionBatchRepository,
     ProductionDayLock,
+    PlanVersionRecorder,
     CountedProductNameReader,
     ProductionDayStatusReader,
     ProductionTrancheSettingsReader,

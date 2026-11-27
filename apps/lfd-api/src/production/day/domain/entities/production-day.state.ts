@@ -39,6 +39,7 @@ export abstract class ProductionDayState implements batching.BatchState {
     protected batchesValue: readonly ProductionBatchSnapshot[],
     protected reopenedValue: ReopenMark | null,
     protected retakeCountValue: number,
+    protected planVersionValue: number | null,
   ) {}
 
   /**
@@ -97,6 +98,14 @@ export abstract class ProductionDayState implements batching.BatchState {
   /** Le tirage du dossier : 1 à l'arrêt, plus un par retirage. */
   get printRun(): number {
     return this.retakeCountValue + 1;
+  }
+
+  /**
+   * Le numéro de la version courante du plan, ou `null` : jamais versionnée.
+   * Écrit par le même `save` que l'état qu'il numérote.
+   */
+  get planVersion(): number | null {
+    return this.planVersionValue;
   }
 
   /** Le dernier retirage, ou `null` — la fiche dit quel tirage elle montre. */
@@ -201,6 +210,7 @@ export abstract class ProductionDayState implements batching.BatchState {
       batches: this.batchesValue,
       reopened: this.reopenedValue,
       retakeCount: this.retakeCountValue,
+      planVersion: this.planVersionValue,
     };
   }
 }

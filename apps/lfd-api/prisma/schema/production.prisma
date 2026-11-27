@@ -82,6 +82,12 @@ model ProductionDay {
   /// une journée jamais arrêtée. Le CHECK de la migration tient les deux valeurs.
   packingOwner String @default("legacy") @map("packing_owner")
 
+  /// Le numéro de la version courante du plan (`plan_versions.version`),
+  /// écrit par le même `save` que l'état qu'il numérote : un lecteur qui
+  /// charge la journée lit l'état et son numéro en une seule ligne. `null` :
+  /// journée jamais versionnée.
+  planVersion Int? @map("plan_version")
+
   orders        ProductionOrder[]
   resupplies    ProductionResupply[]
   counts        ProductionCount[]
@@ -1092,5 +1098,41 @@ model ProductionProvisionalPrint {
 
   @@unique([serviceDay, run])
   @@map("provisional_print")
+  @@schema("production")
+}
+
+/// **Une version du plan de production** (`documentation/fournil/plan-historique-des-tirages.md`) :
+/// ce que le plan figé d'une journée contenait après un geste qui l'a changé
+/// — arrêt, retirage, révision, retrait après l'arrêt, réassort lancé.
+///
+/// En ajout seul, par discipline : le port n'a ni mise à jour ni effacement.
+/// Aucune clé étrangère. L'auteur est le staff (id et nom), un client ou un
+/// invité (ni id ni nom), ou le système (l'arrêt automatique) — CHECK en base.
+model PlanVersion {
+  /// ULID.
+  id             String   @id
+  serviceDay     String   @map("service_day") @db.VarChar(10)
+  /// 1, 2, 3… par journée, attribué sous le verrou de la journée.
+  version        Int
+  /// `closed`, `auto_closed`, `retaken`, `order_revised`, `order_withdrawn`,
+  /// `resupply_launched`, `opened_by_resupply` (CHECK).
+  cause          String
+  recordedAt     DateTime @map("recorded_at") @db.Timestamptz(6)
+  /// `staff`, `customer`, `guest`, `system` (CHECK).
+  recordedByKind String   @map("recorded_by_kind")
+  /// La fiche staff ; `null` pour un client, un invité ou le système.
+  recordedById   String?  @map("recorded_by_id")
+  /// Le nom du staff, figé ; `null` hors staff ou inconnu (registre RGPD).
+  recordedByName String?  @map("recorded_by_name")
+  /// L'arrêt auquel la version appartient.
+  closedAt       DateTime @map("closed_at") @db.Timestamptz(6)
+  /// Le « tirage m » du papier.
+  printRun       Int      @map("print_run")
+  /// La forme de `content`.
+  contentVersion Int      @map("content_version")
+  content        Json
+
+  @@unique([serviceDay, version])
+  @@map("plan_versions")
   @@schema("production")
 }

@@ -31,6 +31,7 @@ import { InMemoryWithdrawals } from "../../../../day/application/__tests__/withd
 import { FixedReopenRelease } from "../../../../channels/commerce/__tests__/reopen-release-doubles.js";
 import { PlanArrestRecording } from "../../services/plan-arrest-recording.js";
 import { CloseProductionDayHandler } from "../close-production-day.handler.js";
+import { SavingPlanVersions } from "../../services/__tests__/saving-plan-versions.js";
 
 /**
  * **La scène de l'arrêt du plan** — les doublés que les specs de
@@ -206,6 +207,7 @@ export function closeScene(
   parts: SceneParts = {},
 ) {
   const days = new Days(day);
+  const versions = new SavingPlanVersions(days);
   const calls: CommerceCall[] = [];
   const commerce = new Commerce(rows, calls);
   const sweeper = new Sweeper(calls);
@@ -237,6 +239,7 @@ export function closeScene(
     releases,
     durable,
     days,
+    versions,
     withdrawals,
     commerce,
     sweeper,
@@ -245,7 +248,7 @@ export function closeScene(
     handler: new CloseProductionDayHandler(
       admission,
       reading,
-      new PlanArrestRecording(days, durable),
+      new PlanArrestRecording(versions, durable),
       events,
       clock,
       uow,

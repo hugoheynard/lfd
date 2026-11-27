@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { ProductionDayRetakenEvent } from "../../../channels/delivery/index.js";
 import type { ProductionDay, ProductionOrderSnapshot } from "../../../day/index.js";
-import { ProductionDayRepository } from "../../../day/index.js";
+import { PlanVersionRecorder } from "../../../day/index.js";
 import { arrivalsBetween } from "../../../day/index.js";
 import type { ServiceDay } from "../../../day/index.js";
 import { ShipmentRef } from "../../../day/index.js";
@@ -25,18 +25,26 @@ export interface DecidedRetake {
  * `production.day_retaken`, que le dossier complété et la livraison écoutent.
  * Sorti de `RetakeProductionDayHandler` (audit du réassort, 2026-11-02) ; à
  * appeler dans son unité de travail, sous le verrou de la journée. Le journal
- * reste au handler.
+ * reste au handler. La journée est sauvée avec la version de son plan.
  */
 @Injectable()
 export class RetakeRecording {
   constructor(
-    private readonly days: ProductionDayRepository,
+    private readonly versions: PlanVersionRecorder,
     private readonly durable: DurablePublisher,
   ) {}
 
   async record(retake: DecidedRetake): Promise<void> {
     const { day, current, at } = retake;
-    await this.days.save(current);
+    // La version du retirage, signée de qui l'a fait (`retaken`, posé par l'agrégat).
+    const by = current.retaken?.by;
+    await this.versions.save(
+      current,
+      "retaken",
+      by === undefined
+        ? { kind: "system" }
+        : { kind: "staff", staffId: by, name: current.retakenByName },
+    );
     const arrivals = arrivalsBetween(retake.before, current.orders);
     const reopenedAt = current.reopened?.at ?? null;
     // La liste à coliser des seules arrivées, datée du retirage. Un `publish`

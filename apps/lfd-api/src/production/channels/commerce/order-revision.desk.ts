@@ -1,4 +1,5 @@
 import type { ServiceDay } from "../../day/domain/value-objects/service-day.value-object.js";
+import type { DeskActor } from "./desk-actor.js";
 import type { ProductionLineOption } from "./day-orders.reader.js";
 
 /**
@@ -68,6 +69,8 @@ export abstract class OrderRevisionDesk {
    * ne change pas de jour) : révise son dû au plan (plan A2, § 7).
    *
    * @param lines la composition révisée entière, un article par ligne.
+   * @param actor qui révise : une révision qui change le plan figé en garde
+   *   une version, signée de lui.
    */
   abstract note(
     days: readonly ServiceDay[],
@@ -75,5 +78,6 @@ export abstract class OrderRevisionDesk {
     revision: number,
     lines: readonly RevisedOrderLine[],
     allowance: OrderRevisionAllowance,
+    actor: DeskActor,
   ): Promise<OrderRevisionOutcome>;
 }

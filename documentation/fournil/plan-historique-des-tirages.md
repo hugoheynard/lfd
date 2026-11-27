@@ -315,7 +315,7 @@ commerce (§ 5). Bâti avant H3 : c'est lui qui rend l'orange honnête.~~
 `test/production-order-off-plan.e2e-spec.ts`,
 et une attente ajoutée en fin de `production-normal-path.e2e-spec.ts`.
 
-**H1 — garder les versions.** Le port, l'adaptateur et `PlanVersion.next`
+~~**H1 — garder les versions.** Le port, l'adaptateur et `PlanVersion.next`
 dans `day/` ; les écrivains : arrêt, retirage, révision, réassort lancé
 (après `days.save`, qui écrit aussi `plan_version`), et le guichet du
 retrait, qui charge déjà la journée sous son verrou, lit le registre et
@@ -326,7 +326,66 @@ déjà), réduit à `{ kind, staffId?, name? }` : un identifiant de client
 n'entre pas au schéma `production`. Tests : domaine (`entry`, `offPlan`,
 retirées, rangs), application (chaque geste écrit une version, ceux du § 1.6
 n'en écrivent pas), e2e (arrêt → révision → annulation → retirage →
-réouverture → arrêt).
+réouverture → arrêt).~~
+— 2026-11-27, bâti, non commité. Migration
+`20261128000500_les_versions_du_plan` (retour arrière dans `prisma/rollback/`) ;
+domaine `apps/lfd-api/src/production/day/domain/entities/plan-version.ts` ; port
+`PlanVersionRecorder` (`apps/lfd-api/src/production/day/domain/ports/plan-version.recorder.ts`, seul
+nom ajouté à `day/index.ts`) et son implémentation `LedgerPlanVersionRecorder` ;
+tests : `apps/lfd-api/src/production/day/domain/entities/__tests__/plan-version.spec.ts`,
+`apps/lfd-api/src/production/day/application/services/__tests__/ledger-plan-version-recorder.spec.ts`,
+les specs des deux guichets,
+`apps/lfd-api/src/production/plan/application/commands/__tests__/close-production-day.versions.spec.ts`,
+`apps/lfd-api/src/production/plan/application/commands/__tests__/retake-production-day.versions.spec.ts`,
+`launch-resupply.handler.spec.ts`, et
+`apps/lfd-api/test/production-plan-versions.e2e-spec.ts`.
+
+Décidé au bâti (2026-11-27), là où le plan ne tranchait pas :
+
+- **Un port, pas un appel au registre dans chaque écrivain.** Les gestes
+  appellent `PlanVersionRecorder.save(journée, cause, auteur)` à la place de
+  `ProductionDayRepository.save` : il lit la version précédente et les
+  retraits sous le verrou, construit la suivante, numérote la journée
+  (`numberPlanVersion`), sauve, puis ajoute la version. « Après `days.save` »
+  (H1) et « écrit par le même `save` » (§ 1.3) tiennent ensemble parce que le
+  numéro est posé AVANT le `save` et la ligne de version ajoutée APRÈS.
+  `day/index.ts` passe de 77 à 78 noms : aucun nom exporté n'était sans
+  lecteur hors du noyau, rien à rendre (dette `$h1` de
+  `production-subcontexts-debt.json`, à relire).
+- **Une révision qui BAISSE le dû écrit une version**, alors que le guichet
+  rend `unchanged`. § 1.6 dit « une révision rendue `unchanged` » n'en écrit
+  pas, mais aussi qu'une version s'écrit dès que les **lignes** changent — et
+  une baisse change la ligne. Retenu : la règle du contenu (§ 1.3, § 1.10) —
+  sans version, l'état `n` sauvé ne serait plus celui de la version `n`, et
+  son papier serait rangé sous une clé qui ment. Une révision `unchanged` aux
+  quantités identiques n'en écrit pas. **À confirmer par Hugo.**
+- **Les retirées d'une version** sont les seuls retraits `after_inscription`
+  du registre (un retrait avant l'inscription ne touche aucun plan). Un envoi
+  par rang : ceux du plan courant, sinon ceux qu'une version précédente a
+  nommés, sinon le rang 1. Le registre ne garde pas l'auteur : il vient du
+  geste qui retire, puis se recopie de version en version ; un retrait
+  d'avant les versions a `by: null`.
+- **Le plan « n'a pas changé »** se juge sur le contenu, `entry` et l'auteur
+  des retirées exclus, après tri (envois par commande puis rang, lignes, compte
+  par SKU, réassorts par identifiant) : `jsonb` ne garde pas l'ordre des clés.
+  Un arrêt différent de la version précédente est toujours une version.
+- **`entry`** : `opened_by_resupply` compte comme un arrêt (sans version
+  précédente, `arrested`) ; un envoi neuf sous une autre cause qu'un retirage,
+  au même arrêt, est `unknown`.
+- **L'auteur** : arrêt sans signataire connu (un semis) → cause `closed`,
+  auteur `system`. Le commerce ne connaît pas le nom de son staff : la
+  révision et le retrait passent `{ kind: "staff", staffId }` sans nom, donc
+  `recorded_by_name` est nul pour eux. CHECK de plus en base :
+  `recorded_by_id` et `recorded_by_name` sont nuls hors `staff`.
+  `recorded_by_id` est aussi au registre RGPD (même durée que le nom).
+- **Le guichet du retrait** ne sauve la journée que si elle est arrêtée : la
+  sauver ouverte créerait sa ligne `production_day`.
+- **Un numéro hors suite** (journée et table qui se contredisent) fait
+  échouer le geste (`PlanVersionOutOfSequenceError`, 500).
+- **La lecture** n'a que `latestOf` : la liste par journée vient avec H4, qui
+  la lit.
+- Le contenu garde ses instants en chaînes ISO (forme 1, relue par un schéma
+  qui vérifie la forme, jamais un cast).
 
 **H2 — le papier par version.** La clé par version (§ 1.10) pour le dossier
 et le compte, la clé par tirage gardée pour les journées sans version, la

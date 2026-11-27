@@ -128,6 +128,13 @@ describe("chaque mutateur de ProductionDay marque ce qu'il change", () => {
     launchResupply: (day) => day.launchResupply(resupply("rs_asap"), gesture, NOTHING_PENDING),
     reviseOrder: (day) => day.reviseOrder("ord_1", [{ sku: "VIE-001", quantity: 9 }]),
   };
+  /**
+   * Les mutateurs de l'EN-TÊTE seul, que `save` écrit à chaque fois sans
+   * lire `changes` : le numéro de la version du plan.
+   */
+  const HEADER: Readonly<Record<string, (day: ProductionDay) => void>> = {
+    numberPlanVersion: (day) => day.numberPlanVersion(1),
+  };
   /** Les lectures et les gardes qui refusent sans muter. */
   const READERS = [
     "producedOf",
@@ -150,7 +157,19 @@ describe("chaque mutateur de ProductionDay marque ce qu'il change", () => {
     const own = methodsOf(ProductionDay.prototype);
     const inherited = methodsOf(Object.getPrototypeOf(ProductionDay.prototype) as object);
 
-    expect([...own, ...inherited].sort()).toEqual([...Object.keys(SAVED), ...READERS].sort());
+    expect([...own, ...inherited].sort()).toEqual(
+      [...Object.keys(SAVED), ...Object.keys(HEADER), ...READERS].sort(),
+    );
+  });
+
+  it.each(Object.keys(HEADER))("%s change l'en-tête, que `save` écrit toujours", (name) => {
+    const day = reloadedClosed();
+    const before = day.toSnapshot();
+
+    HEADER[name]?.(day);
+
+    expect(day.toSnapshot()).not.toEqual(before);
+    expect(day.changes).toEqual(UNCHANGED_DAY);
   });
 
   it.each(Object.keys(SAVED))("%s change l'instantané ET le dit à `save`", (name) => {

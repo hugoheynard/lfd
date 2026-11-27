@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import type { DeskActor } from "../../../channels/commerce/desk-actor.js";
 import { OrderInscriptionReader } from "../../../channels/commerce/order-inscription.reader.js";
 import {
   OrderRevisionDesk,
@@ -17,12 +18,15 @@ import { OrderRevisionNoticeLedger } from "../../domain/ports/order-revision-not
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { deskAuthorOf } from "./desk-author.js";
+import { PlanVersionRecorder } from "../../domain/ports/plan-version.recorder.js";
 
 /** Ce que la révision après l'arrêt apporte au guichet : qui, quelle révision, quoi. */
 interface InscribedRevision {
   readonly orderId: string;
   readonly revision: number;
   readonly lines: readonly RevisedOrderLine[];
+  readonly actor: DeskActor;
 }
 
 /**
@@ -35,7 +39,9 @@ interface InscribedRevision {
  * qu'on révise (sinon `RevisedOrderInscribedElsewhereError`) — toujours sous
  * le verrou de la journée, seule : la journée est rechargée, le
  * dû de la commande révisé et le compte refait sans baisser. Une hausse
- * publie `production.order_quantities_raised`, durable et journalisé.
+ * publie `production.order_quantities_raised`, durable et journalisé. La
+ * journée est sauvée avec la version de son plan, signée de qui révise —
+ * une révision qui ne change rien au plan n'en écrit pas.
  *
  * L'unité de travail REJOINT celle de l'appelant (`PrismaUnitOfWork.run`).
  */
@@ -50,6 +56,7 @@ export class ProductionOrderRevisionDesk extends OrderRevisionDesk {
     private readonly days: ProductionDayRepository,
     private readonly events: DomainEventPublisher,
     private readonly durable: DurablePublisher,
+    private readonly versions: PlanVersionRecorder,
   ) {
     super();
   }
@@ -60,6 +67,7 @@ export class ProductionOrderRevisionDesk extends OrderRevisionDesk {
     revision: number,
     lines: readonly RevisedOrderLine[],
     allowance: OrderRevisionAllowance,
+    actor: DeskActor,
   ): Promise<OrderRevisionOutcome> {
     // Date croissante, une fois chacune : deux révisions croisées (du 3 au 4
     // et du 4 au 3) prennent les verrous dans le même ordre.
@@ -80,7 +88,7 @@ export class ProductionOrderRevisionDesk extends OrderRevisionDesk {
         if (only.value !== inscribedDay) {
           throw new RevisedOrderInscribedElsewhereError(orderId, only.value, inscribedDay);
         }
-        return this.reviseInscribed(only, { orderId, revision, lines });
+        return this.reviseInscribed(only, { orderId, revision, lines, actor });
       }
       const at = this.clock.now();
       for (const day of ordered) {
@@ -97,7 +105,7 @@ export class ProductionOrderRevisionDesk extends OrderRevisionDesk {
   ): Promise<OrderRevisionOutcome> {
     const plan = await this.days.load(day);
     const raised = plan.reviseOrder(revised.orderId, revised.lines);
-    await this.days.save(plan);
+    await this.versions.save(plan, "order_revised", deskAuthorOf(revised.actor));
     if (raised.length === 0) {
       return "unchanged";
     }

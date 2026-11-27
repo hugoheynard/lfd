@@ -5,6 +5,7 @@ import { NOTHING_PENDING } from "../../../../day/index.js";
 import { ProductionDay } from "../../../../day/domain/entities/production-day.js";
 import { ServiceDay } from "../../../../day/index.js";
 import { PlanArrestRecording } from "../plan-arrest-recording.js";
+import { SavingPlanVersions } from "./saving-plan-versions.js";
 
 /**
  * `PlanArrestRecording` — écrire un arrêt et l'annoncer, ou le réannoncer.
@@ -36,7 +37,13 @@ function scene(day: ProductionDay) {
   const trace: string[] = [];
   const days = new SavedDays(ProductionDay.open(DAY), trace);
   const durable = new RecordingDurable(trace);
-  return { recording: new PlanArrestRecording(days, durable), days, durable, trace, day };
+  return {
+    recording: new PlanArrestRecording(new SavingPlanVersions(days), durable),
+    days,
+    durable,
+    trace,
+    day,
+  };
 }
 
 describe("écrire un arrêt", () => {

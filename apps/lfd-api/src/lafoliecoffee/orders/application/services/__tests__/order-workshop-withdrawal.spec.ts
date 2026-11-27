@@ -81,4 +81,28 @@ describe("OrderWorkshopWithdrawal", () => {
 
     expect(trace).toEqual([]);
   });
+
+  it("le fournil reçoit l'auteur réduit : la fiche staff, ou la seule nature d'un client — jamais son identifiant", async () => {
+    const desk = new ScriptedDesk("withdrawn");
+    const workshops = new OrderWorkshopWithdrawal(desk, new ScriptedPackingDesk());
+
+    await workshops.withdraw(cancellationSubject(), BEFORE_PACKING, {
+      kind: "staff",
+      staffUserId: "fiche-marie",
+    });
+    await workshops.withdraw(cancellationSubject(), BEFORE_PACKING, {
+      kind: "customer",
+      userId: "usr_client",
+    });
+    await workshops.withdraw(cancellationSubject(), BEFORE_PACKING, {
+      kind: "guest",
+      userId: "usr_invite",
+    });
+
+    expect(desk.actors).toEqual([
+      { kind: "staff", staffId: "fiche-marie" },
+      { kind: "customer" },
+      { kind: "guest" },
+    ]);
+  });
 });

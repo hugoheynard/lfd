@@ -22,6 +22,7 @@ import { intakeReadingOf } from "../../__tests__/plan-intake-doubles.js";
 import { InMemoryWithdrawals } from "../../../../day/application/__tests__/withdrawal-doubles.js";
 import { RetakeRecording } from "../../services/retake-recording.js";
 import { RetakeProductionDayHandler } from "../retake-production-day.handler.js";
+import { SavingPlanVersions } from "../../services/__tests__/saving-plan-versions.js";
 
 /**
  * **La scène du retirage** — ce que les specs de `RetakeProductionDayHandler`
@@ -96,6 +97,7 @@ export function retakeScene(
 ) {
   const trace: string[] = [];
   const days = new Days(day, trace);
+  const versions = new SavingPlanVersions(days);
   const events = new RecordingPublisher();
   const durable = new RecordingDurable();
   const handler = new RetakeProductionDayHandler(
@@ -104,7 +106,7 @@ export function retakeScene(
       orders: new Commerce(rows, trace),
       withdrawals: parts.withdrawals ?? new InMemoryWithdrawals(),
     }),
-    new RetakeRecording(days, durable),
+    new RetakeRecording(versions, durable),
     new FixedStaffAuthorDirectory(
       authorsKnownAs({ firstName: "Marie", lastName: "Dupont" }, "staff-1"),
     ),
@@ -113,5 +115,5 @@ export function retakeScene(
     new DirectUnitOfWork(),
     new RecordingDayLock(trace),
   );
-  return { handler, days, events, durable, trace };
+  return { handler, days, versions, events, durable, trace };
 }

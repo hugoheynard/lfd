@@ -15,6 +15,7 @@ import { InMemoryWithdrawals } from "../../../../day/application/__tests__/withd
 import { ResupplyLaunchGestures } from "../resupply-launch-gesture.js";
 import { ResupplyLaunchReading } from "../resupply-launch-reading.js";
 import { ResupplyLaunchRecording } from "../resupply-launch-recording.js";
+import { SavingPlanVersions } from "./saving-plan-versions.js";
 
 /**
  * Les trois services du lancement « au plus tôt », chacun seul : le geste
@@ -115,7 +116,7 @@ describe("écrire un lancement", () => {
     const trace: string[] = [];
     const durable = new RecordingDurable(trace);
     const recording = new ResupplyLaunchRecording(
-      new SavedDays(ProductionDay.open(DAY), trace),
+      new SavingPlanVersions(new SavedDays(ProductionDay.open(DAY), trace)),
       durable,
     );
     const current = ProductionDay.open(DAY);

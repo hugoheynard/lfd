@@ -8,6 +8,7 @@ import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
 import { ProductionOrderWithdrawalDesk } from "../src/production/day/application/services/production-order-withdrawal.desk.js";
 import {
   DayOrdersReader,
+  type DeskActor,
   OrderWithdrawalDesk,
   type ProducibleOrder,
   type OrderWithdrawalAllowance,
@@ -104,14 +105,19 @@ const dayOrders = {
 
 /** Le vrai guichet, sauf quand une panne est demandée. */
 const flakyDesk = {
-  withdraw: (day: ServiceDay, orderId: string, allowance: OrderWithdrawalAllowance) => {
+  withdraw: (
+    day: ServiceDay,
+    orderId: string,
+    allowance: OrderWithdrawalAllowance,
+    actor: DeskActor,
+  ) => {
     if (scene.withdrawalFailures > 0) {
       scene.withdrawalFailures -= 1;
       return Promise.reject(new Error("la connexion à la base est tombée"));
     }
     return context()
       .app.get(ProductionOrderWithdrawalDesk, { strict: false })
-      .withdraw(day, orderId, allowance);
+      .withdraw(day, orderId, allowance, actor);
   },
 };
 

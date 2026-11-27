@@ -24,6 +24,7 @@ export const DAY_COLUMNS = {
   closedByName: true,
   retakenByName: true,
   retakeCount: true,
+  planVersion: true,
   packingOwner: true,
   orders: {
     select: {
@@ -91,6 +92,7 @@ export function daySnapshotOf(row: DayRow): ProductionDaySnapshot {
     closedBy: signerOf(row.closedBy, row.closedByName),
     retakenByName: row.retakenByName,
     retakeCount: row.retakeCount,
+    planVersion: row.planVersion,
     // Les deux colonnes sont nullables : le mapper les recolle en un couple,
     // ou en `null` — l'agrégat ne connaît pas l'état où l'instant existe
     // sans son auteur.

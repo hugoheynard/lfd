@@ -32,6 +32,8 @@ describe("ReviseOrderHandler — après l'arrêt du plan (plan A2)", () => {
       allowance: "staff_quantities",
       lines: [{ sku: "VIE-001", quantity: 14 }],
     });
+    // L'auteur que la version du plan garde : la fiche staff (plan-historique-des-tirages, H1).
+    expect(desk.actors).toEqual([{ kind: "staff", staffId: "stf_1" }]);
     expect(packing.revised).toEqual([
       // Les options à jour suivent le dû : aucune ici (`plan-options-de-commande.md`, § 4).
       {
@@ -74,6 +76,8 @@ describe("ReviseOrderHandler — après l'arrêt du plan (plan A2)", () => {
     );
     expect(desk.noted[0]?.allowance).toBe("before_inscription");
     expect(revisions.saved).toEqual([]);
+    // Le client passe au fournil par sa seule nature, jamais son identifiant.
+    expect(desk.actors).toEqual([{ kind: "customer" }]);
   });
 
   it("autre chose que des quantités, découvert sous le verrou du fournil : refus nommé, rien d'écrit", async () => {
