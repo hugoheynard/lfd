@@ -45,6 +45,7 @@ export function freezeOrder(order: ProducibleOrder): ProductionOrderSnapshot {
     dueAt: order.dueAt,
     clientele: order.clientele,
     siteId: order.siteId,
+    offPlan: order.offPlan,
     lines: order.lines.map((line) => ({
       sku: line.sku,
       productName: line.productName,

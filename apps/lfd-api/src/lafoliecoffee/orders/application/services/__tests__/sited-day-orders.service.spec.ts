@@ -39,6 +39,7 @@ function sourced(
       destination: "Le Labo",
       clientele: "pro",
       siteId,
+      offPlan: false,
       lines: [
         { sku: "BAG", productName: "Baguette", quantity: 2, saleUnit: "piece", madeToOrder: null },
       ],

@@ -102,12 +102,19 @@ Le fournil ne connaît aucune de ces raisons : elles sont au commerce.
 ### Ce que le fournil sait d'une commande
 
 `ProducibleOrder` (`channels/commerce/day-orders.reader.ts`, implémenté par
-`PrismaDayOrdersSource`) ne porte pas « hors plan ». Le commerce le sait
-(`placedOffPlan`, posé par `Order.receiveOffPlan`, staff seulement,
-définitif). Une commande absorbée par un retirage reste `placed` au
-commerce : aucun abonné n'écoute le retirage (le commentaire contraire de
-`prisma-admin-order-list.reader.ts`, « le retirage la passe `confirmed` »,
-est faux — à corriger au premier passage).
+`PrismaDayOrdersSource`) porte `offPlan: boolean | null` depuis H0, recopié
+de `placedOffPlan` (posé par `Order.receiveOffPlan`, staff seulement,
+définitif), et la journée le garde (`production_order.off_plan`, `NULL` pour
+les commandes figées avant). Une commande absorbée par un retirage reste
+`placed` au commerce : aucun abonné n'écoute le retirage de ce côté
+(vérifié le 2026-11-27 ; le commentaire de
+`prisma-admin-order-list.reader.ts` le dit désormais).
+
+⚠️ **Conséquence à l'écran du staff, non corrigée** : la liste des commandes
+calcule `offPlan: placedOffPlan && status === "placed"`. Une commande hors
+plan intégrée par un retirage restant `placed`, elle reste affichée « hors
+plan » jusqu'à l'arrêt suivant, alors que le fournil la produit. À trancher
+hors de ce plan (lire l'inscription au plan, ou un fait du retirage).
 
 ## 1. Ce qu'on décide
 
@@ -296,12 +303,17 @@ commerce (§ 5). Bâti avant H3 : c'est lui qui rend l'orange honnête.~~
 `test/production-normal-path.e2e-spec.ts` ; régression :
 `test/production-rearrest-before-release.e2e-spec.ts`.
 
-**H0 — « hors plan » jusqu'au fournil.** `offPlan: boolean | null` sur
+~~**H0 — « hors plan » jusqu'au fournil.** `offPlan: boolean | null` sur
 `ProducibleOrder` (13 fichiers hors tests, et les faux du port), rempli par
 `PrismaDayOrdersSource` depuis `placedOffPlan` ; la colonne `off_plan` de
 `production_order`, `production-day.row.ts` et
 `production-day-children.writer.ts`. Corriger le commentaire faux de
-`prisma-admin-order-list.reader.ts`.
+`prisma-admin-order-list.reader.ts`.~~
+— 2026-11-27, bâti, non commité. Migration
+`20261128000000_la_commande_figee_sait_si_elle_est_hors_plan` ; tests :
+`lafoliecoffee/orders/infrastructure/__tests__/prisma-day-orders.source.spec.ts`,
+`test/production-order-off-plan.e2e-spec.ts`,
+et une attente ajoutée en fin de `production-normal-path.e2e-spec.ts`.
 
 **H1 — garder les versions.** Le port, l'adaptateur et `PlanVersion.next`
 dans `day/` ; les écrivains : arrêt, retirage, révision, réassort lancé

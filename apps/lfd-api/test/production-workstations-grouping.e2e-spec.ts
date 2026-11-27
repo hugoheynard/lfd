@@ -105,6 +105,7 @@ function order(sku: string, productName: string): ProducibleOrder {
     dueAt: null,
     clientele: "pro",
     siteId: null,
+    offPlan: false,
     sheetDetails: null,
     lines: [{ sku, productName, quantity: 2, saleUnit: "piece", madeToOrder: null }],
   };

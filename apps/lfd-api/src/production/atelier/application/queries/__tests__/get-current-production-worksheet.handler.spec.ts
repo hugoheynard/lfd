@@ -52,6 +52,7 @@ const ORDER: ProducibleOrder = {
   dueAt: null,
   clientele: null,
   siteId: null,
+  offPlan: false,
   sheetDetails: null,
   lines: [
     {

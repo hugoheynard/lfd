@@ -27,6 +27,7 @@ function order(lines: ProductionOrderSnapshot["lines"]): ProductionOrderSnapshot
     dueAt: "07:30",
     clientele: "pro",
     siteId: null,
+    offPlan: false,
     sheetDetails: null,
     lines,
   };

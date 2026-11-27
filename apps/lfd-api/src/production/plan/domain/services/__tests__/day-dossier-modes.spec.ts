@@ -30,6 +30,7 @@ function order(
     dueAt: null,
     clientele: null,
     siteId: null,
+    offPlan: false,
     sheetDetails: null,
     lines: lines.map(([sku, quantity]) => ({
       sku,

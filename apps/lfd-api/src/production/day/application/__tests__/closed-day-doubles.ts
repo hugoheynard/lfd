@@ -17,6 +17,7 @@ export const ORDERS: readonly ProducibleOrder[] = [
     dueAt: null,
     clientele: null,
     siteId: null,
+    offPlan: false,
     sheetDetails: null,
     lines: [
       {
@@ -37,6 +38,7 @@ export const ORDERS: readonly ProducibleOrder[] = [
     dueAt: null,
     clientele: null,
     siteId: null,
+    offPlan: false,
     sheetDetails: null,
     lines: [
       {

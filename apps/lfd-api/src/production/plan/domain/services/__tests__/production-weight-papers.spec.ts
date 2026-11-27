@@ -54,6 +54,7 @@ function order(
     dueAt: null,
     clientele: "pro",
     siteId: null,
+    offPlan: false,
     sheetDetails: null,
     lines,
   };

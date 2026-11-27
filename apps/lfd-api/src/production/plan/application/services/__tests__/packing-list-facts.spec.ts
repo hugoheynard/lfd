@@ -18,6 +18,7 @@ function planned(rank: number): ProductionOrderSnapshot {
     dueAt: null,
     clientele: null,
     siteId: null,
+    offPlan: false,
     sheetDetails: null,
     lines: [{ sku: "CRO", productName: "Croissant", quantity: 2, saleUnit: "piece" }],
   };

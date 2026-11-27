@@ -11,6 +11,8 @@
 import { Buffer } from "node:buffer";
 
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
+import { ProductionDayRepository } from "../src/production/day/domain/ports/production-day.repository.js";
+import { ServiceDay } from "../src/production/day/domain/value-objects/service-day.value-object.js";
 import { SEND_DOSSIER_ON_DAY_CLOSED } from "../src/production/plan/application/handlers/send-dossier-on-day-closed.handler.js";
 import { SEND_DOSSIER_ON_DAY_RETAKEN } from "../src/production/plan/application/handlers/send-dossier-on-day-retaken.handler.js";
 import { daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -167,5 +169,9 @@ describe("le parcours normal du plan (§ 2 bis)", () => {
       [true, 2],
     ]);
     expect(dossierMails()).toHaveLength(4);
+
+    // Le fournil sait laquelle est arrivée hors plan (§ 1.8, lot H0).
+    const day = await ctx.app.get(ProductionDayRepository).load(ServiceDay.of(SERVICE_DAY));
+    expect(day.orders.map((order) => order.offPlan).sort()).toEqual([false, true]);
   });
 });

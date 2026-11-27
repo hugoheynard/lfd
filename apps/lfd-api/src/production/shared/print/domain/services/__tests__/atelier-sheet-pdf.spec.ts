@@ -45,6 +45,7 @@ describe("renderAtelierSheetPdf — la pastille de la commande", () => {
     dueAt: "07:30",
     clientele: "pro",
     siteId: null,
+    offPlan: false,
     sheetDetails: null,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece" }],
   };
@@ -81,6 +82,7 @@ describe("renderAtelierSheetPdf — en-tête et acheminement", () => {
     dueAt: "07:30",
     clientele: "pro",
     siteId: null,
+    offPlan: false,
     sheetDetails: null,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece" }],
   };

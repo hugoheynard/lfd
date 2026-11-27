@@ -179,8 +179,11 @@ function toAdminRow(row: AdminRow): AdminOrderRow {
     orderNumber: row.orderNumber,
     placedAt: row.createdAt.toISOString(),
     status: row.status,
-    // Hors plan TANT QUE le fournil ne l'a pas reprise : le retirage la passe
-    // `confirmed`, et c'est ce que l'écart du fournil sait déjà compter (§8.3).
+    // Hors plan tant qu'elle est `placed`. Un retirage ne change pas le statut
+    // au commerce : aucun abonné n'écoute `production.day_retaken` de ce côté
+    // (vérifié le 2026-11-27), et une commande hors plan intégrée par un
+    // retirage reste `placed` — donc « hors plan » ici. Seul l'arrêt suivant
+    // (`OnProductionDayClosed`) la confirme.
     offPlan: row.placedOffPlan && row.status === "placed",
     supply: row.supply,
     // Un manque décidé (E6b) n'attend plus : la colonne « décision attendue » se tait.

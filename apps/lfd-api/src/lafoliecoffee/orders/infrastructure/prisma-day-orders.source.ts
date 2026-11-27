@@ -1,6 +1,7 @@
 import { billingAddressPayloadSchema, type BillingAddressPayload } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
+import type { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { OrderSheetDetails, ServiceDay } from "../../../production/channels/commerce/index.js";
 import { DayOrdersSource, type SourcedDayOrder } from "../domain/ports/day-orders.source.js";
@@ -62,76 +63,94 @@ export class PrismaDayOrdersSource extends DayOrdersSource {
         ...planWhere(),
       },
       orderBy: { orderNumber: "asc" },
-      select: {
-        id: true,
-        orderNumber: true,
-        fulfillmentMethod: true,
-        fulfillment: true,
-        pickupAddress: true,
-        deliveryAddressSnapshot: true,
-        note: true,
-        fromSubscriptionId: true,
-        placedByStaffId: true,
-        clientele: true,
-        company: {
-          select: {
-            enseigne: true,
-            raisonSociale: true,
-            // Le détenteur : le repli du contact, comme sur la fiche de l'écran.
-            memberships: {
-              where: { role: "owner" },
-              take: 1,
-              select: { user: { select: { firstName: true, lastName: true, phone: true } } },
-            },
-          },
-        },
-        placedBy: { select: { firstName: true, lastName: true, email: true } },
-        lines: {
-          select: {
-            sku: true,
-            productNameSnapshot: true,
-            quantity: true,
-            saleUnit: true,
-            madeToOrder: true,
-            options: ORDER_LINE_OPTIONS_SELECT,
-          },
-        },
-      },
+      select: DAY_ORDER_SELECT,
     });
 
-    return rows.map((row) => ({
-      order: {
-        orderId: row.id,
-        reference: row.orderNumber,
-        customerLabel: labelOf(row.company, row.placedBy),
-        fulfillmentMethod: row.fulfillmentMethod === "delivery" ? "delivery" : "pickup",
-        destination: destinationOf(
-          row.fulfillmentMethod,
-          row.pickupAddress,
-          row.deliveryAddressSnapshot,
-        ),
-        // La colonne figée par l'agrégat, telle quelle : un `NULL` d'avant la
-        // distinction reste inconnu, il n'est pas redéduit de `company_id`.
-        clientele: row.clientele,
-        // Le site figé à la passation (S2) ; `null` en livraison ou avant le lot.
-        siteId: row.fulfillmentMethod === "delivery" ? null : siteIdOf(row.pickupAddress),
-        lines: row.lines.map((line) => ({
-          sku: line.sku,
-          productName: line.productNameSnapshot,
-          quantity: line.quantity,
-          saleUnit: orderLineSaleUnitOf(line.sku, line.saleUnit),
-          // Scellé à la passation (`plan-sur-mesure-partout.md`, M2), servi
-          // tel quel : le fournil ne relit jamais le catalogue.
-          madeToOrder: line.madeToOrder,
-          // Les options figées (`plan-options-de-commande.md`, § 3.4) : le
-          // fournil les recopie et les affiche, le compte n'en dépend pas.
-          options: productionOptionsOf(optionChoicesOf(line.options)),
-        })),
-        sheetDetails: sheetDetailsOf(row),
-      },
-      window: fulfillmentOf(row.fulfillment).window.value,
-    }));
+    return rows.map(sourcedDayOrderOf);
   }
+}
+
+/** Ce que l'adaptateur lit d'une commande du jour. */
+export const DAY_ORDER_SELECT = {
+  id: true,
+  orderNumber: true,
+  fulfillmentMethod: true,
+  fulfillment: true,
+  pickupAddress: true,
+  deliveryAddressSnapshot: true,
+  note: true,
+  fromSubscriptionId: true,
+  placedByStaffId: true,
+  clientele: true,
+  placedOffPlan: true,
+  company: {
+    select: {
+      enseigne: true,
+      raisonSociale: true,
+      // Le détenteur : le repli du contact, comme sur la fiche de l'écran.
+      memberships: {
+        where: { role: "owner" },
+        take: 1,
+        select: { user: { select: { firstName: true, lastName: true, phone: true } } },
+      },
+    },
+  },
+  placedBy: { select: { firstName: true, lastName: true, email: true } },
+  lines: {
+    select: {
+      sku: true,
+      productNameSnapshot: true,
+      quantity: true,
+      saleUnit: true,
+      madeToOrder: true,
+      options: ORDER_LINE_OPTIONS_SELECT,
+    },
+  },
+} satisfies Prisma.OrderSelect;
+
+/** Une commande du jour telle que la requête la rend. */
+export type DayOrderRow = Prisma.OrderGetPayload<{ select: typeof DAY_ORDER_SELECT }>;
+
+/**
+ * La ligne de commande, traduite pour le fournil : ce qu'il fabrique, où ça
+ * va, et ce que le bon imprime — rien d'autre.
+ */
+export function sourcedDayOrderOf(row: DayOrderRow): SourcedDayOrder {
+  return {
+    order: {
+      orderId: row.id,
+      reference: row.orderNumber,
+      customerLabel: labelOf(row.company, row.placedBy),
+      fulfillmentMethod: row.fulfillmentMethod === "delivery" ? "delivery" : "pickup",
+      destination: destinationOf(
+        row.fulfillmentMethod,
+        row.pickupAddress,
+        row.deliveryAddressSnapshot,
+      ),
+      // La colonne figée par l'agrégat, telle quelle : un `NULL` d'avant la
+      // distinction reste inconnu, il n'est pas redéduit de `company_id`.
+      clientele: row.clientele,
+      // Le site figé à la passation (S2) ; `null` en livraison ou avant le lot.
+      siteId: row.fulfillmentMethod === "delivery" ? null : siteIdOf(row.pickupAddress),
+      // Posé par `Order.receiveOffPlan`, définitif : le commerce le sait
+      // toujours, la colonne n'est jamais nulle.
+      offPlan: row.placedOffPlan,
+      lines: row.lines.map((line) => ({
+        sku: line.sku,
+        productName: line.productNameSnapshot,
+        quantity: line.quantity,
+        saleUnit: orderLineSaleUnitOf(line.sku, line.saleUnit),
+        // Scellé à la passation (`plan-sur-mesure-partout.md`, M2), servi
+        // tel quel : le fournil ne relit jamais le catalogue.
+        madeToOrder: line.madeToOrder,
+        // Les options figées (`plan-options-de-commande.md`, § 3.4) : le
+        // fournil les recopie et les affiche, le compte n'en dépend pas.
+        options: productionOptionsOf(optionChoicesOf(line.options)),
+      })),
+      sheetDetails: sheetDetailsOf(row),
+    },
+    window: fulfillmentOf(row.fulfillment).window.value,
+  };
 }
 
 /**

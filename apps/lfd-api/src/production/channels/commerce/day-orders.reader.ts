@@ -160,6 +160,15 @@ export interface ProducibleOrder {
    * rattrapée).
    */
   readonly siteId: string | null;
+  /**
+   * **Reçue hors plan** : le staff l'a saisie après l'arrêt du jour, et seul
+   * un retirage la fait entrer au plan. Le commerce le sait
+   * (`Order.receiveOffPlan`, définitif) ; le fournil le recopie pour que les
+   * versions du plan disent « hors plan, intégrée au retirage ». `null` = on
+   * ne sait pas — jamais `false` par défaut : un `false` affirmerait une
+   * commande reçue dans le plan.
+   */
+  readonly offPlan: boolean | null;
   readonly lines: readonly ProducibleLine[];
   /**
    * Le reste du bon (E1b). Toujours rempli par le commerce ; `null` ne se

@@ -47,6 +47,7 @@ const ORDERS: readonly ProducibleOrder[] = [
     dueAt: null,
     clientele: null,
     siteId: null,
+    offPlan: false,
     sheetDetails: null,
     lines: [
       { sku: SKU, productName: "Croissant", quantity: 24, saleUnit: "piece", madeToOrder: null },
@@ -61,6 +62,7 @@ const ORDERS: readonly ProducibleOrder[] = [
     dueAt: null,
     clientele: null,
     siteId: null,
+    offPlan: false,
     sheetDetails: null,
     lines: [
       { sku: SKU, productName: "Croissant", quantity: 6, saleUnit: "piece", madeToOrder: null },

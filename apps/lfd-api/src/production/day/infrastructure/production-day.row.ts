@@ -36,6 +36,7 @@ export const DAY_COLUMNS = {
       dueAt: true,
       clientele: true,
       siteId: true,
+      offPlan: true,
       ...SHEET_COLUMNS,
       lines: {
         select: {
@@ -128,6 +129,8 @@ function orderOf(order: DayRow["orders"][number]): ProductionDaySnapshot["orders
     dueAt: order.dueAt,
     clientele: clienteleOf(order.clientele),
     siteId: order.siteId,
+    // `NULL` relu tel quel : une commande figée avant la colonne reste inconnue.
+    offPlan: order.offPlan,
     lines: order.lines.map((line) => {
       const options = productionLineOptionsOf(line.sku, line.options);
       return {

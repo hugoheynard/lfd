@@ -29,6 +29,7 @@ function sheet(orderId: string): ProductionOrderSnapshot {
     dueAt: null,
     clientele: null,
     siteId: null,
+    offPlan: false,
     sheetDetails: null,
     lines: [],
   };

@@ -40,6 +40,7 @@ const ORDER: ProducibleOrder = {
   dueAt: null,
   clientele: null,
   siteId: null,
+  offPlan: false,
   sheetDetails: null,
   lines: [
     { sku: SKU, productName: "Croissant", quantity: 30, saleUnit: "piece", madeToOrder: null },

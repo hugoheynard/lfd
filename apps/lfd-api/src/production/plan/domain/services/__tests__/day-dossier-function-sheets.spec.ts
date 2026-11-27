@@ -46,6 +46,7 @@ function order(reference: string): ProductionOrderSnapshot {
     dueAt: "07:30",
     clientele: null,
     siteId: null,
+    offPlan: false,
     sheetDetails: null,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 4, saleUnit: "piece" }],
   };

@@ -40,6 +40,7 @@ const ORDER: ProductionOrderSnapshot & ProducibleOrder = {
   dueAt: "07:30",
   clientele: "pro",
   siteId: null,
+  offPlan: false,
   sheetDetails: null,
   lines: [
     { sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece", madeToOrder: null },
@@ -77,6 +78,7 @@ function dayWithResupplies(): ProductionDay {
   const resupply = (resupplyId: string) => ({
     resupplyId,
     siteId: "site-v",
+    offPlan: false,
     siteLabel: "Village",
     name: null,
     servedByTransfer: true,

@@ -23,6 +23,7 @@ export function producibleOrder(
     dueAt: null,
     clientele: null,
     siteId: null,
+    offPlan: false,
     sheetDetails: null,
     lines: [orderLine("VIE-001", 40, "Croissant")],
     ...overrides,

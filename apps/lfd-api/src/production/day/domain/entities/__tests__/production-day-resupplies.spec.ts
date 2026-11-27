@@ -24,6 +24,7 @@ function order(orderId = "ord_1", quantity = 40): ProducibleOrder {
     dueAt: null,
     clientele: null,
     siteId: null,
+    offPlan: false,
     sheetDetails: null,
     lines: [
       { sku: "VIE-001", productName: "Croissant", quantity, saleUnit: "piece", madeToOrder: null },

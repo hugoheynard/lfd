@@ -24,6 +24,7 @@ export const SPECIMEN_ORDER: ProductionOrderSnapshot = {
   dueAt: "07:00",
   clientele: "pro",
   siteId: null,
+  offPlan: false,
   lines: [
     // Une ligne à options (`catalogue/plan-options-de-commande.md`, § 3.4) :
     // « Tranchage : 12 × tranché » doit se lire sous le nom.

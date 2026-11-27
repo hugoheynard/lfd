@@ -219,6 +219,7 @@ function orderRowOf(serviceDay: string, order: OrderSnapshot, carried: CarriedPa
     dueAt: order.dueAt,
     clientele: order.clientele,
     siteId: order.siteId,
+    offPlan: order.offPlan,
     ...sheetRowOf(order.sheetDetails),
     ...carried.orders.get(carriedKey(order.orderId, order.rank)),
   };

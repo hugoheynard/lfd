@@ -34,6 +34,7 @@ const ORDERS: readonly ProducibleOrder[] = ["1", "2"].map((n) => ({
   dueAt: null,
   clientele: null,
   siteId: null,
+  offPlan: false,
   sheetDetails: null,
   lines: [
     { sku: SKU, productName: "Croissant", quantity: 12, saleUnit: "piece", madeToOrder: null },

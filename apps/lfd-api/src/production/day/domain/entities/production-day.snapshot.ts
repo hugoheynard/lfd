@@ -103,6 +103,11 @@ export interface ProductionOrderSnapshot {
   readonly clientele: Clientele | null;
   /** Le site qui remet, opaque, figé à l'arrêt (lot S2) ; `null` = livraison ou inconnu. */
   readonly siteId: string | null;
+  /**
+   * Reçue hors plan, figée à l'arrêt ou au retirage. `null` = commande figée
+   * avant la colonne : on ne savait pas, et ce n'est pas `false`.
+   */
+  readonly offPlan: boolean | null;
   readonly lines: readonly ProductionLineSnapshot[];
   /**
    * Le reste du bon, figé à l'arrêt (E1b, 2026-10-06). `null` = commande

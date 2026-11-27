@@ -48,6 +48,7 @@ function order(reference: string, sku: string, quantity: number): ProductionOrde
     dueAt: "07:30",
     clientele: null,
     siteId: null,
+    offPlan: false,
     sheetDetails: null,
     lines: [{ sku, productName: sku, quantity, saleUnit: "piece" }],
   };

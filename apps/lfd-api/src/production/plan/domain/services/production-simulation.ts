@@ -56,6 +56,7 @@ export function simulationOrderOf(
     dueAt: null,
     clientele: null,
     siteId: null,
+    offPlan: null,
     lines,
     sheetDetails: null,
   };

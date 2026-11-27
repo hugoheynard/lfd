@@ -83,6 +83,7 @@ describe("dossierCountsOf", () => {
       dueAt: null,
       clientele: null,
       siteId: null,
+      offPlan: false,
       sheetDetails: null,
       lines: quantities.map(line),
       packed: null,
@@ -110,6 +111,7 @@ describe("dossierCountsOf", () => {
     const resupply = {
       resupplyId: "r-1",
       siteId: "site-v",
+      offPlan: false,
       siteLabel: "Village",
       name: null,
       servedByTransfer: true,

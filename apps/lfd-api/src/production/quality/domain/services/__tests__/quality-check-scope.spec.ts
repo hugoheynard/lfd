@@ -29,6 +29,7 @@ function day(packed: boolean): ProductionDay {
         dueAt: null,
         clientele: null,
         siteId: null,
+        offPlan: false,
         sheetDetails: null,
         lines: [
           {

@@ -28,6 +28,7 @@ function order(overrides: Partial<ProductionOrderSnapshot> = {}): ProductionOrde
     dueAt: "07:00",
     clientele: null,
     siteId: null,
+    offPlan: false,
     sheetDetails: DETAILS,
     lines: [],
     ...overrides,
