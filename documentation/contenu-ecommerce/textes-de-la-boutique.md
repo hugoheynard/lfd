@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 2038 textes
+## Sommaire — 2041 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -31,7 +31,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 15 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 118 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 120 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 33 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
@@ -39,7 +39,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le cadre — bandeaux et erreurs générales](#espace-chrome) | `chrome` | 62 |
 | [La navigation](#espace-nav) | `nav` | 17 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 292 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 293 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Payer par lien — la page publique /payer](#espace-paylink) | `payLink` | 24 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
@@ -53,7 +53,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **2038** |
+| **Total** | | **2041** |
 
 ## Le parcours de commande
 
@@ -743,7 +743,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 118 textes.
+Source : `fr.ts · en.ts · it.ts` · 120 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -792,6 +792,8 @@ Source : `fr.ts · en.ts · it.ts` · 118 textes.
 | `cart.payOnAccount` | Ajouter au compte | Charge to account | Addebita sul conto |  |
 | `cart.accountSoon` | Le règlement au compte arrive au prochain lot — il attend votre condition de règlement. | Charging to account lands in the next batch — it is waiting on your payment term. | L’addebito sul conto arriva nel prossimo lotto — attende la vostra condizione di pagamento. |  |
 | `cart.dropAria` | Retirer {name} du panier | Remove {name} from the basket | Rimuovi {name} dal carrello | `{name}` |
+| `cart.optionCount` | Dont {label} | Of which {label} | Di cui {label} | `{label}` |
+| `cart.optionCountHint` | Sur {n} ; le reste sans | Out of {n}; the rest without | Su {n}; il resto senza | `{n}` |
 | `cart.quantityAria` | Quantité de {name} | Quantity of {name} | Quantità di {name} | `{name}` |
 | `cart.weightAria` | Poids de {name}, en grammes | Weight of {name}, in grams | Peso di {name}, in grammi | `{name}` |
 | `cart.pay` | Régler ma commande · {total} | Pay for my order · {total} | Pago il mio ordine · {total} | `{total}` |
@@ -1075,7 +1077,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 292 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 293 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1318,6 +1320,7 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.ticketHead` | Votre ticket | Your receipt | Il tuo scontrino |  |
 | `orders.ticketArticles` | Articles | Items | Articoli |  |
 | `orders.ticketPerKilogram` | / kg | / kg | / kg |  |
+| `orders.ticketOptionSome` | dont {n} {label} | {n} of them {label} | di cui {n} {label} | `{n}` `{label}` |
 | `orders.ticketVoucher` | Bon de fidélité | Loyalty voucher | Buono fedeltà |  |
 | `orders.ticketDelivery` | Livraison | Delivery | Consegna |  |
 | `orders.ticketFreeDelivery` | Livraison offerte | Free delivery | Consegna gratuita |  |

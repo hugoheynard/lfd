@@ -307,6 +307,20 @@
               (quantityChange)="cart().setQuantity(line.sku, $event)"
               (remove)="cart().remove(line.sku)"
             />
+            <!-- Les options proposées à CE client (« dont 2 tranchés ») ; sans
+                 prix, le reste de la ligne est « sans ». -->
+            @if (cart().optionGroupsOf(line.sku); as groups) {
+              @if (groups.length > 0) {
+                <lfd-line-options-picker
+                  data-line-options
+                  [groups]="groups"
+                  [choices]="line.optionChoices ?? []"
+                  [quantity]="line.quantity"
+                  [saleUnit]="line.saleUnit ?? 'piece'"
+                  (choicesChange)="cart().setOptionChoices(line.sku, $event)"
+                />
+              }
+            }
             @if (limitNotices().get(line.sku); as notice) {
               <fold-callout
                 [variant]="notice.kind === 'closed' ? 'alert' : 'warning'"

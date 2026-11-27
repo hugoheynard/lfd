@@ -216,6 +216,11 @@ export function restoreLines(
       unitPriceMillicents: item.unitPriceMillicents,
       quantity: line.quantity,
       ...saleTermsOf(item),
+      // Les options mises de côté reviennent ; celles que le client ne se
+      // voit plus proposer tombent quand ses groupes arrivent (`offerOptions`).
+      ...(line.optionChoices === undefined || line.optionChoices.length === 0
+        ? {}
+        : { optionChoices: line.optionChoices }),
     });
   }
   return { lines, dropped };

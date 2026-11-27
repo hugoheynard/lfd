@@ -865,6 +865,10 @@ export interface ClientCopy {
     readonly accountSoon: string;
     /** `{name}` est remplacé par la pièce. La corbeille retire la LIGNE. */
     readonly dropAria: string;
+    /** `{label}` est remplacé par le choix (« tranché ») : le compteur « dont N tranchés » d'une ligne. */
+    readonly optionCount: string;
+    /** `{n}` est remplacé par la quantité de la ligne ; le reste n'a pas l'option. */
+    readonly optionCountHint: string;
     /** `{name}` est remplacé par la pièce. Le nom, lu seulement, du champ de quantité d'une ligne. */
     readonly quantityAria: string;
     /** Le champ d'une ligne au poids, en grammes (P4 de `vente-au-poids.md`). */

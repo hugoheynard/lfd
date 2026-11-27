@@ -19,6 +19,7 @@ import { CartStore } from './cart.store';
 import { ShopCartGateway } from './shop-cart.gateway';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { lineTermsOf, requestedLine, type SaleTerms } from '../shop/sale-unit';
+import type { LineOptionChoice } from '@lfd/b2b-ui/line-options';
 import type { OrderSaleUnit } from '@lfd/contracts';
 
 /**
@@ -141,7 +142,7 @@ export class ShopCartSync {
   /** Le panier, trié pour être comparable, et l'espace dont il est la copie. */
   private readonly draft = computed<Draft>(() => ({
     workspace: this.store.scope(),
-    payload: payloadOf(this.store.quantities(), this.termsOf),
+    payload: payloadOf(this.store.quantities(), this.termsOf, this.store.options()),
   }));
 
   constructor() {
@@ -202,7 +203,11 @@ export class ShopCartSync {
   private enter(workspace: string): void {
     const visitor =
       this.store.scope() === null
-        ? { quantities: this.store.quantities(), savedAt: this.store.savedAt() }
+        ? {
+            quantities: this.store.quantities(),
+            savedAt: this.store.savedAt(),
+            options: this.store.options(),
+          }
         : null;
 
     this.synced = workspace;
@@ -215,7 +220,9 @@ export class ShopCartSync {
     // il ne remplace rien : ouvrir la boutique n'est pas composer un panier.
     const carried = visitor !== null && Object.keys(visitor.quantities).length > 0;
     if (carried) {
-      this.store.replaceAll(visitor.quantities, visitor.savedAt);
+      // Les unités ne remontent pas (le devis relit celle du catalogue) ; les
+      // options, si : elles ne se relisent nulle part ailleurs.
+      this.store.replaceAll(visitor.quantities, visitor.savedAt, {}, visitor.options);
     }
 
     this.reading = this.gateway
@@ -259,7 +266,9 @@ export class ShopCartSync {
       if (carried) {
         this.pushNow(workspace);
       } else {
-        this.lastSaved = keyOf(payloadOf(this.store.quantities(), this.termsOf));
+        this.lastSaved = keyOf(
+          payloadOf(this.store.quantities(), this.termsOf, this.store.options()),
+        );
       }
       return;
     }
@@ -268,12 +277,12 @@ export class ShopCartSync {
       return;
     }
     this.lastSaved = keyOf({ lines: remote.lines });
-    this.store.replaceAll(quantitiesOf(remote), remote.savedAt, unitsOf(remote));
+    this.store.replaceAll(quantitiesOf(remote), remote.savedAt, unitsOf(remote), optionsOf(remote));
   }
 
   /** Écrit sans attendre l'accalmie : la reprise n'est pas une frappe. */
   private pushNow(workspace: string): void {
-    this.push(payloadOf(this.store.quantities(), this.termsOf), workspace)
+    this.push(payloadOf(this.store.quantities(), this.termsOf, this.store.options()), workspace)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe();
   }
@@ -309,12 +318,24 @@ export class ShopCartSync {
 function payloadOf(
   quantities: Readonly<Record<string, number>>,
   termsOf: (sku: string) => SaleTerms,
+  options: Readonly<Record<string, readonly LineOptionChoice[]>>,
 ): ShopCartPayload {
   return {
     lines: Object.keys(quantities)
       .sort((a, b) => a.localeCompare(b))
-      .map((sku) => requestedLine(sku, quantities[sku] ?? 0, termsOf(sku))),
+      .map((sku) => requestedLine(sku, quantities[sku] ?? 0, termsOf(sku), options[sku])),
   };
+}
+
+/** Les options de chaque ligne relue — le panier gardé les porte (`shop_carts.payload`). */
+function optionsOf(view: ShopCartView): Record<string, readonly LineOptionChoice[]> {
+  return Object.fromEntries(
+    view.lines.flatMap((line) =>
+      line.optionChoices === undefined || line.optionChoices.length === 0
+        ? []
+        : [[line.sku, line.optionChoices] as const],
+    ),
+  );
 }
 
 /** L'unité de chaque ligne relue — absente, la ligne est à la pièce (le contrat le dit). */

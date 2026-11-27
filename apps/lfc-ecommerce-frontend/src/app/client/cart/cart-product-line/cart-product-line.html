@@ -63,3 +63,18 @@
 <button class="drop" type="button" [attr.aria-label]="dropLabel()" (click)="dropped.emit()">
   <fold-icon name="bin" />
 </button>
+
+<!-- Les options de l'article (« dont 2 tranchés ») : une rangée de plus,
+     seulement quand l'article en propose. Le reste de la ligne est « sans ». -->
+@if (optionGroups().length > 0) {
+  <lfd-line-options-picker
+    class="options"
+    data-line-options
+    [groups]="optionGroups()"
+    [choices]="line().optionChoices ?? []"
+    [quantity]="quantity()"
+    [saleUnit]="byWeight() ? 'weight' : 'piece'"
+    [words]="optionWords()"
+    (choicesChange)="optionChoicesChange.emit($event)"
+  />
+}

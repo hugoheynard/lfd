@@ -25,6 +25,10 @@
       "types": "./src/order/index.ts",
       "default": "./src/order/index.ts"
     },
+    "./line-options": {
+      "types": "./src/line-options/index.ts",
+      "default": "./src/line-options/index.ts"
+    },
     "./panel": {
       "types": "./src/panel/index.ts",
       "default": "./src/panel/index.ts"

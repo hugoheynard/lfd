@@ -123,6 +123,9 @@
                       </span>
                       <!-- Le SKU sous le nom quand sa colonne a cédé la place (colonne étroite). -->
                       <span class="od-article-sku" data-article-sku>{{ line.sku }}</span>
+                      @for (mention of optionMentions(line); track $index) {
+                        <span class="od-article-option" data-line-option>{{ mention }}</span>
+                      }
                       <!-- **Pourquoi ce prix**, figé à la passation. Les étages qui
                          ont produit un effet, dans l'ordre où ils l'ont produit.
                          Les règles qui les ont produits peuvent avoir été

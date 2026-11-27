@@ -13,6 +13,7 @@ import {
   type ServedCompany,
 } from "../../../../catalog/domain/ports/served-company.reader.js";
 import { NoShopShelfCache } from "../../../../catalog/infrastructure/no-shop-shelf-cache.js";
+import { InMemoryShelfOptionGroups } from "../../../../catalog/infrastructure/in-memory-shelf-option-groups.js";
 import { OrderCompanyNotFoundError } from "../../../domain/errors/order-errors.js";
 import {
   StaffEntryCompanyArchivedError,
@@ -50,7 +51,7 @@ class GivenCompanies extends ServedCompanyReader {
   }
 }
 
-function rig() {
+function rig(options = new InMemoryShelfOptionGroups()) {
   const computation = shelfComputation();
   const shelf = new RecognisedShelf(
     computation.pricing,
@@ -65,7 +66,11 @@ function rig() {
       [ARCHIVED, "active"],
     ]),
   );
-  return { handler: new ReadCustomerShelfPricesHandler(companies, shelf), shelf, computation };
+  return {
+    handler: new ReadCustomerShelfPricesHandler(companies, shelf, options),
+    shelf,
+    computation,
+  };
 }
 
 describe("ReadCustomerShelfPricesHandler — la liste de l'équipe au prix du client", () => {
@@ -124,5 +129,36 @@ describe("ReadCustomerShelfPricesHandler — la liste de l'équipe au prix du cl
     expect(negotiated?.struckFromMillicents).not.toBeNull();
     expect(negotiated?.struckFromTtcCents).not.toBeNull();
     expect(table.items.some((item) => item.struckFromMillicents === null)).toBe(true);
+  });
+
+  it("porte les options à la clientèle du CLIENT, jamais un choix réservé à une autre", async () => {
+    const { handler: probe } = rig();
+    const sku = (await probe.execute(new ReadCustomerShelfPricesQuery(HEAD))).items[0]?.sku ?? "";
+    const options = new InMemoryShelfOptionGroups(
+      new Map([
+        [
+          sku,
+          [
+            {
+              id: "grp_slicing",
+              name: "Tranchage",
+              choices: [
+                { key: "sliced", label: "tranché", audience: "both" as const },
+                { key: "public_only", label: "emballé cadeau", audience: "public" as const },
+              ],
+            },
+          ],
+        ],
+      ]),
+    );
+    const { handler } = rig(options);
+
+    const table = await handler.execute(new ReadCustomerShelfPricesQuery(HEAD));
+
+    expect(options.audiences).toEqual(["pro"]);
+    expect(table.items.find((item) => item.sku === sku)?.optionGroups).toEqual([
+      { id: "grp_slicing", name: "Tranchage", choices: [{ key: "sliced", label: "tranché" }] },
+    ]);
+    expect(table.items.filter((item) => item.optionGroups !== undefined)).toHaveLength(1);
   });
 });

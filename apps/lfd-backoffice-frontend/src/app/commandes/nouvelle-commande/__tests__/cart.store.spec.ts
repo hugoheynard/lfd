@@ -214,3 +214,51 @@ describe('CartStore', () => {
     });
   });
 });
+
+describe('CartStore — les options d’une ligne (« dont 2 tranchés »)', () => {
+  const SLICING = {
+    id: 'grp_slicing',
+    name: 'Tranchage',
+    choices: [{ key: 'sliced', label: 'tranché' }],
+  };
+  const SLICED = { group: 'grp_slicing', choice: 'sliced' };
+
+  it('envoie les options avec la ligne, et rien quand il n’y en a pas', () => {
+    const cart = new CartStore();
+    cart.add(BAGUETTE, 4);
+    expect(cart.toPayloadLines()).toEqual([{ sku: 'PAI-001', quantity: 4 }]);
+
+    cart.setOptionChoices('PAI-001', [{ ...SLICED, quantity: 2 }]);
+
+    expect(cart.toPayloadLines()).toEqual([
+      { sku: 'PAI-001', quantity: 4, optionChoices: [{ ...SLICED, quantity: 2 }] },
+    ]);
+  });
+
+  it('une quantité qui baisse réduit d’abord le « sans », puis les options', () => {
+    const cart = new CartStore();
+    cart.add(BAGUETTE, 4);
+    cart.setOptionChoices('PAI-001', [{ ...SLICED, quantity: 3 }]);
+
+    cart.setQuantity('PAI-001', 3);
+    expect(cart.lines()[0]?.optionChoices).toEqual([{ ...SLICED, quantity: 3 }]);
+
+    cart.setQuantity('PAI-001', 2);
+    expect(cart.lines()[0]?.optionChoices).toEqual([{ ...SLICED, quantity: 2 }]);
+  });
+
+  it('retire les choix que le client ne se voit plus proposer', () => {
+    const cart = new CartStore();
+    cart.add(BAGUETTE, 4);
+    cart.setOptionChoices('PAI-001', [{ ...SLICED, quantity: 2 }]);
+
+    cart.offerOptions(new Map([['PAI-001', [SLICING]]]));
+    expect(cart.optionGroupsOf('PAI-001')).toEqual([SLICING]);
+    expect(cart.lines()[0]?.optionChoices).toEqual([{ ...SLICED, quantity: 2 }]);
+
+    cart.offerOptions(new Map());
+    expect(cart.optionGroupsOf('PAI-001')).toEqual([]);
+    expect(cart.lines()[0]?.optionChoices).toBeUndefined();
+    expect(cart.toPayloadLines()).toEqual([{ sku: 'PAI-001', quantity: 4 }]);
+  });
+});

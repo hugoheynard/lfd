@@ -4,6 +4,8 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import { RecognisedShelf } from "../../../catalog/application/recognised-shelf.service.js";
 import { servedCompanyServiceOf } from "../../../catalog/domain/company-service.js";
 import { ServedCompanyReader } from "../../../catalog/domain/ports/served-company.reader.js";
+import { ShelfOptionGroupsReader } from "../../../catalog/domain/ports/shelf-option-groups.reader.js";
+import { optionGroupViewOf } from "../../../catalog/application/queries/read-shop-option-groups.handler.js";
 import { OrderCompanyNotFoundError } from "../../domain/errors/order-errors.js";
 import {
   StaffEntryCompanyArchivedError,
@@ -39,6 +41,7 @@ export class ReadCustomerShelfPricesHandler implements IQueryHandler<
   constructor(
     private readonly companies: ServedCompanyReader,
     private readonly shelf: RecognisedShelf,
+    private readonly options: ShelfOptionGroupsReader,
   ) {}
 
   /**
@@ -57,8 +60,21 @@ export class ReadCustomerShelfPricesHandler implements IQueryHandler<
         ? new StaffEntryCompanyClosedError(companyId)
         : new StaffEntryCompanyArchivedError(companyId);
     }
-    const view = await this.shelf.read(companyId);
-    return { items: view.items.map(shelfPriceOf), audience: service };
+    const [view, offered] = await Promise.all([
+      this.shelf.read(companyId),
+      // Les options à la clientèle du CLIENT (`plan-options-de-commande.md`,
+      // § 3.3) : l'équipe qui saisit applique la sienne, jamais celle du staff.
+      this.options.offeredTo(service),
+    ]);
+    return {
+      items: view.items.map((item) => {
+        const groups = offered.get(item.sku);
+        return groups === undefined
+          ? shelfPriceOf(item)
+          : { ...shelfPriceOf(item), optionGroups: groups.map(optionGroupViewOf) };
+      }),
+      audience: service,
+    };
   }
 }
 

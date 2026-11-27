@@ -90,6 +90,11 @@
   font-weight: var(--fold-weight-regular);
 }
 
+/* Les options de l'article : une rangée de plus, sur toute la largeur. */
+.options {
+  grid-column: 1 / -1;
+}
+
 /* La limite propre de l'article, sous son prix. */
 .made-to-order {
   /* Une troisième rangée, seulement quand la limite existe. */

@@ -16,6 +16,8 @@
           [pending]="cart.pendingSkus().has(line.product.sku)"
           (quantityChange)="cart.setQuantity(line.product.sku, $event)"
           (dropped)="cart.drop(line.product.sku)"
+          [optionGroups]="optionGroups.groupsOf(line.product.sku)"
+          (optionChoicesChange)="cart.setOptions(line.product.sku, $event)"
         ></li>
       }
     </ul>

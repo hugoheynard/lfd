@@ -2,6 +2,7 @@ import type {
   CustomerOrderView,
   DiscountLabelView,
   OrderRateAmounts,
+  OrderLineOptionChoiceView,
   OrderSaleUnit,
 } from '@lfd/contracts';
 
@@ -66,6 +67,8 @@ export interface OrderTicketLine {
   readonly saleUnit: OrderSaleUnit;
   readonly unitTtcCents: number;
   readonly lineTtcCents: number;
+  /** Les options figées de la ligne (« dont 2 tranché ») ; absentes = aucune. */
+  readonly optionChoices?: readonly OrderLineOptionChoiceView[];
 }
 
 export function ticketOf(order: CustomerOrderView): OrderTicket | null {
@@ -86,6 +89,7 @@ export function ticketOf(order: CustomerOrderView): OrderTicket | null {
       saleUnit: line.saleUnit,
       unitTtcCents: unit,
       lineTtcCents: total,
+      ...(line.optionChoices === undefined ? {} : { optionChoices: line.optionChoices }),
     });
   }
   return {

@@ -1,0 +1,21 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.lo-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.lo-legend {
+  padding: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}

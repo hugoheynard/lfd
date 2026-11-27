@@ -1,5 +1,6 @@
 import { Injectable, signal, type Signal } from '@angular/core';
 import type { OrderSaleUnit } from '@lfd/contracts';
+import { settleLineOptions, type LineOptionChoice } from '@lfd/b2b-ui/line-options';
 
 import {
   clearLocal,
@@ -40,14 +41,50 @@ function keysOf(workspace: string | null): {
   readonly cart: string;
   readonly savedAt: string;
   readonly units: string;
+  readonly options: string;
 } {
   return workspace === null
-    ? { cart: KEY, savedAt: SAVED_AT_KEY, units: UNITS_KEY }
+    ? { cart: KEY, savedAt: SAVED_AT_KEY, units: UNITS_KEY, options: OPTIONS_KEY }
     : {
         cart: `cart.ws.${workspace}`,
         savedAt: `cart.ws.${workspace}.savedAt`,
         units: `cart.ws.${workspace}.units`,
+        options: `cart.ws.${workspace}.options`,
       };
+}
+
+/**
+ * Les options de chaque ligne (« dont 2 tranchés », `plan-options-de-commande.md`,
+ * § 3.3), dans une clé à part pour la même raison que l'unité : la forme de
+ * `cart` est déjà écrite chez les clients. Une ligne sans entrée n'a pas d'option.
+ */
+const OPTIONS_KEY = 'cart.options';
+
+/** Les options relues : des choix nommés, à quantité entière positive, rien d'autre. */
+function parseOptions(raw: unknown): Readonly<Record<string, readonly LineOptionChoice[]>> | null {
+  if (!isRecord(raw)) {
+    return null;
+  }
+  const clean: Record<string, readonly LineOptionChoice[]> = {};
+  for (const [sku, value] of Object.entries(raw)) {
+    const choices = Array.isArray(value) ? value.flatMap(choiceOf) : [];
+    if (choices.length > 0) {
+      clean[sku] = choices;
+    }
+  }
+  return clean;
+}
+
+function choiceOf(raw: unknown): LineOptionChoice[] {
+  if (!isRecord(raw)) {
+    return [];
+  }
+  const group = readString(raw['group']);
+  const choice = readString(raw['choice']);
+  const quantity = readNumber(raw['quantity']);
+  return group === null || choice === null || quantity === null || quantity <= 0
+    ? []
+    : [{ group, choice, quantity: Math.floor(quantity) }];
 }
 
 /**
@@ -173,6 +210,27 @@ export class CartStore {
    */
   readonly units: Signal<Readonly<Record<string, OrderSaleUnit>>> = this.units$.asReadonly();
 
+  private readonly options$ = signal<Readonly<Record<string, readonly LineOptionChoice[]>>>(
+    readLocal(OPTIONS_KEY, parseOptions) ?? {},
+  );
+
+  /** Les options de chaque ligne ; une ligne absente n'en porte aucune. */
+  readonly options: Signal<Readonly<Record<string, readonly LineOptionChoice[]>>> =
+    this.options$.asReadonly();
+
+  /**
+   * Pose les options d'une ligne, déjà bornées par le sélecteur. C'est un
+   * geste : il date le panier, comme une quantité.
+   */
+  setOptions(productId: string, choices: readonly LineOptionChoice[], at: string = now()): void {
+    if (this.quantityOf(productId) === 0) {
+      return;
+    }
+    this.savedAt$.set(at);
+    this.options$.update((current) => withOptions(current, productId, choices));
+    this.persist();
+  }
+
   /**
    * Quand ce panier a été TOUCHÉ pour la dernière fois, en ISO — `null` tant
    * qu'il ne l'a jamais été.
@@ -216,6 +274,21 @@ export class CartStore {
       }
       return next;
     });
+    // Diminuer réduit d'abord le « sans », puis les options ; au poids, elles suivent la ligne.
+    this.options$.update((current) => {
+      const choices = current[productId];
+      if (choices === undefined) {
+        return current;
+      }
+      const unit = this.units$()[productId];
+      return withOptions(
+        current,
+        productId,
+        quantity > 0
+          ? settleLineOptions(choices, { quantity: Math.floor(quantity), saleUnit: unit })
+          : [],
+      );
+    });
     this.persist();
   }
 
@@ -223,6 +296,7 @@ export class CartStore {
     this.savedAt$.set(at);
     this.quantities$.set({});
     this.units$.set({});
+    this.options$.set({});
     this.persist();
   }
 
@@ -239,10 +313,12 @@ export class CartStore {
     quantities: Readonly<Record<string, number>>,
     at: string | null,
     units: Readonly<Record<string, OrderSaleUnit>> = {},
+    options: Readonly<Record<string, readonly LineOptionChoice[]>> = {},
   ): void {
     this.savedAt$.set(at);
     this.quantities$.set(parseCart(quantities) ?? {});
     this.units$.set(parseUnits(units) ?? {});
+    this.options$.set(parseOptions(options) ?? {});
     this.persist();
   }
 
@@ -265,12 +341,14 @@ export class CartStore {
       clearLocal(KEY);
       clearLocal(SAVED_AT_KEY);
       clearLocal(UNITS_KEY);
+      clearLocal(OPTIONS_KEY);
     }
     const keys = keysOf(workspace);
     this.scope$.set(workspace);
     this.quantities$.set(readLocal(keys.cart, parseCart) ?? {});
     this.savedAt$.set(readLocal(keys.savedAt, readString));
     this.units$.set(readLocal(keys.units, parseUnits) ?? {});
+    this.options$.set(readLocal(keys.options, parseOptions) ?? {});
   }
 
   /**
@@ -291,6 +369,9 @@ export class CartStore {
     this.units$.update((current) =>
       Object.fromEntries(Object.entries(current).filter(([sku]) => known.has(sku))),
     );
+    this.options$.update((current) =>
+      Object.fromEntries(Object.entries(current).filter(([sku]) => known.has(sku))),
+    );
     this.persist();
   }
 
@@ -303,6 +384,7 @@ export class CartStore {
     this.quantities$.set({});
     this.savedAt$.set(null);
     this.units$.set({});
+    this.options$.set({});
   }
 
   /** Écrit la copie de l'espace courant, sous SES clés. */
@@ -311,7 +393,23 @@ export class CartStore {
     writeLocal(keys.cart, this.quantities$());
     writeLocal(keys.savedAt, this.savedAt$());
     writeLocal(keys.units, this.units$());
+    writeLocal(keys.options, this.options$());
   }
+}
+
+/** Les options d'une ligne remplacées ; une ligne sans option perd son entrée. */
+function withOptions(
+  current: Readonly<Record<string, readonly LineOptionChoice[]>>,
+  productId: string,
+  choices: readonly LineOptionChoice[],
+): Readonly<Record<string, readonly LineOptionChoice[]>> {
+  const next = { ...current };
+  if (choices.length === 0) {
+    delete next[productId];
+  } else {
+    next[productId] = choices;
+  }
+  return next;
 }
 
 /** L'instant du geste. Le front n'a pas de port d'horloge — cf. `lint:clock-port`, qui garde l'API. */

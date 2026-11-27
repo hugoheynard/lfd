@@ -98,7 +98,7 @@ import { NotifyService } from '../../notify.service';
 import { DeliveryZonesService } from '../../b2b/reglages/delivery-zones.service';
 import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
 import { AdminCatalogService } from '../catalog.service';
-import { loadShelfPrices } from './customer-shelf-prices';
+import { loadShelfPrices, optionGroupsIndexOf } from './customer-shelf-prices';
 import { AdminOrdersService } from '../orders.service';
 import { OrderDraftsService } from '../order-drafts.service';
 import {
@@ -582,6 +582,7 @@ export class NouvelleCommandePage {
       this.catalogue.set(catalogue);
       this.habits.set(habits);
       this.shelfPrices.set(shelfPrices.prices);
+      this.cart.offerOptions(optionGroupsIndexOf(shelfPrices.prices));
       this.shelfPricesIssue.set(shelfPrices.failure);
       this.pickups.set(pickups);
       this.zones.set(zones);

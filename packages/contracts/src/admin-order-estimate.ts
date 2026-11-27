@@ -1,5 +1,6 @@
 import type { OrderQuoteCutoffView, OrderSaleUnit, VatShareView } from "./order.js";
 import type { ShopItemLockedReason } from "./shop-catalogue.js";
+import type { OfferedOptionGroupView } from "./option-groups.js";
 
 /**
  * **Ce que la saisie de l'équipe coûterait, au centime** — la réponse de
@@ -130,6 +131,12 @@ export interface CustomerShelfPriceView {
   readonly struckFromTtcCents: number | null;
   /** Pourquoi l'article ne se commande pas pour ce client ; `null` s'il se commande. */
   readonly lockedReason: ShopItemLockedReason | null;
+  /**
+   * Les options que la clientèle de CE client peut demander sur l'article
+   * (`plan-options-de-commande.md`, § 3.3) — absent quand il n'y en a aucune.
+   * L'équipe qui saisit applique la clientèle du client, jamais la sienne.
+   */
+  readonly optionGroups?: readonly OfferedOptionGroupView[];
 }
 
 /**

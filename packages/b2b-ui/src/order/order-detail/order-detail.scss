@@ -374,6 +374,11 @@ fold-aside-layout {
 }
 
 // La cellule « Article » : le nom, la remise, le lien, l'un sous l'autre.
+.od-article-option {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
 .od-article {
   display: flex;
   flex-direction: column;

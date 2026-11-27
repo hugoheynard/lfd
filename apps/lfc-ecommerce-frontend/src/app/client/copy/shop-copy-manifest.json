@@ -3946,6 +3946,20 @@
           "variables": ["name"]
         },
         {
+          "key": "cart.optionCount",
+          "fr": "Dont {label}",
+          "en": "Of which {label}",
+          "it": "Di cui {label}",
+          "variables": ["label"]
+        },
+        {
+          "key": "cart.optionCountHint",
+          "fr": "Sur {n} ; le reste sans",
+          "en": "Out of {n}; the rest without",
+          "it": "Su {n}; il resto senza",
+          "variables": ["n"]
+        },
+        {
           "key": "cart.quantityAria",
           "fr": "Quantité de {name}",
           "en": "Quantity of {name}",
@@ -7138,6 +7152,13 @@
           "en": "/ kg",
           "it": "/ kg",
           "variables": []
+        },
+        {
+          "key": "orders.ticketOptionSome",
+          "fr": "dont {n} {label}",
+          "en": "{n} of them {label}",
+          "it": "di cui {n} {label}",
+          "variables": ["n", "label"]
         },
         {
           "key": "orders.ticketVoucher",

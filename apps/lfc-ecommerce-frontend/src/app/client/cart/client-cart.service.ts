@@ -1,5 +1,6 @@
 import { computed, effect, inject, Injectable, Injector, untracked } from '@angular/core';
 import { FoldPanelHostService } from 'fold-ng';
+import type { LineOptionChoice } from '@lfd/b2b-ui/line-options';
 
 import { type CartLine } from './cart-total';
 import { CartStore } from './cart.store';
@@ -127,13 +128,20 @@ export class ClientCart {
     }
     const quantities = this.store.quantities();
     const units = this.store.units();
+    const options = this.store.options();
     return this.catalogue
       .items()
       .filter((item) => (quantities[item.sku] ?? 0) > 0 && !isLocked(item))
       .map((product): CartLine => {
         const saleUnit = units[product.sku];
         const quantity = quantities[product.sku] ?? 0;
-        return saleUnit === undefined ? { product, quantity } : { product, quantity, saleUnit };
+        const optionChoices = options[product.sku];
+        return {
+          product,
+          quantity,
+          ...(saleUnit === undefined ? {} : { saleUnit }),
+          ...(optionChoices === undefined ? {} : { optionChoices }),
+        };
       });
   });
 
@@ -306,6 +314,15 @@ export class ClientCart {
    */
   drop(productId: string): void {
     this.store.setQuantity(productId, 0);
+  }
+
+  /**
+   * Les options d'une ligne (« dont 2 tranchés », `plan-options-de-commande.md`,
+   * § 3.3), déjà bornées par le sélecteur. Elles se gardent avec le panier et
+   * partent au devis comme à la passation.
+   */
+  setOptions(productId: string, choices: readonly LineOptionChoice[]): void {
+    this.store.setOptions(productId, choices);
   }
 
   /** Retire du panier les articles verrouillés — cf. {@link reservedLines}. */

@@ -422,6 +422,8 @@ export const IT: ClientCopy = {
     accountSoon:
       'L’addebito sul conto arriva nel prossimo lotto — attende la vostra condizione di pagamento.',
     dropAria: 'Rimuovi {name} dal carrello',
+    optionCount: 'Di cui {label}',
+    optionCountHint: 'Su {n}; il resto senza',
     quantityAria: 'Quantità di {name}',
     weightAria: 'Peso di {name}, in grammi',
     pay: 'Pago il mio ordine · {total}',

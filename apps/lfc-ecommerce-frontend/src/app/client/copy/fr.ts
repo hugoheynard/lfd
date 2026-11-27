@@ -417,6 +417,8 @@ export const FR: ClientCopy = {
     accountSoon:
       'Le règlement au compte arrive au prochain lot — il attend votre condition de règlement.',
     dropAria: 'Retirer {name} du panier',
+    optionCount: 'Dont {label}',
+    optionCountHint: 'Sur {n} ; le reste sans',
     quantityAria: 'Quantité de {name}',
     weightAria: 'Poids de {name}, en grammes',
     pay: 'Régler ma commande · {total}',

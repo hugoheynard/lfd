@@ -1407,6 +1407,7 @@ export {
   idempotencyKeySchema,
   MAX_LINE_QUANTITY,
   MAX_LINE_WEIGHT_GRAMS,
+  MAX_LINE_OPTION_CHOICES,
   MAX_ORDER_LINES,
   toCustomerQuote,
   toCustomerOrder,
@@ -1486,6 +1487,7 @@ export type {
   OrderSettlement,
   OrderOrigin,
   OrderLineView,
+  OrderLineOptionChoiceView,
   OrderSaleUnit,
   OrderView,
   OrderPaymentIntent,
@@ -3706,3 +3708,9 @@ export {
   type MyFavoritesView,
 } from "./shop-favorites.js";
 export { fileNameCustomerPart, orderDocumentFileName } from "./document-file-name.js";
+export type {
+  OfferedOptionChoiceView,
+  OfferedOptionGroupView,
+  ShopItemOptionGroupsView,
+  ShopOptionGroupsView,
+} from "./option-groups.js";

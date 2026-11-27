@@ -1,4 +1,5 @@
 import type { OrderSaleUnit, ShopItemView } from '@lfd/contracts';
+import type { LineOptionChoice } from '@lfd/b2b-ui/line-options';
 
 /**
  * **Ce qu'une ligne de panier EST** — et plus rien de ce qu'elle coûte.
@@ -30,4 +31,6 @@ export interface CartLine {
    * absente : un panier d'avant, lu à l'unité du catalogue.
    */
   readonly saleUnit?: OrderSaleUnit;
+  /** Les options choisies (« dont 2 tranchés ») ; absentes = aucune. */
+  readonly optionChoices?: readonly LineOptionChoice[];
 }

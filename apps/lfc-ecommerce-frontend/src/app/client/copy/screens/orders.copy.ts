@@ -634,6 +634,8 @@ export interface OrdersCopy {
   readonly ticketArticles: string;
   /** L'unité d'une étiquette au poids, sur le ticket (P4 de `vente-au-poids.md`). */
   readonly ticketPerKilogram: string;
+  /** `{n}` et `{label}` remplacés : une option figée sur une partie de la ligne (« dont 2 tranché »). */
+  readonly ticketOptionSome: string;
   readonly ticketVoucher: string;
   readonly ticketDelivery: string;
   /** La ligne de la livraison offerte par le franco, au ticket. */
@@ -800,6 +802,7 @@ export const ORDERS_FR: OrdersCopy = {
   ticketHead: 'Votre ticket',
   ticketArticles: 'Articles',
   ticketPerKilogram: '/ kg',
+  ticketOptionSome: 'dont {n} {label}',
   ticketVoucher: 'Bon de fidélité',
   ticketDelivery: 'Livraison',
   ticketFreeDelivery: 'Livraison offerte',
@@ -944,6 +947,7 @@ export const ORDERS_EN: OrdersCopy = {
   ticketHead: 'Your receipt',
   ticketArticles: 'Items',
   ticketPerKilogram: '/ kg',
+  ticketOptionSome: '{n} of them {label}',
   ticketVoucher: 'Loyalty voucher',
   ticketDelivery: 'Delivery',
   ticketFreeDelivery: 'Free delivery',
@@ -1088,6 +1092,7 @@ export const ORDERS_IT: OrdersCopy = {
   ticketHead: 'Il tuo scontrino',
   ticketArticles: 'Articoli',
   ticketPerKilogram: '/ kg',
+  ticketOptionSome: 'di cui {n} {label}',
   ticketVoucher: 'Buono fedeltà',
   ticketDelivery: 'Consegna',
   ticketFreeDelivery: 'Consegna gratuita',

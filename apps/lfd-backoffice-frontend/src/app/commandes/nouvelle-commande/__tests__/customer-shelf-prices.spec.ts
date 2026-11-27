@@ -7,6 +7,7 @@ import {
   loadShelfPrices,
   LOCKED_LABEL,
   OFF_MENU_LABEL,
+  optionGroupsIndexOf,
   SHELF_PRICES_UNAVAILABLE,
   shelfPriceIndexOf,
   shelfPricingOf,
@@ -102,5 +103,24 @@ describe('loadShelfPrices', () => {
       });
     });
     expect(load.failure).toBe(`${SHELF_PRICES_UNAVAILABLE} Ce compte est résilié.`);
+  });
+});
+
+describe('les options du client, lues avec ses prix (plan des options, § 3.3)', () => {
+  const SLICING = {
+    id: 'grp_slicing',
+    name: 'Tranchage',
+    choices: [{ key: 'sliced', label: 'tranché' }],
+  };
+
+  it('range les groupes par SKU, et ignore un article sans option', () => {
+    const index = optionGroupsIndexOf(
+      table([price({ sku: 'BAG', optionGroups: [SLICING] }), price({ sku: 'CRO' })]),
+    );
+    expect([...index]).toEqual([['BAG', [SLICING]]]);
+  });
+
+  it('sans table, rien à choisir', () => {
+    expect(optionGroupsIndexOf(null).size).toBe(0);
   });
 });

@@ -1,4 +1,5 @@
 import { weightLabel } from '@lfd/money';
+import { lineOptionMentions } from '@lfd/b2b-ui/line-options';
 
 import { formatCents, formatRate } from '../format-money';
 import type { DiscountLabelView } from '@lfd/contracts';
@@ -15,6 +16,7 @@ export interface TicketRow {
 export interface TicketCopy {
   readonly ticketArticles: string;
   readonly ticketPerKilogram: string;
+  readonly ticketOptionSome: string;
   readonly detailPickupDiscount: string;
   readonly ticketVoucher: string;
   readonly ticketDelivery: string;
@@ -47,9 +49,13 @@ export function ticketRowsOf(
     ...ticket.lines.map((line) => ({
       // Au poids : « 500 g · Saumon (12,40 € / kg) » — l'étiquette est au kilo.
       label:
-        line.saleUnit === 'weight'
+        (line.saleUnit === 'weight'
           ? `${weightLabel(line.quantity)} · ${line.name} (${formatCents(line.unitTtcCents)} ${copy.ticketPerKilogram})`
-          : `${String(line.quantity)} × ${line.name} (${formatCents(line.unitTtcCents)})`,
+          : `${String(line.quantity)} × ${line.name} (${formatCents(line.unitTtcCents)})`) +
+        // Les options figées (« dont 2 tranché »), sans prix : elles sont gratuites.
+        lineOptionMentions(line, { some: copy.ticketOptionSome })
+          .map((mention) => ` · ${mention}`)
+          .join(''),
       value: formatCents(line.lineTtcCents),
     })),
     { label: copy.ticketArticles, value: formatCents(ticket.articlesCents) },

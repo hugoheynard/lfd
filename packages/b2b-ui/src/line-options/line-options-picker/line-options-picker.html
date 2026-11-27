@@ -1,0 +1,28 @@
+@for (group of groups(); track group.id) {
+  <fieldset class="lo-group">
+    <legend class="lo-legend">{{ group.name }}</legend>
+    @for (option of group.choices; track option.key) {
+      @if (byWeight()) {
+        <fold-checkbox
+          size="sm"
+          [label]="option.label"
+          [checked]="quantityOf(group.id, option.key) > 0"
+          (checkedChange)="set(group.id, option.key, $event ? 1 : 0)"
+        />
+      } @else {
+        <fold-number-input
+          size="sm"
+          integer
+          spinner="plusminus"
+          controls="outside"
+          [label]="countLabel(option.label)"
+          [hint]="countHint()"
+          [min]="0"
+          [max]="ceilingOf(group.id, option.key)"
+          [value]="quantityOf(group.id, option.key)"
+          (valueChange)="set(group.id, option.key, $event)"
+        />
+      }
+    }
+  </fieldset>
+}

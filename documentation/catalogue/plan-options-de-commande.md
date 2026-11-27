@@ -101,6 +101,45 @@ lecture.
   options ; le choix vaut pour toute la ligne.
 - **Proposé** : plusieurs groupes sur une ligne (tranché + emballé), chacun
   compté indépendamment.
+- **Décidé le 2026-11-27 (lot G3)** : changer les options d'une commande
+  déjà inscrite au fournil est permis, comme changer une quantité — mêmes
+  droits (l'équipe, commande au compte, à régler en boutique ou offerte),
+  même chemin. La révision « quantités seulement » (`isQuantitiesOnly`)
+  admet déjà une révision qui ne change que les options (mêmes articles) ;
+  le guichet du fournil (`OrderRevisionDesk`) et celui du colisage
+  (`PackingRevisionDesk`) reçoivent désormais, par ligne, les options à jour
+  avec le dû, les écrivent, et le bon de livraison prévu suit. Le compte à
+  produire ne bouge pas : une révision qui ne change que les options ne
+  monte rien.
+- **G3, la mention** : « Tranchage : 2 × tranché » — un groupe par segment,
+  le compte devant le choix quand il ne vaut pas pour toute la ligne ; au
+  poids, ou quand toute la ligne le porte, le choix seul. Le libellé est
+  celui du référentiel : son pluriel ne se fabrique pas.
+- **G3, le départ partiel et le reliquat** : les options se plafonnent à ce
+  qui part par la règle de la révision (`carriedOptionChoices`, le « sans »
+  d'abord). Le reliquat reprend les options d'origine plafonnées à sa
+  quantité, par la même règle : le colisage ne dit pas quelles pièces
+  manquaient.
+- **Décidé au lot G4, 2026-11-27** : le panier **garde** les options. Le
+  panier enregistré (`shop_carts.payload`, schéma `cart`) range déjà ses
+  lignes sous la forme d'`orderLineInputSchema`, qui porte `optionChoices` :
+  aucune migration. La copie du navigateur les range dans une clé à part
+  (`cart.options`, comme `cart.units`), et la passation les renvoie.
+- **Décidé au lot G4, 2026-11-27** : les options se **choisissent sur la
+  ligne du panier** (boutique) et sur la ligne de la saisie (équipe), pas sur
+  la fiche produit — c'est là que la quantité, qui les borne, est connue. À
+  la pièce, un compteur « Dont tranché » par choix, borné par ce que le groupe
+  laisse ; au poids, une case qui vaut pour toute la ligne. Diminuer la
+  quantité réduit d'abord le « sans ».
+- **Décidé au lot G4, 2026-11-27** : les écrans lisent les options par une
+  route à part du rayon (`GET /shop/catalogue/options`, sans jeton,
+  `?audience=pro` pour la visite pro ; `GET /shop/catalogue/options/mine`,
+  murée, à la clientèle de la société de l'appelant) et, pour l'équipe, dans
+  la table des prix du client (`optionGroups` sur
+  `GET /admin/catalog/companies/:companyId/shelf-prices`, à la clientèle du
+  CLIENT). Le rayon est gardé en cache et tiré de l'instantané du catalogue,
+  dont le miroir des options ne fait pas partie : l'y ajouter aurait demandé
+  un déclencheur de version et une purge des rayons pour un champ d'écran.
 
 ## 5. Les lots
 

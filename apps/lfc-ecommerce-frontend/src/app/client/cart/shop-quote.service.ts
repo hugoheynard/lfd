@@ -552,6 +552,7 @@ export class ShopQuote {
   private payloadLines(): ShopQuotePayload['lines'] {
     const quantities = this.store.quantities();
     const units = this.store.units();
+    const options = this.store.options();
     // L'unité FIGÉE à l'ajout, jamais celle du catalogue d'aujourd'hui : c'est
     // le serveur qui dit qu'elle a changé, et retire la ligne.
     return (
@@ -561,7 +562,12 @@ export class ShopQuote {
         // le serveur refuserait tout le décompte pour lui.
         .filter((item) => (quantities[item.sku] ?? 0) > 0 && !isLocked(item))
         .map((item) =>
-          requestedLine(item.sku, quantities[item.sku] ?? 0, lineTermsOf(units[item.sku], item)),
+          requestedLine(
+            item.sku,
+            quantities[item.sku] ?? 0,
+            lineTermsOf(units[item.sku], item),
+            options[item.sku],
+          ),
         )
     );
   }

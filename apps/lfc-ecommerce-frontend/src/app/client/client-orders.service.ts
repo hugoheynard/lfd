@@ -23,6 +23,7 @@ import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import { unitPriceCents } from '@lfd/money';
 import { firstValueFrom } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
+import type { LineOptionChoice } from '@lfd/b2b-ui/line-options';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
@@ -923,6 +924,8 @@ function payloadOf(
     product: { sku: string } & SaleTerms;
     quantity: number;
     saleUnit?: OrderSaleUnit;
+    /** Les options choisies (« dont 2 tranchés ») ; absentes = aucune. */
+    optionChoices?: readonly LineOptionChoice[];
   }[],
   idempotencyKey: string,
   settlement: OrderSettlement | null,
@@ -953,7 +956,12 @@ function payloadOf(
     // Une ligne au poids dit son unité : sans elle, le serveur lirait des pièces.
     // Et c'est l'unité FIGÉE à l'ajout qui part (`saisir-un-prix.md`, § 3).
     lines: lines.map((line) =>
-      requestedLine(line.product.sku, line.quantity, lineTermsOf(line.saleUnit, line.product)),
+      requestedLine(
+        line.product.sku,
+        line.quantity,
+        lineTermsOf(line.saleUnit, line.product),
+        line.optionChoices,
+      ),
     ),
     ...serviceContentOf(service),
   };
@@ -1011,6 +1019,8 @@ function guestContentOf(
     product: { sku: string } & SaleTerms;
     quantity: number;
     saleUnit?: OrderSaleUnit;
+    /** Les options choisies (« dont 2 tranchés ») ; absentes = aucune. */
+    optionChoices?: readonly LineOptionChoice[];
   }[],
   idempotencyKey: string,
   locale: LocaleCode,

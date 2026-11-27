@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
 import type {
+  OfferedOptionGroupView,
   CustomerShelfPriceView,
   CustomerShelfPricesView,
   ShopItemLockedReason,
@@ -133,4 +134,20 @@ export async function loadShelfPrices(
         : SHELF_PRICES_UNAVAILABLE,
     };
   }
+}
+
+/**
+ * Les groupes d'options du client, par SKU (`plan-options-de-commande.md`,
+ * § 3.3) — servis avec la table des prix, à SA clientèle. Sans table, rien.
+ */
+export function optionGroupsIndexOf(
+  view: CustomerShelfPricesView | null,
+): ReadonlyMap<string, readonly OfferedOptionGroupView[]> {
+  return new Map(
+    (view?.items ?? []).flatMap((item) =>
+      item.optionGroups === undefined || item.optionGroups.length === 0
+        ? []
+        : [[item.sku, item.optionGroups] as const],
+    ),
+  );
 }

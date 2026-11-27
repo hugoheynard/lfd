@@ -188,3 +188,55 @@ describe('le ticket et la livraison offerte (plan livraison offerte, § 2.6)', (
     expect(text).toContain('Livraison offerte (HT)=−10,00');
   });
 });
+
+describe('le ticket et les options de la ligne (plan des options de commande, § 3.3)', () => {
+  const sliced = (quantity: number) => ({
+    group: 'grp_slicing',
+    groupName: 'Tranchage',
+    choice: 'sliced',
+    choiceLabel: 'tranché',
+    quantity,
+  });
+
+  it('dit « dont 2 tranché » sur une partie de la ligne, sans montant de plus', () => {
+    const ticket = ticketOf(
+      exact({
+        lines: [
+          {
+            ...BANANA,
+            productName: 'Pain',
+            quantity: 4,
+            unitPriceTtcCents: 300,
+            lineTotalTtcCents: 1_200,
+            optionChoices: [sliced(2)],
+          },
+        ],
+      }),
+    );
+    const rows = ticket === null ? [] : ticketRowsOf(ticket, FR.orders);
+
+    expect(rows[0]?.label).toBe('4 × Pain (3,00 €) · dont 2 tranché');
+    expect(rows[0]?.value).toBe('12,00 €');
+  });
+
+  it('dit le libellé seul au poids : le choix vaut pour toute la ligne', () => {
+    const ticket = ticketOf(
+      exact({
+        lines: [
+          {
+            ...BANANA,
+            productName: 'Seigle',
+            quantity: 1_200,
+            saleUnit: 'weight',
+            unitPriceTtcCents: 800,
+            lineTotalTtcCents: 960,
+            optionChoices: [sliced(1_200)],
+          },
+        ],
+      }),
+    );
+    const rows = ticket === null ? [] : ticketRowsOf(ticket, FR.orders);
+
+    expect(rows[0]?.label).toBe('1,2 kg · Seigle (8,00 € / kg) · tranché');
+  });
+});

@@ -418,6 +418,8 @@ export const EN: ClientCopy = {
     accountSoon:
       'Charging to account lands in the next batch — it is waiting on your payment term.',
     dropAria: 'Remove {name} from the basket',
+    optionCount: 'Of which {label}',
+    optionCountHint: 'Out of {n}; the rest without',
     quantityAria: 'Quantity of {name}',
     weightAria: 'Weight of {name}, in grams',
     pay: 'Pay for my order · {total}',

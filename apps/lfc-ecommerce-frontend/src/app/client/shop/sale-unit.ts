@@ -1,5 +1,6 @@
 import type { OrderSaleUnit, ShopItemView } from '@lfd/contracts';
 import { lineTotalCents, saleQuantity, weightLabel, type SaleQuantity } from '@lfd/money';
+import { optionChoicesField, type LineOptionChoice } from '@lfd/b2b-ui/line-options';
 
 /**
  * **L'unité de vente d'un article, telle que la boutique la manie** (plan
@@ -122,8 +123,19 @@ export function requestedLine(
   sku: string,
   quantity: number,
   item: SaleTerms,
-): { readonly sku: string; readonly quantity: number; readonly saleUnit?: 'weight' } {
-  return isSoldByWeight(item) ? { sku, quantity, saleUnit: 'weight' } : { sku, quantity };
+  options?: readonly LineOptionChoice[],
+): {
+  readonly sku: string;
+  readonly quantity: number;
+  readonly saleUnit?: 'weight';
+  readonly optionChoices?: LineOptionChoice[];
+} {
+  // Les options choisies (« dont 2 tranchés ») : absentes quand il n'y en a
+  // pas, pour qu'une ligne sans option garde exactement sa forme d'avant.
+  const chosen = optionChoicesField(options);
+  return isSoldByWeight(item)
+    ? { sku, quantity, saleUnit: 'weight', ...chosen }
+    : { sku, quantity, ...chosen };
 }
 
 /**

@@ -1,5 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { FoldIconComponent, FoldNumberInputComponent, FoldSpinnerComponent } from 'fold-ng';
+import type { OfferedOptionGroupView } from '@lfd/contracts';
+import {
+  LineOptionsPicker,
+  type LineOptionChoice,
+  type LineOptionsPickerWords,
+} from '@lfd/b2b-ui/line-options';
 
 import { formatCents, formatMillicents } from '../../format-money';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
@@ -45,7 +51,7 @@ import {
 @Component({
   selector: 'li[app-cart-product-line]',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldIconComponent, FoldNumberInputComponent, FoldSpinnerComponent],
+  imports: [FoldIconComponent, FoldNumberInputComponent, FoldSpinnerComponent, LineOptionsPicker],
   // Plus de `role="group"` sur l'hôte (lot A5, 2026-10-26) : il effaçait le
   // `listitem` du `<li>`, et la liste n'avait plus d'items (axe `list`). Le
   // champ est nommé par son propre `<label for>`, la corbeille par le sien.
@@ -59,6 +65,20 @@ export class CartProductLine {
   readonly quantityChange = output<number>();
   /** Retirer la ligne ENTIÈRE — la corbeille, pas le « − ». */
   readonly dropped = output<void>();
+
+  /**
+   * Les options proposées sur l'article, à la clientèle que le serveur a
+   * résolue (`plan-options-de-commande.md`, § 3.3) — vide : rien à choisir.
+   */
+  readonly optionGroups = input<readonly OfferedOptionGroupView[]>([]);
+  /** Les options choisies, déjà bornées, telles que le sélecteur les rend. */
+  readonly optionChoicesChange = output<readonly LineOptionChoice[]>();
+
+  /** Les mots du sélecteur, dans la langue de la boutique. Aucun prix : les options sont gratuites. */
+  protected readonly optionWords = computed<LineOptionsPickerWords>(() => ({
+    count: this.t().cart.optionCount,
+    countHint: this.t().cart.optionCountHint,
+  }));
 
   private readonly t = inject(ClientCopyService).t;
 

@@ -41,6 +41,7 @@ import { OfferedOptionGroupsReader } from "./domain/ports/offered-option-groups.
 import {
   PrismaCatalogOptionGroupsProjection,
   PrismaOfferedOptionGroupsReader,
+  PrismaShelfOptionGroupsReader,
 } from "./infrastructure/prisma-catalog-option-groups.js";
 import { CatalogFamilyFactsProjection } from "./domain/ports/catalog-family-facts.projection.js";
 import { PrismaCatalogProductFactsProjection } from "./infrastructure/prisma-catalog-product-facts.projection.js";
@@ -74,6 +75,12 @@ import { CatalogAdminChangePruner } from "./domain/ports/catalog-admin-change.pr
 import { PrismaCatalogAdminChangeVersionReader } from "./infrastructure/prisma-catalog-admin-change-version.reader.js";
 import { PrismaCatalogAdminChangePruner } from "./infrastructure/prisma-catalog-admin-change.pruner.js";
 import { ShopCatalogueController } from "./http/shop-catalogue.controller.js";
+import {
+  MyShopOptionGroupsController,
+  ShopOptionGroupsController,
+} from "./http/shop-option-groups.controller.js";
+import { ReadShopOptionGroupsHandler } from "./application/queries/read-shop-option-groups.handler.js";
+import { ShelfOptionGroupsReader } from "./domain/ports/shelf-option-groups.reader.js";
 import { ShopFeaturedController } from "./http/shop-featured.controller.js";
 import { ReadShopCatalogueHandler } from "./application/queries/read-shop-catalogue.js";
 import { ReadShopFeaturedHandler } from "./application/queries/read-shop-featured.handler.js";
@@ -195,6 +202,8 @@ import { PrismaResupplyOnlyArticlesReader } from "./infrastructure/prisma-resupp
     AdminShelfCacheController,
     // La vitrine, sans jeton : on visite d'abord, on s'identifie pour régler.
     ShopCatalogueController,
+    ShopOptionGroupsController,
+    MyShopOptionGroupsController,
     ShopFeaturedController,
   ],
   providers: [
@@ -223,6 +232,7 @@ import { PrismaResupplyOnlyArticlesReader } from "./infrastructure/prisma-resupp
     ReadShopCatalogueHandler,
     ReadShopFeaturedHandler,
     ReadPublicShopCatalogueHandler,
+    ReadShopOptionGroupsHandler,
     ReadPublicShopFeaturedHandler,
     // 🔴 LA logique de prix de la vitrine, pour les DEUX routes. Exportée plus
     // bas : la route reconnue l'appelle avec un `companyId`, la publique avec
@@ -262,6 +272,8 @@ import { PrismaResupplyOnlyArticlesReader } from "./infrastructure/prisma-resupp
     // récepteur du fait de fiche les écrit, la commande les lit filtrés.
     { provide: CatalogOptionGroupsProjection, useClass: PrismaCatalogOptionGroupsProjection },
     { provide: OfferedOptionGroupsReader, useClass: PrismaOfferedOptionGroupsReader },
+    // Les écrans qui proposent de choisir lisent tout le miroir, filtré (G4).
+    { provide: ShelfOptionGroupsReader, useClass: PrismaShelfOptionGroupsReader },
     { provide: CatalogFamilyFactsProjection, useClass: PrismaCatalogFamilyFactsProjection },
     { provide: CatalogRulesProjection, useClass: PrismaCatalogRulesProjection },
     { provide: CatalogOrderLimits, useClass: PrismaCatalogOrderLimits },
@@ -339,6 +351,8 @@ import { PrismaResupplyOnlyArticlesReader } from "./infrastructure/prisma-resupp
     ProductCatalogReader,
     // Pour la commande : les options qu'une ligne peut porter, par clientèle (G2).
     OfferedOptionGroupsReader,
+    // Pour la saisie de l'équipe : les options proposées au client (G4).
+    ShelfOptionGroupsReader,
     // Pour le relais des produits vers la livraison (lot 4 bis) : le froid.
     CatalogColdReader,
     // Pour la tarification : une décision ne vise pas un article retiré (L5).

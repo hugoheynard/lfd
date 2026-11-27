@@ -35,6 +35,7 @@ import {
 } from '@lfd/contracts';
 import { NgTemplateOutlet } from '@angular/common';
 import { CartRow } from '@lfd/b2b-ui/cart';
+import { LineOptionsPicker } from '@lfd/b2b-ui/line-options';
 import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
 import { PermissionsStore } from '../../../auth/permissions.store';
 
@@ -113,6 +114,7 @@ const SPLIT_MIN_MEDIA = '(max-width: 767px)';
     AcheminementCommande,
     BudgetCommitmentFields,
     CartRow,
+    LineOptionsPicker,
     FoldButtonComponent,
     FoldButtonIconComponent,
     FoldCalloutComponent,

@@ -220,3 +220,68 @@ describe('L’unité figée d’une ligne', () => {
     expect(store.units()).toEqual({ 'VRC-001': 'weight' });
   });
 });
+
+describe('Les options d’une ligne, gardées avec le panier (plan des options, § 3.3)', () => {
+  const SLICED = { group: 'grp_slicing', choice: 'sliced' };
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({});
+  });
+
+  it('survivent à un rechargement', () => {
+    const store = TestBed.inject(CartStore);
+    store.setQuantity('PAI-001', 4);
+    store.setOptions('PAI-001', [{ ...SLICED, quantity: 2 }]);
+
+    expect(reload().options()).toEqual({ 'PAI-001': [{ ...SLICED, quantity: 2 }] });
+  });
+
+  it('ne s’accrochent pas à une ligne absente', () => {
+    const store = TestBed.inject(CartStore);
+    store.setOptions('PAI-001', [{ ...SLICED, quantity: 2 }]);
+
+    expect(store.options()).toEqual({});
+  });
+
+  it('une quantité qui baisse réduit d’abord le « sans », et retirer la ligne les oublie', () => {
+    const store = TestBed.inject(CartStore);
+    store.setQuantity('PAI-001', 4);
+    store.setOptions('PAI-001', [{ ...SLICED, quantity: 3 }]);
+
+    store.setQuantity('PAI-001', 3);
+    expect(store.options()['PAI-001']).toEqual([{ ...SLICED, quantity: 3 }]);
+    store.setQuantity('PAI-001', 2);
+    expect(store.options()['PAI-001']).toEqual([{ ...SLICED, quantity: 2 }]);
+    store.setQuantity('PAI-001', 0);
+    expect(store.options()).toEqual({});
+  });
+
+  it('au poids, le choix suit la ligne entière', () => {
+    const store = TestBed.inject(CartStore);
+    store.setQuantity('SEI-001', 1_000, undefined, 'weight');
+    store.setOptions('SEI-001', [{ ...SLICED, quantity: 1_000 }]);
+
+    store.setQuantity('SEI-001', 1_500);
+
+    expect(store.options()['SEI-001']).toEqual([{ ...SLICED, quantity: 1_500 }]);
+  });
+
+  it('une reprise du serveur pose ses options, en entier', () => {
+    const store = TestBed.inject(CartStore);
+    store.setQuantity('VIE-001', 1);
+    store.setOptions('VIE-001', [{ ...SLICED, quantity: 1 }]);
+
+    store.replaceAll(
+      { 'PAI-001': 4 },
+      '2026-01-01T00:00:00.000Z',
+      {},
+      {
+        'PAI-001': [{ ...SLICED, quantity: 2 }],
+      },
+    );
+
+    expect(store.options()).toEqual({ 'PAI-001': [{ ...SLICED, quantity: 2 }] });
+  });
+});

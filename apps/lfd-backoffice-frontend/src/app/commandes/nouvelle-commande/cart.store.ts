@@ -1,7 +1,13 @@
 import { computed, signal, type Signal } from '@angular/core';
 
-import type { OrderLineInput, OrderSaleUnit } from '@lfd/contracts';
+import type { OfferedOptionGroupView, OrderLineInput, OrderSaleUnit } from '@lfd/contracts';
 import { settleSaleQuantity } from '@lfd/b2b-ui/catalog';
+import {
+  offeredChoicesOnly,
+  optionChoicesField,
+  settleLineOptions,
+  type LineOptionChoice,
+} from '@lfd/b2b-ui/line-options';
 
 /** Une ligne du panier en cours de saisie. Le prix n'est là que pour l'écran. */
 export interface CartLine {
@@ -23,6 +29,11 @@ export interface CartLine {
    * de pièces (plan quantité minimale, Q6) ; absent = 1.
    */
   readonly minimum?: number;
+  /**
+   * Les options choisies (« dont 2 tranchés », `plan-options-de-commande.md`,
+   * § 3.3) ; absentes = aucune. Elles partent avec la ligne, sans prix.
+   */
+  readonly optionChoices?: readonly LineOptionChoice[];
 }
 
 /**
@@ -47,9 +58,16 @@ export function saleLineOf(product: {
 
 /** La ligne telle qu'elle part : `saleUnit` n'est écrit que pour le poids. */
 export function requestedLineOf(line: CartLine): OrderLineInput {
+  const options = optionChoicesField(line.optionChoices);
   return line.saleUnit === 'weight'
-    ? { sku: line.sku, quantity: line.quantity, saleUnit: 'weight' }
-    : { sku: line.sku, quantity: line.quantity };
+    ? { sku: line.sku, quantity: line.quantity, saleUnit: 'weight', ...options }
+    : { sku: line.sku, quantity: line.quantity, ...options };
+}
+
+/** Une ligne dont les options ont changé : `optionChoices` disparaît quand il n'y en a plus. */
+function withOptions(line: CartLine, choices: readonly LineOptionChoice[]): CartLine {
+  const { optionChoices: _dropped, ...rest } = line;
+  return choices.length === 0 ? rest : { ...rest, optionChoices: choices };
 }
 
 /**
@@ -89,6 +107,43 @@ export class CartStore {
 
   /** Les lignes, dans l'ordre où elles ont été ajoutées. */
   readonly lines: Signal<readonly CartLine[]> = this.lines$.asReadonly();
+
+  private readonly optionGroups$ = signal<ReadonlyMap<string, readonly OfferedOptionGroupView[]>>(
+    new Map(),
+  );
+
+  /**
+   * Les groupes d'options proposés à CE client, par SKU — servis avec les
+   * prix de son rayon, à sa clientèle (jamais celle de l'équipe). Vide tant
+   * que la table n'est pas lue, ou quand elle a échoué : rien à choisir.
+   */
+  optionGroupsOf(sku: string): readonly OfferedOptionGroupView[] {
+    return this.optionGroups$().get(sku) ?? [];
+  }
+
+  /**
+   * Pose les groupes du client, et retire des lignes les choix qu'il ne se
+   * voit plus proposer : le serveur refuserait toute la ligne pour eux.
+   */
+  offerOptions(groups: ReadonlyMap<string, readonly OfferedOptionGroupView[]>): void {
+    this.optionGroups$.set(groups);
+    this.lines$.update((lines) =>
+      lines.map((line) =>
+        line.optionChoices === undefined
+          ? line
+          : withOptions(line, offeredChoicesOnly(line.optionChoices, groups.get(line.sku) ?? [])),
+      ),
+    );
+  }
+
+  /** Les options d'une ligne, déjà bornées par le sélecteur. */
+  setOptionChoices(sku: string, choices: readonly LineOptionChoice[]): void {
+    this.lines$.update((lines) =>
+      lines.map((line) =>
+        line.sku === sku ? withOptions(line, settleLineOptions(choices, line)) : line,
+      ),
+    );
+  }
 
   /**
    * Les lignes **au prix du catalogue**, sans prix barré. Le prix de ce client
@@ -150,9 +205,16 @@ export class CartStore {
       return;
     }
     this.lines$.update((lines) =>
-      lines.map((line) =>
-        line.sku === sku ? { ...line, quantity: settledLineQuantity(line, quantity) } : line,
-      ),
+      lines.map((line) => {
+        if (line.sku !== sku) {
+          return line;
+        }
+        const settled = { ...line, quantity: settledLineQuantity(line, quantity) };
+        // Diminuer réduit d'abord le « sans », puis les options (§ 3.3).
+        return settled.optionChoices === undefined
+          ? settled
+          : withOptions(settled, settleLineOptions(settled.optionChoices, settled));
+      }),
     );
   }
 

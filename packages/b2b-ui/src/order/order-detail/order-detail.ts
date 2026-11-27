@@ -13,6 +13,7 @@ import {
   type TotalRow,
 } from '../order-pricing';
 import { NgTemplateOutlet } from '@angular/common';
+import { lineOptionMentions } from '../../line-options/line-options';
 import {
   FoldAsideLayoutComponent,
   FoldBadgeComponent,
@@ -402,6 +403,11 @@ export class OrderDetail {
   /** La quantité dite : « 12 », ou « 1,25 kg » au poids (`vente-au-poids.md`, P5). */
   protected quantityOf(line: CustomerOrderLineView): string {
     return saleQuantityLabel(line.quantity, line.saleUnit);
+  }
+
+  /** « dont 2 tranché » — les options figées de la ligne, une mention par choix (G4). */
+  protected optionMentions(line: CustomerOrderLineView): readonly string[] {
+    return lineOptionMentions(line);
   }
 
   protected isAdded(line: CustomerOrderLineView): boolean {

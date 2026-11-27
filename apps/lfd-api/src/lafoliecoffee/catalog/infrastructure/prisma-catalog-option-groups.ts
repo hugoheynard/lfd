@@ -14,6 +14,7 @@ import {
 } from "../domain/ports/catalog-option-groups.projection.js";
 import type { ShopAudience } from "../domain/ports/catalog.reader.js";
 import { OfferedOptionGroupsReader } from "../domain/ports/offered-option-groups.reader.js";
+import { ShelfOptionGroupsReader } from "../domain/ports/shelf-option-groups.reader.js";
 
 const GROUPS_SCHEMA = z.array(
   z.object({
@@ -98,19 +99,44 @@ export class PrismaOfferedOptionGroupsReader extends OfferedOptionGroupsReader {
       where: { sku: { in: [...skus] } },
       select: { sku: true, groups: true },
     });
-    const offered = new Map<string, readonly OfferedOptionGroup[]>();
-    for (const row of rows) {
-      const parsed = GROUPS_SCHEMA.safeParse(row.groups);
-      if (!parsed.success) {
-        throw new UnreadableOptionGroupsError(row.sku);
-      }
-      const groups = optionGroupsOfferedTo(parsed.data, audience);
-      if (groups.length > 0) {
-        offered.set(row.sku, groups);
-      }
-    }
-    return offered;
+    return offeredOf(rows, audience);
   }
+}
+
+/** Tout le miroir, pour les écrans qui proposent de choisir : une lecture, filtrée par l'audience. */
+@Injectable()
+export class PrismaShelfOptionGroupsReader extends ShelfOptionGroupsReader {
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
+
+  async offeredTo(
+    audience: ShopAudience,
+  ): Promise<ReadonlyMap<string, readonly OfferedOptionGroup[]>> {
+    const rows = await this.prisma.catalogItemOptionGroups.findMany({
+      select: { sku: true, groups: true },
+    });
+    return offeredOf(rows, audience);
+  }
+}
+
+/** Les lignes relues, réduites à ce que l'audience se voit proposer ; un SKU sans groupe disparaît. */
+function offeredOf(
+  rows: readonly { readonly sku: string; readonly groups: unknown }[],
+  audience: ShopAudience,
+): ReadonlyMap<string, readonly OfferedOptionGroup[]> {
+  const offered = new Map<string, readonly OfferedOptionGroup[]>();
+  for (const row of rows) {
+    const parsed = GROUPS_SCHEMA.safeParse(row.groups);
+    if (!parsed.success) {
+      throw new UnreadableOptionGroupsError(row.sku);
+    }
+    const groups = optionGroupsOfferedTo(parsed.data, audience);
+    if (groups.length > 0) {
+      offered.set(row.sku, groups);
+    }
+  }
+  return offered;
 }
 
 /** Recopiés en objets nus : Prisma refuse une interface dans un champ JSON. */

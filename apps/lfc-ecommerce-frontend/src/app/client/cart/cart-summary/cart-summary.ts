@@ -18,6 +18,7 @@ import {
 import { formatCents, formatRate } from '../../format-money';
 import { adjustmentValue, labelIn, quoteDiscountRows } from '../quote-discount-rows';
 import { CartProductLine } from '../cart-product-line/cart-product-line';
+import { ShopOptionGroups } from '../../shop/shop-option-groups.store';
 import { StaffCartSuggestion } from '../staff-cart-suggestion.service';
 import { StaffSuggestionCard } from '../../suggestions/staff-suggestion-card/staff-suggestion-card';
 import { ClientCart } from '../client-cart.service';
@@ -69,6 +70,8 @@ export class CartSummary implements OnInit {
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
+  /** Les options que chaque ligne peut porter, à la clientèle résolue par le serveur. */
+  protected readonly optionGroups = inject(ShopOptionGroups);
   /**
    * La suggestion du staff (RS2), puis la calculée « souvent pris avec »
    * (R2), montrées par la carte partagée avec la fiche ; sans règle
@@ -402,6 +405,8 @@ export class CartSummary implements OnInit {
     if (this.linesShown()) {
       this.staffPick.open();
       this.destroyRef.onDestroy(() => this.staffPick.close());
+      // Les options ne se lisent qu'au panier ouvert : c'est là qu'on les choisit.
+      void this.optionGroups.hydrate();
     }
   }
 
