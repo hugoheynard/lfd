@@ -17,6 +17,8 @@ import { B2bReemitController } from "./http/reemit.controller.js";
 import { PrismaReemissionJobReader } from "./infrastructure/prisma-reemission-job.reader.js";
 import { PrismaReemissionJobRepository } from "./infrastructure/prisma-reemission-job.repository.js";
 import { ReemissionRecoveryOnBoot } from "./infrastructure/reemission-recovery.on-boot.js";
+import { BusVariantCustomRecipeMarker } from "./custom-recipe/bus-variant-custom-recipe-marker.js";
+import { VariantCustomRecipeMarker } from "./custom-recipe/variant-custom-recipe-marker.js";
 
 /**
  * Adaptateur du canal **plateforme B2B** — le second canal, après l'ancien canal de vente en ligne.
@@ -47,6 +49,8 @@ import { ReemissionRecoveryOnBoot } from "./infrastructure/reemission-recovery.o
     GetLatestCatalogReemissionHandler,
     GetCatalogReemissionHandler,
     ReemissionRecoveryOnBoot,
+    { provide: VariantCustomRecipeMarker, useClass: BusVariantCustomRecipeMarker },
   ],
+  exports: [VariantCustomRecipeMarker],
 })
 export class B2bPlatformModule {}
