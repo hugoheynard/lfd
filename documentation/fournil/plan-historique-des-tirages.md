@@ -289,9 +289,12 @@ touche pas (il ne lit le commerce qu'après une réouverture).
 
 ## 3. Les lots
 
-**H-1 — fermer la course de la réouverture (préalable).** Un arrêt refuse
+~~**H-1 — fermer la course de la réouverture (préalable).** Un arrêt refuse
 de passer tant que la remise de la réouverture précédente n'est pas faite au
-commerce (§ 5). Bâti avant H3 : c'est lui qui rend l'orange honnête.
+commerce (§ 5). Bâti avant H3 : c'est lui qui rend l'orange honnête.~~
+— 2026-11-27, bâti, non commité. Garde-fou du § 2 bis :
+`test/production-normal-path.e2e-spec.ts` ; régression :
+`test/production-rearrest-before-release.e2e-spec.ts`.
 
 **H0 — « hors plan » jusqu'au fournil.** `offPlan: boolean | null` sur
 `ProducibleOrder` (13 fichiers hors tests, et les faux du port), rempli par
@@ -366,13 +369,55 @@ L'arrêt le lit sous son verrou, après une réouverture seulement. Réponse
 
 - arrêt manuel : refus nommé — « la réouverture est encore en cours de
   remise au commerce, réessayez dans un instant » ;
-- arrêt automatique : refusé ce tour-là, comme tout refus du tour (alerte
-  « bloqué » si ça dure), et repris au tour suivant.
+- arrêt automatique : refusé comme tout refus du tour (`afterRefusal` :
+  trace `failed`, cloche « non arrêté » avec le message). Il n'est **pas**
+  repris au tour suivant — le tour ne tente qu'une fois par journée
+  (`closeStep` : `attempt === null`) : la reprise est à la main, et la
+  cloche le dit.
+
+**L'instant de l'arrêt défait est gardé sur la journée** (décidé au bâti,
+2026-11-27). `reopen` efface `closed_at` ; la journée ne gardait que
+`reopened_at`/`reopened_by`, et la remise borne sa condition à
+`confirmedAt = <arrêt défait>`. Un repli « confirmée avant `reopened_at` »
+aurait été faux : une commande restée confirmée par un arrêt plus ancien
+(remise sautée, prête, manque décidé) bloquerait l'arrêt pour toujours. D'où
+`production_day.undone_closed_at` (migration additive
+`20261127235500_l_arret_defait_garde_son_instant`), posé par `reopen` dans
+la marque de réouverture (`ReopenMark.undoneClosedAt`). Nulle pour une
+réouverture d'avant la colonne : l'arrêt ne demande alors rien au commerce.
+
+La condition est **une seule fonction** (`releasableFromPlanWhere`,
+`lafoliecoffee/orders/infrastructure/order-plan-release.where.ts`), lue par la
+remise et par le lecteur `ReopenReleasePending`
+(`production/channels/commerce/`). Le lecteur ne borne pas aux `orderIds` du
+fait : la journée n'en garde pas la liste. Le refus est
+`ReopenReleasePendingError` (409), rangé dans `plan/domain/errors/` et non
+dans `day/` : l'index de `day/` est à son plafond de noms exportés
+(`lint:production-subcontexts`), et c'est l'arrêt — `plan/` — qui refuse.
+
+**Le fait d'arrêt livré après la réouverture ne confirme rien.** La boîte
+d'envoi ne garantit pas l'ordre : livré après la remise, il confirmait des
+commandes sur une journée rouverte, et l'arrêt suivant attendait leur remise
+sans fin. Le commerce (`OnProductionDayClosed`) ne confirme et ne prévoit les
+BL que si la journée est encore arrêtée par CET arrêt (`closed_at` = l'instant
+du fait), lu sous le verrou partagé de la journée jusqu'au `COMMIT` du reçu :
+port `CurrentArrestHold` de `production/channels/commerce/`, déclaré et
+implémenté par le fournil (même verrou que `ArrestedPlanHold`). Sinon il ne
+fait rien : le nouvel arrêt fera le travail. Une réannonce publie le même
+instant et confirme toujours. Régression :
+`test/production-closed-fact-after-reopen.e2e-spec.ts`.
 
 **Écartée : remettre en `placed` dans la transaction de la réouverture.**
 Elle inverserait l'ordre des verrous : l'annulation prend la ligne `orders`
 puis la journée (`order-cancellation.service.ts`), la réouverture prendrait
 la journée puis écrirait `orders`. Risque d'interblocage.
+
+**Risque connu, sans perte** : l'abonné du commerce à l'arrêt tient le
+verrou partagé de la journée puis écrit des lignes `orders` ; l'annulation
+prend la ligne `orders` puis le verrou exclusif de la journée. S'ils se
+croisent, Postgres annule l'un des deux : l'abonné est relivré par la boîte
+d'envoi ; l'annulation, elle, rend une erreur à celui qui annule, qui
+réessaie. Fenêtre étroite (la livraison du fait d'arrêt), assumée.
 
 La fluidité d'ensemble de la réouverture, que Hugo veut repenser, reste un
 chantier à part ; H-1 n'en ferme que la perte silencieuse.

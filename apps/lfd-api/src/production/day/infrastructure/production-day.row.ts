@@ -19,6 +19,7 @@ export const DAY_COLUMNS = {
   retakenBy: true,
   reopenedAt: true,
   reopenedBy: true,
+  undoneClosedAt: true,
   closedBy: true,
   closedByName: true,
   retakenByName: true,
@@ -100,7 +101,7 @@ export function daySnapshotOf(row: DayRow): ProductionDaySnapshot {
     reopened:
       row.reopenedAt === null || row.reopenedBy === null
         ? null
-        : { at: row.reopenedAt, by: row.reopenedBy },
+        : { at: row.reopenedAt, by: row.reopenedBy, undoneClosedAt: row.undoneClosedAt },
     // Le CHECK de la base n'admet que ces deux valeurs.
     packingOwner: row.packingOwner === "packing" ? "packing" : "legacy",
     orders: row.orders.map(orderOf),

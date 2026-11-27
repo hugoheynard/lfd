@@ -19,6 +19,8 @@ import type {
   ResupplyTime,
 } from "../../../channels/commerce/__tests__/order-cutoff-doubles.js";
 import { DayResupplies } from "../../../channels/commerce/__tests__/day-resupplies-doubles.js";
+import { FixedReopenRelease } from "../../../channels/commerce/__tests__/reopen-release-doubles.js";
+import type { ReopenReleasePending } from "../../../channels/commerce/reopen-release.pending.js";
 import { stopRulesOf } from "./settings-doubles.js";
 
 /** Ce qu'il faut pour lire l'arrêt et le retirage ; chaque pièce a un défaut vide. */
@@ -27,6 +29,8 @@ export interface IntakeParts {
   readonly orders: DayOrdersReader;
   readonly withdrawals?: OrderWithdrawalsReader;
   readonly resupplies?: DayResuppliesReader;
+  /** La remise de la réouverture ; par défaut, faite. */
+  readonly releases?: ReopenReleasePending;
 }
 
 /** La lecture sous verrou, montée sur des doublés. */
@@ -36,6 +40,7 @@ export function intakeReadingOf(parts: IntakeParts): PlanIntakeReading {
     parts.orders,
     parts.withdrawals ?? new InMemoryWithdrawals(),
     parts.resupplies ?? new DayResupplies([]),
+    parts.releases ?? new FixedReopenRelease(),
   );
 }
 

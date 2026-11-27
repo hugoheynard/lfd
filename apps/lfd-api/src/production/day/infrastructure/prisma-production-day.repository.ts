@@ -88,6 +88,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
         retakenBy: snapshot.retaken?.by ?? null,
         reopenedAt: snapshot.reopened?.at ?? null,
         reopenedBy: snapshot.reopened?.by ?? null,
+        undoneClosedAt: snapshot.reopened?.undoneClosedAt ?? null,
         ...signerColumns(snapshot.closedBy),
         retakenByName: snapshot.retakenByName,
         retakeCount: snapshot.retakeCount ?? 0,

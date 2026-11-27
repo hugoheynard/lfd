@@ -6,6 +6,7 @@ import {
   type DurableSubscriber,
 } from "../../../../platform/outbox/durable-handler.js";
 import {
+  CurrentArrestHold,
   PRODUCTION_DAY_CLOSED,
   ProductionDayClosedEvent,
 } from "../../../../production/channels/commerce/index.js";
@@ -50,6 +51,16 @@ export const ON_PRODUCTION_DAY_CLOSED = "b2b.orders.absorb-into-plan";
  * (plan E1 (`documentation/commandes/bon-de-livraison.md`), § 6). Une
  * commande écartée par `planWhere` n'est pas confirmée, donc n'a pas de BL.
  *
+ * ## Seulement l'arrêt en vigueur
+ *
+ * La boîte d'envoi ne garantit aucun ordre : livré après une réouverture, le
+ * fait confirmerait des commandes qu'aucun plan ne porte, et le prochain
+ * arrêt attendrait leur remise sans fin. L'abonné tient donc le plan
+ * (`CurrentArrestHold`, verrou partagé jusqu'au `COMMIT` du reçu) et ne fait
+ * rien si `closed_at` n'est plus l'instant du fait — journée rouverte, ou
+ * réarrêtée à un autre instant, dont le propre fait fera le travail. Une
+ * réannonce publie le même instant : elle confirme.
+ *
  * Le relais l'inscrit à `BackgroundWork` : c'est ce que `lint:events-tracked`
  * vérifie sur un `@DurableHandler`.
  */
@@ -59,10 +70,14 @@ export class OnProductionDayClosed implements DurableSubscriber {
   constructor(
     private readonly orders: OrderRepository,
     private readonly deliveryNotes: DeliveryNoteFollowing,
+    private readonly arrest: CurrentArrestHold,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const event = ProductionDayClosedEvent.fromPayload(delivery.payload);
+    if (!(await this.arrest.holdIfCurrent(event.serviceDay, event.closedAt))) {
+      return;
+    }
     // L'instant du SNAPSHOT, pas celui de la réception : deux commandes
     // absorbées par la même clôture portent la même heure, y compris quand le
     // relais livre une heure plus tard ou lors d'une réannonce.

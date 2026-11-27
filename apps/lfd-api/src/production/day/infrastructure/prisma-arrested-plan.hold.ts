@@ -30,15 +30,7 @@ export class PrismaArrestedPlanHold extends ArrestedPlanHold {
   }
 
   async hold(serviceDay: string): Promise<PlanHoldState> {
-    if (currentTransaction() === undefined) {
-      throw new PlanHoldOutsideTransactionError(serviceDay);
-    }
-    const key = dayLockKey(serviceDay);
-    await this.prisma.$executeRaw`SELECT pg_advisory_xact_lock_shared(hashtextextended(${key}, 0))`;
-    const row = await this.prisma.productionDay.findUnique({
-      where: { serviceDay },
-      select: { closedAt: true, reopenedAt: true },
-    });
+    const row = await this.heldHeader(serviceDay);
     if (row === null) {
       return "never_arrested";
     }
@@ -46,5 +38,23 @@ export class PrismaArrestedPlanHold extends ArrestedPlanHold {
       return "arrested";
     }
     return row.reopenedAt === null ? "never_arrested" : "reopened";
+  }
+
+  /**
+   * Le verrou partagé, puis l'en-tête de la journée lu après lui — ce que
+   * {@link hold} et `PrismaCurrentArrestHold` interprètent chacun à sa façon.
+   */
+  async heldHeader(
+    serviceDay: string,
+  ): Promise<{ readonly closedAt: Date | null; readonly reopenedAt: Date | null } | null> {
+    if (currentTransaction() === undefined) {
+      throw new PlanHoldOutsideTransactionError(serviceDay);
+    }
+    const key = dayLockKey(serviceDay);
+    await this.prisma.$executeRaw`SELECT pg_advisory_xact_lock_shared(hashtextextended(${key}, 0))`;
+    return this.prisma.productionDay.findUnique({
+      where: { serviceDay },
+      select: { closedAt: true, reopenedAt: true },
+    });
   }
 }

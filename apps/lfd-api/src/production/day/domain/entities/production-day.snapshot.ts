@@ -62,6 +62,17 @@ export interface PackedMark {
   readonly by: string;
 }
 
+/**
+ * **La réouverture** : l'instant, l'auteur, et l'instant de l'arrêt qu'elle a
+ * défait. Ce dernier est la clé de la remise au commerce (il a confirmé les
+ * commandes de cet arrêt à cet instant précis) : le nouvel arrêt le lit pour
+ * savoir si la remise est faite. `null` ou absent : une réouverture gardée
+ * avant qu'on le garde — l'arrêt défait n'est plus connu.
+ */
+export interface ReopenMark extends PackedMark {
+  readonly undoneClosedAt?: Date | null;
+}
+
 /** Une commande, figée du côté de la production. */
 export interface ProductionOrderSnapshot {
   /**
@@ -224,7 +235,7 @@ export interface ProductionDaySnapshot {
    * Facultative à la RÉHYDRATATION seulement (absente vaut `null`) ;
    * `toSnapshot` la rend toujours.
    */
-  readonly reopened?: PackedMark | null;
+  readonly reopened?: ReopenMark | null;
   /** Qui colise la journée — écrit à la clôture (colisage, §13, B1). */
   readonly packingOwner: PackingOwner;
   readonly orders: readonly ProductionOrderSnapshot[];

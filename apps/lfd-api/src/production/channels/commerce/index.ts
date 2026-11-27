@@ -107,6 +107,13 @@ export {
   ProductionDayReopenedEvent,
   ProductionDayReopenedPayloadError,
 } from "./production-day-reopened.event.js";
+// Le nouvel arrêt attend que le commerce ait remis les commandes de l'arrêt
+// défait (`plan-historique-des-tirages.md`, § 5) : le fournil DÉCLARE, le
+// commerce IMPLÉMENTE, avec la condition de la remise.
+export { ReopenReleasePending } from "./reopen-release.pending.js";
+// Le commerce ne confirme les commandes d'un arrêt que s'il est toujours celui
+// de la journée, lu sous le verrou partagé : le fournil DÉCLARE et IMPLÉMENTE.
+export { CurrentArrestHold } from "./current-arrest.hold.js";
 // Le réassort « au plus tôt » lancé (R4a, `reassort-boutiques/au-plus-tot.md`,
 // 2026-10-22) : le port que le fournil DÉCLARE et IMPLÉMENTE pour refuser,
 // sous le verrou de la journée, l'annulation d'un réassort lancé ; et le fait

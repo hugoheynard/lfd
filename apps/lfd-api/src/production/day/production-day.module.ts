@@ -34,6 +34,7 @@ import { ProductionDayChangeSweepController } from "./http/production-day-change
 import { PrismaArrestedPlanLinesReader } from "./infrastructure/prisma-arrested-plan-lines.reader.js";
 import { PrismaKnownArticles } from "./infrastructure/prisma-known-articles.reader.js";
 import { PrismaArrestedPlanHold } from "./infrastructure/prisma-arrested-plan.hold.js";
+import { PrismaCurrentArrestHold } from "./infrastructure/prisma-current-arrest.hold.js";
 import { PrismaOutputCorrectionsReader } from "./infrastructure/prisma-output-corrections.reader.js";
 import { PrismaAtelierSheetsReader } from "./infrastructure/prisma-atelier-sheets.reader.js";
 import { PrismaClosedPlansReader } from "./infrastructure/prisma-closed-plans.reader.js";
@@ -124,6 +125,7 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
     PrismaClosedPlansReader,
     { provide: ClosedPlansReader, useExisting: PrismaClosedPlansReader },
     PrismaArrestedPlanHold,
+    PrismaCurrentArrestHold,
     PrismaFrozenResuppliesReader,
     PrismaAtelierSheetsReader,
     // Les corrections de déclaration d'une journée (`PackingFeedModule`).
@@ -156,6 +158,7 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
     PrismaOrderInscriptionReader,
     PrismaClosedPlansReader,
     PrismaArrestedPlanHold,
+    PrismaCurrentArrestHold,
     PrismaFrozenResuppliesReader,
     PrismaAtelierSheetsReader,
     PrismaOutputCorrectionsReader,
@@ -173,6 +176,7 @@ export {
   DayPlannedDestinationsReader,
   PrismaArrestedPlanHold,
   PrismaAtelierSheetsReader,
+  PrismaCurrentArrestHold,
   PrismaClosedPlansReader,
   PrismaFrozenResuppliesReader,
   PrismaOrderInscriptionReader,

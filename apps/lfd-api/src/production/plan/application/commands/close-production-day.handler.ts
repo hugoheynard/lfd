@@ -28,8 +28,9 @@ import { CloseProductionDayCommand } from "./close-production-day.command.js";
  * 2. Sous le verrou de la journée, dans une unité de travail : la journée
  *    RECHARGÉE décide. Ouverte, l'heure limite est contrôlée DE NOUVEAU — une
  *    réouverture validée pendant l'attente du verrou la rendait contournable
- *    (corrigé le 2026-11-03, `production-day-close-race.e2e-spec.ts`) —, puis
- *    elle s'arrête sur les retraits, les réassorts et les commandes lus sous
+ *    (corrigé le 2026-11-03, `production-day-close-race.e2e-spec.ts`) —,
+ *    rouverte, elle attend que le commerce ait remis les commandes de l'arrêt
+ *    défait (`ReopenReleasePendingError` sinon), puis elle s'arrête sur les retraits, les réassorts et les commandes lus sous
  *    le même verrou. Déjà arrêtée, le fait est réannoncé sans rien recalculer
  *    (sauf une journée arrêtée par un lancement, qui n'en a jamais publié).
  *
@@ -71,7 +72,7 @@ export class CloseProductionDayHandler implements ICommandHandler<
     current: ProductionDay,
     signer: PlanSigner | null,
   ): Promise<ProductionPlanClosure> {
-    const { producible, withdrawn, resupplies } = await this.reading.arrestUnderLock(day);
+    const { producible, withdrawn, resupplies } = await this.reading.arrestUnderLock(day, current);
     const now = this.clock.now();
     current.close(producible, withdrawn, now, signer, resupplies);
     await this.recording.record(day, current, now);

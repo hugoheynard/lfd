@@ -2,6 +2,7 @@ import { Global, Module } from "@nestjs/common";
 
 import {
   PrismaClosedPlansReader,
+  PrismaCurrentArrestHold,
   PrismaOrderInscriptionReader,
   ProductionOrderRevisionDesk,
   ProductionOrderWithdrawalDesk,
@@ -10,6 +11,7 @@ import { ProductionPlanAdmissionDesk } from "../production/plan/production-plan.
 import { ProductionLaunchedResupplies } from "../production/resupply/production-resupply.module.js";
 import {
   ClosedPlansReader,
+  CurrentArrestHold,
   LaunchedResupplies,
   OrderInscriptionReader,
   OrderRevisionDesk,
@@ -51,6 +53,9 @@ import { ProductionModule } from "../production/production.module.js";
     // L'annulation d'un réassort « au plus tôt » demande, sous le même
     // verrou, s'il est lancé (R4a) : le fournil répond, le commerce refuse.
     { provide: LaunchedResupplies, useExisting: ProductionLaunchedResupplies },
+    // Le commerce ne confirme les commandes d'un arrêt que s'il est toujours
+    // celui de la journée, sous le verrou partagé (plan des versions, § 5).
+    { provide: CurrentArrestHold, useExisting: PrismaCurrentArrestHold },
   ],
   exports: [
     OrderWithdrawalDesk,
@@ -59,6 +64,7 @@ import { ProductionModule } from "../production/production.module.js";
     ClosedPlansReader,
     PlanAdmissionDesk,
     LaunchedResupplies,
+    CurrentArrestHold,
   ],
 })
 export class ProductionDeskFeedModule {}

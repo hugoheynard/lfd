@@ -28,6 +28,7 @@ import {
 } from "../../../../channels/commerce/__tests__/order-cutoff-doubles.js";
 import { DayResupplies } from "../../../../channels/commerce/__tests__/day-resupplies-doubles.js";
 import { InMemoryWithdrawals } from "../../../../day/application/__tests__/withdrawal-doubles.js";
+import { FixedReopenRelease } from "../../../../channels/commerce/__tests__/reopen-release-doubles.js";
 import { PlanArrestRecording } from "../../services/plan-arrest-recording.js";
 import { CloseProductionDayHandler } from "../close-production-day.handler.js";
 
@@ -194,6 +195,8 @@ export interface SceneParts {
   readonly resupplyTime?: ResupplyTime;
   /** L'en-tête lu hors verrou ; par défaut, celui de la journée doublée. */
   readonly status?: ProductionDayStatusReader;
+  /** La remise de la réouverture au commerce ; par défaut, faite. */
+  readonly releases?: FixedReopenRelease;
 }
 
 /** La clôture montée sur ses doublés, la journée `day` en base. */
@@ -210,6 +213,7 @@ export function closeScene(
   const events = new Publisher(uow);
   const durable = new Durable(uow);
   const withdrawals = parts.withdrawals ?? new InMemoryWithdrawals();
+  const releases = parts.releases ?? new FixedReopenRelease();
   const clock = new FixedClock(NOW);
   const admission = admissionOf({
     days,
@@ -227,8 +231,10 @@ export function closeScene(
     orders: commerce,
     withdrawals,
     resupplies: parts.resupplies ?? new DayResupplies(),
+    releases,
   });
   return {
+    releases,
     durable,
     days,
     withdrawals,
@@ -258,6 +264,27 @@ export function closedDay(): ProductionDay {
   const day = openDay();
   day.close([order()], new Set<string>(), EARLIER, null);
   return day;
+}
+
+/** Rien n'a commencé en aval : la réouverture passe. */
+const NOTHING_STARTED = { packingStarted: false, dispatchStarted: false };
+
+/**
+ * Une journée arrêtée à `EARLIER`, puis rouverte avant `NOW` : l'arrêt défait
+ * est celui de `EARLIER`.
+ */
+export function reopenedDay(): ProductionDay {
+  const day = closedDay();
+  day.reopen(NOTHING_STARTED, EARLIER, "staff-1");
+  return day;
+}
+
+/** Une journée rouverte dont la réouverture ne connaît pas l'arrêt défait (gardée avant). */
+export function reopenedBeforeTheColumn(): ProductionDay {
+  return ProductionDay.restore({
+    ...reopenedDay().toSnapshot(),
+    reopened: { at: EARLIER, by: "staff-1" },
+  });
 }
 
 /** Un réassort « pour demain » envoyé au Village (lot R3a). */

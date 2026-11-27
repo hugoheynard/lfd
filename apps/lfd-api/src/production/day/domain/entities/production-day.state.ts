@@ -8,6 +8,7 @@ import type {
   LaunchedResupplySnapshot,
   PackedMark,
   ProducedItemSnapshot,
+  ReopenMark,
   ProductionBatchSnapshot,
   ProductionDaySnapshot,
   ProductionOrderSnapshot,
@@ -36,7 +37,7 @@ export abstract class ProductionDayState implements batching.BatchState {
     protected packingOwnerValue: PackingOwner,
     protected planValue: DayPlan,
     protected batchesValue: readonly ProductionBatchSnapshot[],
-    protected reopenedValue: PackedMark | null,
+    protected reopenedValue: ReopenMark | null,
     protected retakeCountValue: number,
   ) {}
 
@@ -104,8 +105,16 @@ export abstract class ProductionDayState implements batching.BatchState {
   }
 
   /** La dernière réouverture, ou `null` : jamais rouverte. */
-  get reopened(): PackedMark | null {
+  get reopened(): ReopenMark | null {
     return this.reopenedValue;
+  }
+
+  /**
+   * L'instant de l'arrêt que la dernière réouverture a défait, ou `null` :
+   * jamais rouverte, ou rouverte avant qu'on le garde.
+   */
+  get undoneClosedAt(): Date | null {
+    return this.reopenedValue?.undoneClosedAt ?? null;
   }
 
   /** Qui colise la journée — cf. `PackingOwner`. */

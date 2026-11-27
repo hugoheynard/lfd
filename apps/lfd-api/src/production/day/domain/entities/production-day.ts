@@ -179,8 +179,9 @@ export class ProductionDay extends ProductionDayState {
   /**
    * **Rouvre la journée** (Hugo, 2026-10-14) : l'arrêt est défait, le plan du
    * soir effacé (commandes, réassorts « pour demain », compte, retirage), et
-   * la trace `reopened` posée. L'appelant lit {@link resupplies} AVANT pour
-   * les nommer dans le fait. Restent : les fournées annulées (l'historique du
+   * la trace `reopened` posée — avec l'instant de l'arrêt défait, que le
+   * prochain arrêt lit pour attendre la remise du commerce. L'appelant lit
+   * {@link resupplies} AVANT pour les nommer dans le fait. Restent : les fournées annulées (l'historique du
    * four) et les réassorts LANCÉS — le comptoir ne peut plus les annuler, le
    * prochain arrêt les remet au compte.
    *
@@ -194,13 +195,14 @@ export class ProductionDay extends ProductionDayState {
     }
     assertReopenable(this.day.value, this.batchesValue, progress);
     const released = this.orders.map((order) => order.orderId);
+    const undoneClosedAt = this.closedAtValue;
     this.closedAtValue = null;
     this.closedByValue = null;
     this.retakenValue = null;
     this.retakenByNameValue = null;
     this.retakeCountValue = 0;
     this.planValue = this.planValue.cleared();
-    this.reopenedValue = { at, by };
+    this.reopenedValue = { at, by, undoneClosedAt };
     return released;
   }
 

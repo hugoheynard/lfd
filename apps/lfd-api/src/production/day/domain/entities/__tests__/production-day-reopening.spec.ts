@@ -60,7 +60,7 @@ describe("ProductionDay.reopen", () => {
     day.close([order("ord_2"), order("ord_4")], new Set<string>(), RETAKEN, null);
 
     expect(day.orders.map((item) => item.orderId)).toEqual(["ord_2", "ord_4"]);
-    expect(day.reopened).toEqual({ at: REOPENED, by: "staff-1" });
+    expect(day.reopened).toEqual({ at: REOPENED, by: "staff-1", undoneClosedAt: CLOSED });
   });
 
   it("refuse une journée qui n'est pas arrêtée", () => {

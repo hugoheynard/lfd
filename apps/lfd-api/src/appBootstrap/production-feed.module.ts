@@ -21,6 +21,7 @@ import { PrismaExpectedProductionReader } from "../lafoliecoffee/orders/infrastr
 import { ProductionOrderPrintColorsReader } from "../lafoliecoffee/orders/infrastructure/production-order-print-colors.reader.js";
 import { ProductionCommerceDayVersionReader } from "../lafoliecoffee/orders/infrastructure/production-commerce-day-version.reader.js";
 import { PrismaPendingOrdersReader } from "../lafoliecoffee/orders/infrastructure/prisma-pending-orders.reader.js";
+import { PrismaReopenReleasePending } from "../lafoliecoffee/orders/infrastructure/prisma-reopen-release-pending.js";
 import { ProductionDayResupplies } from "../lafoliecoffee/resupply/infrastructure/production-day-resupplies.js";
 import { ProductionRangeResupplies } from "../lafoliecoffee/resupply/infrastructure/production-range-resupplies.js";
 import { ResupplyModule } from "../lafoliecoffee/resupply/resupply.module.js";
@@ -41,6 +42,7 @@ import {
   PendingSettlementSweeper,
   PlannedDeliveryNotesReader,
   ProductionArticlesReader,
+  ReopenReleasePending,
   ResupplyCutoffTimeReader,
   ResupplyPrintColorsReader,
   SellableArticlesReader,
@@ -140,6 +142,10 @@ import {
     // provisoire du dossier : « la journée a changé depuis #N ». Un port du
     // fournil à lui (ISP), même requête que celui de la livraison.
     { provide: CommerceDayVersionReader, useClass: ProductionCommerceDayVersionReader },
+    // Après une réouverture, l'arrêt attend que le commerce ait remis les
+    // commandes de l'arrêt défait (`plan-historique-des-tirages.md`, § 5) :
+    // même condition que la remise.
+    { provide: ReopenReleasePending, useClass: PrismaReopenReleasePending },
   ],
   exports: [
     CommerceDayVersionReader,
@@ -156,6 +162,7 @@ import {
     PendingSettlementSweeper,
     PlannedDeliveryNotesReader,
     ProductionArticlesReader,
+    ReopenReleasePending,
     ResupplyCutoffTimeReader,
     ResupplyPrintColorsReader,
     SellableArticlesReader,

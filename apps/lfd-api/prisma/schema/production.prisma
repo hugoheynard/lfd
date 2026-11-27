@@ -55,6 +55,11 @@ model ProductionDay {
   /// journal (`production_day.reopened`) garde chacune.
   reopenedAt DateTime? @map("reopened_at")
   reopenedBy String?   @map("reopened_by")
+  /// L'instant de l'arrêt que la dernière réouverture a défait. Le commerce a
+  /// confirmé les commandes de cet arrêt à cet instant précis ; le nouvel
+  /// arrêt le lit pour refuser de passer tant qu'il ne les a pas remises en
+  /// `placed`. `null` : jamais rouverte, ou rouverte avant la colonne.
+  undoneClosedAt DateTime? @map("undone_closed_at")
 
   /// **Qui a arrêté le plan** (2026-10-06) : l'id de la fiche staff, ou
   /// `auto-close` pour l'arrêt automatique. `null` : une journée arrêtée avant

@@ -1,4 +1,5 @@
 import {
+  CurrentArrestHold,
   ProductionDayClosedEvent,
   ProductionDayClosedPayloadError,
 } from "../../../../../production/channels/commerce/index.js";
@@ -97,11 +98,29 @@ class RecordingPlanning extends DeliveryNoteFollowing {
   }
 }
 
-function deliver(payload: Readonly<Record<string, unknown>>) {
+/**
+ * Le fournil doublé : `closed_at` de la journée tenue (`null` = rouverte), et
+ * la trace de chaque question, avant tout le reste.
+ */
+class HeldArrest extends CurrentArrestHold {
+  constructor(
+    private readonly current: Date | null,
+    private readonly trace: string[],
+  ) {
+    super();
+  }
+
+  holdIfCurrent(_serviceDay: string, closedAt: Date): Promise<boolean> {
+    this.trace.push("hold");
+    return Promise.resolve(this.current?.getTime() === closedAt.getTime());
+  }
+}
+
+function deliver(payload: Readonly<Record<string, unknown>>, current: Date | null = CLOSED_AT) {
   const trace: string[] = [];
   const orders = new AbsorbingRepository(trace);
   const notes = new RecordingPlanning(trace);
-  const run = new OnProductionDayClosed(orders, notes).handle({
+  const run = new OnProductionDayClosed(orders, notes, new HeldArrest(current, trace)).handle({
     eventId: "evt_1",
     type: "production.day_closed",
     payload,
@@ -138,8 +157,40 @@ describe("le commerce apprend qu'une journée est arrêtée (abonné durable)", 
 
     await run;
 
-    expect(trace).toEqual(["absorb", "plan-notes"]);
+    expect(trace).toEqual(["hold", "absorb", "plan-notes"]);
     expect(notes.planned).toEqual([{ orderIds: ["ord_1"], closedAt: CLOSED_AT }]);
+  });
+
+  it("tient le plan AVANT d'absorber, et absorbe sur l'arrêt en vigueur", async () => {
+    const fact = new ProductionDayClosedEvent(DAY, CLOSED_AT, ["ord_1"]).durableFact();
+    const { trace, run } = deliver(fact.payload, CLOSED_AT);
+
+    await run;
+
+    expect(trace).toEqual(["hold", "absorb", "plan-notes"]);
+  });
+
+  it("ne confirme rien ni ne prévoit de BL sur une journée ROUVERTE", async () => {
+    // Le fait livré après la réouverture : confirmer laisserait des commandes
+    // qu'aucun plan ne porte, et le prochain arrêt attendrait sans fin.
+    const fact = new ProductionDayClosedEvent(DAY, CLOSED_AT, ["ord_1"]).durableFact();
+    const { orders, notes, trace, run } = deliver(fact.payload, null);
+
+    await run;
+
+    expect(trace).toEqual(["hold"]);
+    expect(orders.absorbed).toEqual([]);
+    expect(notes.planned).toEqual([]);
+  });
+
+  it("ne fait rien sur une journée RÉARRÊTÉE à un autre instant : son propre fait confirmera", async () => {
+    const fact = new ProductionDayClosedEvent(DAY, CLOSED_AT, ["ord_1"]).durableFact();
+    const { orders, notes, run } = deliver(fact.payload, new Date(CLOSED_AT.getTime() + 60_000));
+
+    await run;
+
+    expect(orders.absorbed).toEqual([]);
+    expect(notes.planned).toEqual([]);
   });
 
   it.each<[string, Readonly<Record<string, unknown>>]>([

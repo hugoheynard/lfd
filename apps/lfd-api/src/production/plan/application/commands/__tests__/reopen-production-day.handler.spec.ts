@@ -137,7 +137,7 @@ describe("ReopenProductionDayHandler", () => {
 
     expect(reopening).toEqual({ date: DAY, released: 2, reopenedAt: NOW.toISOString() });
     expect(days.saved?.isClosed).toBe(false);
-    expect(days.saved?.reopened).toEqual({ at: NOW, by: "staff-1" });
+    expect(days.saved?.reopened).toEqual({ at: NOW, by: "staff-1", undoneClosedAt: CLOSED });
     expect(events.traced.map((event) => event.journalFact())).toEqual([
       {
         type: "production_day.reopened",
