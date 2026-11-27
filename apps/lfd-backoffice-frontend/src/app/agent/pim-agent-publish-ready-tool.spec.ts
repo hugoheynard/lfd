@@ -26,7 +26,6 @@ function product(id: string, status: ProductStatus): Product {
     vatByContext: {},
     operationOnly: false,
     requiresCold: false,
-    variantsAsTiles: true,
     audience: null,
   };
 }

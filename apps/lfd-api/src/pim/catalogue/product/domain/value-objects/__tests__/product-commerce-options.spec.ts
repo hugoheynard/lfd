@@ -1,12 +1,11 @@
 import { ProductCommerceOptions } from "../product-commerce-options.js";
 
 describe("ProductCommerceOptions — les réglages de vente d'une fiche", () => {
-  it("naît courante, sans froid, avec l'audience de sa famille, vignettes montrées", () => {
+  it("naît courante, sans froid, avec l'audience de sa famille", () => {
     expect(ProductCommerceOptions.initial()).toMatchObject({
       operationOnly: false,
       requiresCold: false,
       audience: null,
-      variantsAsTiles: true,
     });
   });
 
@@ -15,7 +14,6 @@ describe("ProductCommerceOptions — les réglages de vente d'une fiche", () => 
     expect(options.withOperationOnly(false)).toBe(options);
     expect(options.withRequiresCold(false)).toBe(options);
     expect(options.withAudience(null)).toBe(options);
-    expect(options.withVariantsAsTiles(true)).toBe(options);
   });
 
   it("change un réglage sans toucher aux autres, et sans muter l'original", () => {
@@ -24,23 +22,20 @@ describe("ProductCommerceOptions — les réglages de vente d'une fiche", () => 
     expect(reserved).toMatchObject({
       operationOnly: true,
       requiresCold: true,
-      variantsAsTiles: true,
     });
     expect(options.operationOnly).toBe(false);
   });
 
-  it("une fiche née d'un détachement montre ses vignettes et garde le reste", () => {
+  it("une fiche née d'un détachement garde les réglages de son origine", () => {
     const origin = ProductCommerceOptions.of({
       operationOnly: true,
       requiresCold: true,
       audience: "pro",
-      variantsAsTiles: false,
     });
     expect(origin.forDetachedProduct(null)).toMatchObject({
       operationOnly: true,
       requiresCold: true,
       audience: "pro",
-      variantsAsTiles: true,
     });
   });
 
@@ -49,7 +44,6 @@ describe("ProductCommerceOptions — les réglages de vente d'une fiche", () => 
       operationOnly: false,
       requiresCold: false,
       audience: "public",
-      variantsAsTiles: true,
     });
     expect(origin.forDetachedProduct("resupply").audience).toBe("resupply");
   });

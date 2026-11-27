@@ -12,7 +12,6 @@ import {
   VariantAlreadyDiscontinuedError,
 } from "../errors/variant-lifecycle-errors.js";
 import { PricingAlignmentAcrossUnitsError } from "../errors/sale-unit-errors.js";
-import { CustomRecipeDefaultWithoutTilesError } from "../errors/custom-recipe-errors.js";
 import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 import type { DefaultVariantChange } from "./product-state.js";
@@ -218,11 +217,10 @@ export class VariantLineup {
    *   en propre — elles se persistent par leurs ports dédiés.
    * @throws {VariantAlreadyDefaultError} elle l'est déjà.
    * @throws {DiscontinuedVariantNotDefaultableError} elle est archivée.
-   * @throws {CustomRecipeDefaultWithoutTilesError} sur mesure sur une fiche sans vignettes.
    * @throws {OwnAudienceVariantNotDefaultableError} elle a sa propre audience (A2).
    * @throws {PricingAlignmentAcrossUnitsError} une sœur suivrait un tarif d'une autre unité.
    */
-  makeDefault(variantId: string, variantsAsTiles: boolean): DefaultVariantChange {
+  makeDefault(variantId: string): DefaultVariantChange {
     const target = this.get(variantId);
     if (target.isDefault) {
       throw new VariantAlreadyDefaultError(target.sku);
@@ -230,7 +228,6 @@ export class VariantLineup {
     if (target.isDiscontinued) {
       throw new DiscontinuedVariantNotDefaultableError(target.sku);
     }
-    this.refuseCustomDefaultWithoutTiles(target, variantsAsTiles);
     refuseOwnAudienceDefault(target);
     const previous = this.defaultVariant;
     const resolved = this.resolved(target);
@@ -271,24 +268,6 @@ export class VariantLineup {
     );
     if (stray !== undefined) {
       throw new PricingAlignmentAcrossUnitsError(stray.sku);
-    }
-  }
-
-  /**
-   * **Le sur mesure du défaut a besoin des vignettes** : une fiche sans
-   * vignettes ne paraît au rayon que par son défaut, et sur mesure il
-   * disparaîtrait pour tous les pros sans réservation. L'état que le geste
-   * laisserait est jugé ici, avant toute mutation.
-   *
-   * @throws {CustomRecipeDefaultWithoutTilesError}
-   */
-  refuseCustomDefaultWithoutTiles(
-    defaultVariant: Variant,
-    variantsAsTiles: boolean,
-    customRecipe = defaultVariant.customRecipe,
-  ): void {
-    if (customRecipe && !variantsAsTiles) {
-      throw new CustomRecipeDefaultWithoutTilesError(defaultVariant.sku);
     }
   }
 }

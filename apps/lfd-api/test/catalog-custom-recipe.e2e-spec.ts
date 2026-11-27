@@ -174,17 +174,13 @@ describe("la case « Sur mesure » d'une déclinaison", () => {
       .expect(400);
   });
 
-  it("refuse le défaut sur mesure d'une fiche sans vignettes (409, V5)", async () => {
+  it("accepte le défaut sur mesure", async () => {
     const subject = await tarte();
-    await staff()
-      .put(`${PRODUCTS}/${subject.fiche.id}/variants-as-tiles`)
-      .send({ variantsAsTiles: false })
-      .expect(200);
 
     await staff()
       .put(checkRoute(subject, subject.defaultId))
       .send({ customRecipe: true })
-      .expect(409);
+      .expect(200);
   });
 
   it("la route de la fiche est retirée", async () => {

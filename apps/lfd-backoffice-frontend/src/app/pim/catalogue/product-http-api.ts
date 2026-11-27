@@ -34,7 +34,6 @@ import type {
   SetVariantCustomRecipePayload,
   SetVariantAudiencePayload,
   SetProductColdRequirementPayload,
-  SetProductVariantsAsTilesPayload,
   UpdateVariantPricingPayload,
 } from '@lfd/pim-contracts';
 
@@ -215,7 +214,6 @@ export function backendToProduct(
     vatByContext: product.vatByContext,
     operationOnly: product.operationOnly,
     requiresCold: product.requiresCold,
-    variantsAsTiles: product.variantsAsTiles,
     audience: product.audience,
     slug: product.slug,
     ...(price === null || price === undefined ? {} : { priceEur: price / 100 }),
@@ -633,7 +631,7 @@ export class ProductHttpApi {
   /**
    * **Sur mesure, par déclinaison** — une écriture à part, journalisée par le
    * serveur (`product.variant_custom_recipe_changed`), hors de l'enregistrement
-   * des sections. Le serveur refuse le défaut d'une fiche sans vignettes.
+   * des sections.
    */
   async setVariantCustomRecipe(
     productId: string,
@@ -666,16 +664,6 @@ export class ProductHttpApi {
   async setColdRequirement(id: string, requiresCold: boolean): Promise<void> {
     const payload: SetProductColdRequirementPayload = { requiresCold };
     await this.put(`products/${id}/cold-requirement`, payload);
-  }
-
-  /**
-   * **Montrer chaque déclinaison en vignette** au rayon — une écriture à part,
-   * journalisée par le serveur (`product.variants_as_tiles_changed`), hors des
-   * sections.
-   */
-  async setVariantsAsTiles(id: string, variantsAsTiles: boolean): Promise<void> {
-    const payload: SetProductVariantsAsTilesPayload = { variantsAsTiles };
-    await this.put(`products/${id}/variants-as-tiles`, payload);
   }
 
   /**

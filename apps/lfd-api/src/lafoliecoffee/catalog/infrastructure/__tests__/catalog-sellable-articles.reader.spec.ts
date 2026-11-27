@@ -39,7 +39,6 @@ function item(
     },
     family: of,
     isDefault: true,
-    variantsAsTiles: true,
     saleUnit: "piece",
     weightMinGrams: null,
     weightStepGrams: null,

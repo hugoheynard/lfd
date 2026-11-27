@@ -25,14 +25,9 @@ describe("ProductSnapshotMapper — la forme de l'instantané ne bouge pas", () 
     expect(productSnapshot(productFieldsFrom(snapshot), snapshot.variants)).toEqual(snapshot);
   });
 
-  it("les champs facultatifs à la lecture reprennent la valeur de toute fiche", () => {
-    const {
-      variantsAsTiles: _tiles,
-      originVariantId: _origin,
-      ...legacy
-    } = aProduct().persistenceSnapshot();
+  it("le champ facultatif à la lecture reprend la valeur de toute fiche", () => {
+    const { originVariantId: _origin, ...legacy } = aProduct().persistenceSnapshot();
     const fields = productFieldsFrom(legacy);
-    expect(fields.options.variantsAsTiles).toBe(true);
     expect(fields.originVariantId).toBeNull();
   });
 
@@ -50,7 +45,6 @@ describe("ProductSnapshotMapper — la forme de l'instantané ne bouge pas", () 
       "requiresCold",
       "audience",
       "originVariantId",
-      "variantsAsTiles",
       "variants",
     ]);
   });

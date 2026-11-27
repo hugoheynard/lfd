@@ -11,7 +11,6 @@ function row(category: ArticleRow["category"]): ArticleRow {
     name: "Cookie formule",
     audience: "resupply",
     isDefault: true,
-    variantsAsTiles: false,
     saleUnit: "piece",
     customRecipe: false,
     publicReviewPending: false,

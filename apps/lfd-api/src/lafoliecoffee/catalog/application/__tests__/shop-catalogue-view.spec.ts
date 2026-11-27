@@ -37,8 +37,8 @@ const SELLABLE = [
     categoryName: "Viennoiseries",
   }),
   catalogItem("PAT-002", { name: "Bûche" }),
-  // Une déclinaison non vendue par la vitrine : jamais un SKU d'opération servi.
-  catalogItem("PAT-002", { sku: "PAT-002-2", isDefault: false, variantsAsTiles: false }),
+  // Une autre déclinaison de la bûche, en vente hors opération : elle a sa vignette.
+  catalogItem("PAT-002", { sku: "PAT-002-2", isDefault: false }),
 ];
 
 function sale(now: Date, over: Partial<ShopSale> = {}): ShopSale {
@@ -55,8 +55,8 @@ describe("shopCatalogueOf — les opérations datées", () => {
   it("hors fenêtre, écarte la bûche du rayon et ne montre aucune opération", () => {
     const view = shopCatalogueOf(SELLABLE, sale(new Date("2026-10-01T00:00:00.000Z")));
 
-    expect(view.items.map((item) => item.sku)).toEqual(["VIE-001-1"]);
-    expect(view.shelves.map((shelf) => shelf.id)).toEqual(["fam-vien"]);
+    expect(view.items.map((item) => item.sku)).toEqual(["VIE-001-1", "PAT-002-2"]);
+    expect(view.shelves.map((shelf) => shelf.id)).toEqual(["fam-vien", "fam-patisseries"]);
     expect(view.operations).toEqual([]);
   });
 
@@ -109,7 +109,7 @@ describe("shopCatalogueOf — les opérations datées", () => {
       sale(new Date("2026-12-01T00:00:00.000Z"), { operations: [noel({ audience: "pro" })] }),
     );
 
-    expect(view.items.map((item) => item.sku)).toEqual(["VIE-001-1"]);
+    expect(view.items.map((item) => item.sku)).toEqual(["VIE-001-1", "PAT-002-2"]);
     expect(view.operations).toEqual([]);
   });
 });

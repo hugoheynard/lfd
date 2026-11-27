@@ -11,10 +11,10 @@
   }
   <fold-listbox
     label="Audience"
-    [hint]="hint()"
+    [hint]="hint"
     [options]="options()"
     [value]="choice()"
-    [disabled]="busy() || needsTiles()"
+    [disabled]="busy()"
     (selectionChange)="onChange($event)"
   />
 }

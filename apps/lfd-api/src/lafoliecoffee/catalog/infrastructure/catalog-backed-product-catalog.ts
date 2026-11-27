@@ -4,7 +4,7 @@ import { CatalogReader, type ResolvedCatalogItem } from "../domain/ports/catalog
 import type { CatalogViewer } from "../domain/catalog-viewer.js";
 import { catalogueArticle } from "../domain/catalogue-article.js";
 import { compareFamilies } from "../domain/catalog-family.js";
-import { isShownAsTile, shopSkuOf } from "../domain/shop-sku.js";
+import { shopSkuOf } from "../domain/shop-sku.js";
 import { ProductCatalogReader, type CatalogItem } from "../domain/ports/product-catalog.reader.js";
 
 /**
@@ -58,8 +58,8 @@ export class CatalogBackedProductCatalog extends ProductCatalogReader {
    * famille, puis l'alphabet. Plus d'ordre des rayons dans le code — celui du
    * PIM fait foi, et une famille nouvelle y prend sa place sans déploiement.
    *
-   * **Ce que la vitrine pro montre** (`isShownAsTile`) : le défaut, plus chaque
-   * déclinaison d'une fiche en vignette — chacune sous son SKU de vente
+   * **Ce que la vitrine pro montre** : chaque déclinaison en vente, chacune
+   * sous son SKU de vente
    * (`shopSkuOf`, le seul point qui décide de cette clé). Une déclinaison sans
    * prix pro, d'audience publique ou en attente de validation pro n'arrive pas
    * jusqu'ici : `listSellable` l'écarte déjà (Q3 a).
@@ -70,10 +70,7 @@ export class CatalogBackedProductCatalog extends ProductCatalogReader {
    */
   async all(viewer: CatalogViewer): Promise<readonly CatalogItem[]> {
     const items = await this.catalog.listSellable(viewer);
-    return items
-      .filter(isShownAsTile)
-      .map((item) => toCatalogItem(item))
-      .sort(byFamilyThenName);
+    return items.map((item) => toCatalogItem(item)).sort(byFamilyThenName);
   }
 }
 

@@ -51,7 +51,6 @@ export function catalogItem(
       path: ["fam-patisseries"],
     },
     isDefault: true,
-    variantsAsTiles: true,
     saleUnit: "piece",
     weightMinGrams: null,
     weightStepGrams: null,

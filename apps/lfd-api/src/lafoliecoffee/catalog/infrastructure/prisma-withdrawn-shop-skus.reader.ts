@@ -10,10 +10,6 @@ import { WithdrawnShopSkusReader } from "../domain/ports/withdrawn-shop-skus.rea
  * du 2026-10-29 — `plan-defaut-sous-sa-reference.md`, L3) : la clause cherche
  * `sku IN …`, sa jumelle en requête. La branche « référence produit et
  * défaut » est tombée avec la bascule.
- *
- * `variantsAsTiles` n'est PAS exigé, contrairement à `soldUnderShopSkus` : une
- * déclinaison retirée a pu perdre sa vignette avec sa fiche, elle reste
- * « retirée » et non « inconnue » pour qui l'a vendue.
  */
 @Injectable()
 export class PrismaWithdrawnShopSkusReader extends WithdrawnShopSkusReader {

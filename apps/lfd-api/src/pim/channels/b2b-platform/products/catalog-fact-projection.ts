@@ -100,7 +100,6 @@ export function projectProductFact(input: ProductFactInput): CatalogProductFactB
       thumbnail: showcase?.thumbnail ?? null,
       operationOnly: product.operationOnly,
       requiresCold: product.requiresCold,
-      variantsAsTiles: product.variantsAsTiles ?? true,
       detachedFromSku: input.detachedFromSku,
     },
     variants,

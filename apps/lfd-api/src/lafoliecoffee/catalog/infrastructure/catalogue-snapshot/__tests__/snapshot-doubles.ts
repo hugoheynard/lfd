@@ -19,7 +19,6 @@ export interface ArticleFixture {
   readonly position: number;
   readonly vatRatePercent: { readonly toNumber: () => number } | null;
   readonly publicByContext: unknown;
-  readonly variantsAsTiles: boolean;
   readonly productName: string | null;
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
@@ -145,7 +144,6 @@ export function article(sku: string, overrides: Partial<ArticleFixture> = {}): A
     position: 0,
     vatRatePercent: rate(5.5),
     publicByContext: { takeaway: { htMillicents: 120_000, vatRatePercent: 5.5 } },
-    variantsAsTiles: false,
     productName: null,
     allergens: null,
     allergenLabels: null,

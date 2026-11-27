@@ -59,7 +59,6 @@ function stored(version: number, variants: readonly unknown[]) {
         thumbnail: null,
         operationOnly: false,
         requiresCold: false,
-        variantsAsTiles: true,
       },
     ],
     orderTimeLimits: [],

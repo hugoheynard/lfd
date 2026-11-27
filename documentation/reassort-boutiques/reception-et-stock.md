@@ -66,8 +66,7 @@ emballé connu après ne change rien (le comptoir fait foi).
 
 **Routes** — `admin/resupply-receipts` (`http/admin-resupply-receipts.controller.ts:47`),
 `handover_counter` : `GET articles` (le catalogue publié, pièces et poids,
-avec la famille — ce que le rayon montre, `isShownAsTile` : le défaut et
-les déclinaisons en vignette ; la validation d'un article saisi suit le même
+avec la famille — ce que le rayon montre : toute déclinaison en vente ; la validation d'un article saisi suit le même
 critère depuis le 2026-11-03, décision E4), `GET :siteId/:day` (les réassorts envoyés de la journée
 avec leur réception, le sans commande, le stock),
 `POST :siteId/resupplies/:resupplyId/receive`,

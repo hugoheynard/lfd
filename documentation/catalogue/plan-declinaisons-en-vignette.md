@@ -1,5 +1,12 @@
 # Plan — montrer chaque déclinaison en vignette
 
+> 🔴 **Option retirée** (Hugo, 2026-11-27 — [`plan-fin-du-sur-mesure.md`](plan-fin-du-sur-mesure.md),
+> lot V1) : toute déclinaison en vente a sa vignette au rayon, sans case à
+> cocher. Le geste, sa route et la section de la fiche n'existent plus ; plus
+> aucun code ne lit ni n'écrit `variants_as_tiles`, dont les deux colonnes
+> partent au lot V2. Le fait `product.variants_as_tiles_changed` reste lisible
+> au journal. Ce qui suit décrit l'option telle qu'elle a été bâtie.
+
 > 📐 Écrit et bâti le 2026-10-29 (un seul lot, non commité). Demande de Hugo
 > du jour : une option par fiche, « Montrer chaque déclinaison en vignette » ;
 > cochée, chaque déclinaison vivante a sa vignette au rayon ; décochée, seule la
@@ -43,7 +50,7 @@
 
 | #   | Question                                    | Décision                                                                                                                                                                                                                                                                                                                                                                          |
 | --- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| V1  | Où vit l'option                             | `pim.product.variants_as_tiles BOOLEAN NOT NULL DEFAULT true`. Méthode `Product.showVariantsAsTiles(bool)`, commande colocalisée `set-product-variants-as-tiles.ts`, route `PUT /pim/catalogue/products/:id/variants-as-tiles`, fait `product.variants_as_tiles_changed`.                                                                                                         |
+| V1  | Où vit l'option                             | `pim.product.variants_as_tiles BOOLEAN NOT NULL DEFAULT true`. Méthode `Product.showVariantsAsTiles(bool)`, commande colocalisée « set-product-variants-as-tiles » (retirée en V1 de `plan-fin-du-sur-mesure.md`), route `PUT /pim/catalogue/products/:id/variants-as-tiles`, fait `product.variants_as_tiles_changed`.                                                           |
 | V2  | Le fil                                      | **v16** : `variantsAsTiles` sur `syncProductSchema`. Le fait le lit `true` quand il est absent (fait d'avant), ce que vaut la colonne.                                                                                                                                                                                                                                            |
 | V3  | La projection                               | Deux colonnes de fiche descendues sur chaque article, comme `requires_cold` : `catalog_items.variants_as_tiles BOOLEAN NOT NULL DEFAULT true` et `catalog_items.product_name TEXT NULL` (`NULL` = reçu avant ce lot).                                                                                                                                                             |
 | V4  | Le SKU d'une vignette — **le SKU de vente** | Le défaut garde le SKU **produit** (rien ne change pour l'existant, ni pour les commandes passées) ; une autre déclinaison se vend sous **son propre SKU** (`VIE-001-2`). Une seule fonction le dit : `shopSkuOf(item)`. Le lecteur résout les deux formes ; une déclinaison non défaut ne se résout que si sa fiche a l'option cochée — la caisse vend ce que la vitrine montre. |

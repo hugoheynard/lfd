@@ -81,7 +81,6 @@ function tarte(): OneProduct {
     vatByContext: {},
     operationOnly: false,
     requiresCold: false,
-    variantsAsTiles: true,
     audience: null,
   });
 }

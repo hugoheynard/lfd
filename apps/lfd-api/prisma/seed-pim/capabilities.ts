@@ -5,7 +5,6 @@ import type { CommandBus } from "@nestjs/cqrs";
 import { AddProductVariantCommand } from "../../src/pim/catalogue/product/variants/add-product-variant.js";
 import { DiscontinueProductVariantCommand } from "../../src/pim/catalogue/product/variants/discontinue-product-variant.js";
 import { SetProductMinQuantitiesCommand } from "../../src/pim/catalogue/product/sale/set-product-min-quantities.js";
-import { SetProductVariantsAsTilesCommand } from "../../src/pim/catalogue/product/sale/set-product-variants-as-tiles.js";
 import { SetVariantCustomRecipeCommand } from "../../src/pim/catalogue/product/variants/set-variant-custom-recipe.js";
 import { SetVariantShopNameCommand } from "../../src/pim/catalogue/product/variants/set-variant-shop-name.js";
 import { UpdateVariantPricingCommand } from "../../src/pim/catalogue/product/sale/update-variant-pricing.js";
@@ -15,7 +14,7 @@ import { SEED_STAFF_ID } from "./harness.js";
 
 /**
  * **Les gestes de fiche livrés après le premier corpus** — quantité minimale,
- * déclinaisons en vignette, nom de boutique, déclinaison archivée, sur mesure — rejoués par
+ * nom de boutique, déclinaison archivée, sur mesure — rejoués par
  * les VRAIS handlers, comme le reste de `replay.ts`.
  *
  * Joués AVANT la signature et la mise en vente (`settle`) : une fiche neuve se
@@ -30,14 +29,8 @@ export async function replayCapabilities(
   product: CorpusProduct,
 ): Promise<void> {
   await setMinQuantities(bus, prisma, productId, product);
-  const variants = product.variants ?? [];
-  for (const variant of variants) {
+  for (const variant of product.variants ?? []) {
     await replayVariant(bus, prisma, productId, variant);
-  }
-  if (variants.length > 0) {
-    await bus.execute<SetProductVariantsAsTilesCommand, void>(
-      new SetProductVariantsAsTilesCommand(productId, true),
-    );
   }
   if (product.customRecipe === true) {
     await declareDefaultCustomRecipe(bus, prisma, productId);

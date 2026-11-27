@@ -96,12 +96,6 @@ export interface ResolvedCatalogItem {
    */
   readonly isDefault: boolean;
   /**
-   * **Sa fiche montre chaque déclinaison en vignette** (fil v16,
-   * `plan-declinaisons-en-vignette.md`) : un article non défaut ne paraît au
-   * rayon — et ne se vend — que si c'est vrai (`isShownAsTile`).
-   */
-  readonly variantsAsTiles: boolean;
-  /**
    * **L'unité de vente** (`vente-au-poids.md`, P3) : au poids, la quantité
    * se compte en grammes et le prix s'entend AU KILO. Le pas et le minimum, en
    * grammes, sont ce contre quoi une quantité commandée se valide ; `null` à

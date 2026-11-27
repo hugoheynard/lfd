@@ -51,7 +51,7 @@ class RecordingCatalog extends CatalogReader {
 
 const ITEMS: ResolvedCatalogItem[] = [
   catalogItem("VIE-001", { productName: "Croissant", name: "Croissant pur beurre" }),
-  catalogItem("PAI-001", { isDefault: false, variantsAsTiles: false }),
+  catalogItem("PAI-001", { isDefault: false }),
 ];
 
 function reader(catalog: CatalogReader = new RecordingCatalog()): CatalogPriceGridShelfReader {
@@ -66,10 +66,10 @@ function reader(catalog: CatalogReader = new RecordingCatalog()): CatalogPriceGr
 }
 
 describe("le rayon d'un public pour la grille de prix", () => {
-  it("un particulier : TTC, sans société ; seules les déclinaisons montrées", async () => {
+  it("un particulier : TTC, sans société ; chaque déclinaison en vente", async () => {
     const shelf = await reader().shelfFor(PUBLIC_VIEWER, AT);
 
-    expect(shelf.articles.map((entry) => entry.article.sku)).toEqual(["VIE-001-1"]);
+    expect(shelf.articles.map((entry) => entry.article.sku)).toEqual(["VIE-001-1", "PAI-001-1"]);
     expect(shelf.articles[0]).toMatchObject({
       familyName: "Pâtisseries",
       productName: "Croissant",

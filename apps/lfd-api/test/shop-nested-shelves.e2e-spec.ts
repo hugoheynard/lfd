@@ -73,7 +73,6 @@ function product(id: string, sku: string, categoryId: string): CatalogSnapshot["
     thumbnail: null,
     operationOnly: false,
     requiresCold: false,
-    variantsAsTiles: true,
   };
 }
 

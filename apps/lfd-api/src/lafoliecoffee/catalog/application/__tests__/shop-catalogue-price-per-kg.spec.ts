@@ -16,7 +16,7 @@ const SALE = {
 };
 const SELLABLE = [
   catalogItem("PAI-001"),
-  catalogItem("PAI-001", { sku: "PAI-001-2", isDefault: false, variantsAsTiles: false }),
+  catalogItem("PAI-001", { sku: "PAI-001-2", isDefault: false }),
   catalogItem("VIE-001"),
 ];
 
@@ -79,9 +79,9 @@ describe("withPricesPerKg", () => {
 });
 
 describe("shownVariantSkus", () => {
-  it("demande les seules déclinaisons par défaut montrées", () => {
+  it("demande chaque déclinaison montrée", () => {
     const view = shopCatalogueOf(SELLABLE, SALE);
 
-    expect(shownVariantSkus(view, SELLABLE)).toEqual(["PAI-001-1", "VIE-001-1"]);
+    expect(shownVariantSkus(view, SELLABLE)).toEqual(["PAI-001-1", "PAI-001-2", "VIE-001-1"]);
   });
 });

@@ -243,13 +243,8 @@ describe("projectProductFact", () => {
     );
   });
 
-  /** Fil v16 (`plan-declinaisons-en-vignette.md`, V2) : l'option voyage telle que la fiche la dit. */
-  it("porte l'option « chaque déclinaison en vignette » de la fiche", () => {
-    expect(projectProductFact(input()).product.variantsAsTiles).toBe(true);
-    expect(
-      projectProductFact(input({ product: tarte({ variantsAsTiles: false }) })).product
-        .variantsAsTiles,
-    ).toBe(false);
+  it("n'émet plus l'option « chaque déclinaison en vignette »", () => {
+    expect(projectProductFact(input()).product).not.toHaveProperty("variantsAsTiles");
   });
 
   /**

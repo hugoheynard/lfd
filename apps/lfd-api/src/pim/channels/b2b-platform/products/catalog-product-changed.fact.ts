@@ -45,10 +45,6 @@ const payloadSchema = z.object({
     // la reçoit à sa prochaine émission.
     description: z.string().nullable().default(null),
     descriptionTranslations: catalogTranslationsSchema,
-    // Fil v16 (`plan-declinaisons-en-vignette.md`) : absente d'un fait émis
-    // avant elle, et lue `true` — la valeur que la colonne du référentiel a
-    // donnée à toute fiche existante.
-    variantsAsTiles: z.boolean().default(true),
     // Le sur mesure de la FICHE, porté par la v17 seule : relu, plus émis
     // (v18 : il est sur chaque déclinaison). Absent, il est lu ABSENT — pas
     // `false` : le commerce laisse alors sa colonne intacte.

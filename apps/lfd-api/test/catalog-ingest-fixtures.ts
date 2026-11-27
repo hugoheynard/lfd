@@ -127,7 +127,6 @@ export function snapshotOf(
         thumbnail,
         operationOnly,
         requiresCold,
-        variantsAsTiles: true,
         variants: [
           {
             id: `var_${sku}`,

@@ -6,7 +6,7 @@ import {
   ResupplyOnlyArticlesReader,
 } from "../domain/ports/resupply-only-articles.reader.js";
 import { servedToResupply } from "../domain/served-to.js";
-import { isShownAsTile, shopItemName, shopSkuOf } from "../domain/shop-sku.js";
+import { shopItemName, shopSkuOf } from "../domain/shop-sku.js";
 import type { CatalogFamilyView } from "@lfd/contracts";
 
 import { familyView } from "../domain/catalog-family.js";
@@ -23,7 +23,6 @@ const ARTICLE_SELECT = {
   name: true,
   audience: true,
   isDefault: true,
-  variantsAsTiles: true,
   saleUnit: true,
   customRecipe: true,
   publicReviewPending: true,
@@ -97,7 +96,6 @@ export interface ArticleRow {
   readonly name: string;
   readonly audience: string | null;
   readonly isDefault: boolean;
-  readonly variantsAsTiles: boolean;
   readonly saleUnit: string;
   readonly customRecipe: boolean;
   readonly publicReviewPending: boolean;
@@ -113,7 +111,7 @@ export interface ArticleRow {
   readonly _count: { readonly reservations: number };
 }
 
-/** L'article servi au réassort, ou `null` s'il ne l'est pas (masqué, réservé, hors rayon). */
+/** L'article servi au réassort, ou `null` s'il ne l'est pas (masqué, réservé). */
 export function articleOf(row: ArticleRow, lineage: Lineage): ResupplyOnlyArticle | null {
   const served = servedToResupply({
     audience: "resupply",
@@ -124,7 +122,7 @@ export function articleOf(row: ArticleRow, lineage: Lineage): ResupplyOnlyArticl
     isReserved: row._count.reservations > 0,
     isCustomRecipe: row.customRecipe,
   });
-  if (!served || !isShownAsTile(row)) {
+  if (!served) {
     return null;
   }
   return {

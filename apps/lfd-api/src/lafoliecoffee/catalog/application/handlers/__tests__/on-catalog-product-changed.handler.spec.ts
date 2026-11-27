@@ -96,7 +96,6 @@ function productFact(
       thumbnail: null,
       operationOnly: false,
       requiresCold: false,
-      variantsAsTiles: true,
       detachedFromSku: null,
     },
     variants: [VARIANT],

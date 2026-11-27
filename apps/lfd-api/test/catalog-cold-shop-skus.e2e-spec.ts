@@ -82,7 +82,6 @@ function product(sku: string, requiresCold: boolean, variants: readonly Variant[
     thumbnail: null,
     operationOnly: false,
     requiresCold,
-    variantsAsTiles: true,
   };
 }
 

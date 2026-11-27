@@ -99,13 +99,9 @@ describe('proOfferNotesOf', () => {
     variant({ pro: { state: 'incomplet', htMillicents: null } }),
   ]);
 
-  it('mentionne la déclinaison montrée que le canal pro ne sert pas', () => {
-    expect(proOfferNotesOf(view, TABS, true)).toEqual([
+  it('mentionne toute déclinaison que le canal pro ne sert pas', () => {
+    expect(proOfferNotesOf(view, TABS)).toEqual([
       { id: 'var_2', label: 'Ancolie part', sku: 'ANC-001-2', cause: 'no_pro_price' },
     ]);
-  });
-
-  it('se tait sur une déclinaison qui n’est pas montrée (fiche sans vignettes)', () => {
-    expect(proOfferNotesOf(view, TABS, false)).toEqual([]);
   });
 });

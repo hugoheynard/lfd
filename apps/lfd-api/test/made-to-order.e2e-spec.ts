@@ -110,7 +110,6 @@ function snapshot(skus: readonly string[], custom: readonly string[] = []): Cata
       thumbnail: null,
       operationOnly: false,
       requiresCold: false,
-      variantsAsTiles: true,
       productName: null,
     })),
     orderTimeLimits: [],

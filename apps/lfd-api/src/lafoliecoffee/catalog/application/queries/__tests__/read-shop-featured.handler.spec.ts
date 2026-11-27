@@ -58,7 +58,6 @@ const ECLAIR = catalogItem("PAT-001", { name: "Éclair", isFeatured: false });
 const CARTON = catalogItem("VIE-001", {
   sku: "VIE-001-2",
   isDefault: false,
-  variantsAsTiles: false,
   isFeatured: true,
 });
 
@@ -76,7 +75,7 @@ describe("ReadShopFeaturedHandler", () => {
     const view = await handlerOver(catalog).execute(new ReadShopFeaturedQuery("pro", "fr"));
 
     expect(catalog.audiences).toEqual(["pro"]);
-    expect(view.map((item) => item.sku)).toEqual(["PAI-001-1", "VIE-001-1"]);
+    expect(view.map((item) => item.sku)).toEqual(["PAI-001-1", "VIE-001-1", "VIE-001-2"]);
   });
 
   it("ne sort pas un article que la vitrine pro écarte (vendu seulement pendant une opération)", async () => {

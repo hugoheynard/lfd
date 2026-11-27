@@ -6,11 +6,7 @@ import type { SaleUnitClearance } from "../value-objects/sale-reference-usage.js
 import type { DefaultVariantChange } from "./product-state.js";
 import { VariantLineup, type NewVariantInput } from "./variant-lineup.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
-import {
-  changeVariantAudience,
-  refuseUntiledOwnAudiences,
-  refuseUntiledRestore,
-} from "./variant-audience.js";
+import { changeVariantAudience } from "./variant-audience.js";
 import {
   Variant,
   type VariantAspect,
@@ -121,34 +117,21 @@ export class ProductLineup {
    * mesure qu'aux comptes auxquels il l'a attribué.
    *
    * @returns `false` quand elle le disait déjà.
-   * @throws {CustomRecipeDefaultWithoutTilesError} le défaut d'une fiche sans vignettes.
    */
-  declareVariantCustomRecipe(
-    variantId: string,
-    customRecipe: boolean,
-    variantsAsTiles: boolean,
-  ): boolean {
-    const target = this.lineup.get(variantId);
-    if (customRecipe && target.isDefault) {
-      this.lineup.refuseCustomDefaultWithoutTiles(target, variantsAsTiles, true);
-    }
-    return target.declareCustomRecipe(customRecipe);
+  declareVariantCustomRecipe(variantId: string, customRecipe: boolean): boolean {
+    return this.lineup.get(variantId).declareCustomRecipe(customRecipe);
   }
 
   /**
    * **Pose l'audience propre d'une déclinaison**, ou `null` pour qu'elle suive
    * sa fiche (`plan-audience-par-declinaison.md`, A1–A4). Toute audience, plus
-   * large ou plus étroite que la fiche ; jamais sur le défaut, jamais sans
-   * vignettes ({@link changeVariantAudience}).
+   * large ou plus étroite que la fiche ; jamais sur le défaut
+   * ({@link changeVariantAudience}).
    *
    * @returns `false` quand elle le disait déjà.
    */
-  changeVariantAudience(
-    variantId: string,
-    next: Audience | null,
-    variantsAsTiles: boolean,
-  ): boolean {
-    return changeVariantAudience(this.lineup.get(variantId), next, variantsAsTiles);
+  changeVariantAudience(variantId: string, next: Audience | null): boolean {
+    return changeVariantAudience(this.lineup.get(variantId), next);
   }
 
   /**
@@ -163,24 +146,21 @@ export class ProductLineup {
   /**
    * **Désarchive une déclinaison** — elle reprend son rang et sa référence.
    * Refuse celle devenue un produit ; `detachedProductLabel` est le nom de ce
-   * produit, pour que le refus le dise. Refuse aussi celle qui a sa propre
-   * audience sur une fiche sans vignettes ({@link refuseUntiledRestore}).
+   * produit, pour que le refus le dise.
    */
-  restoreVariant(variantId: string, variantsAsTiles: boolean, detachedProductLabel?: string): void {
-    refuseUntiledRestore(this.lineup.get(variantId), variantsAsTiles);
+  restoreVariant(variantId: string, detachedProductLabel?: string): void {
     this.lineup.restore(variantId, detachedProductLabel);
   }
 
   /**
    * **Fait d'une déclinaison la déclinaison par défaut.** Ce qui SUIT le
-   * défaut est décrit par {@link VariantLineup.makeDefault} ; la fiche y ajoute
-   * ce qu'elle seule sait, si elle montre ses vignettes.
+   * défaut est décrit par {@link VariantLineup.makeDefault}.
    *
    * @returns l'ancien défaut, et les moitiés de fiche que la nouvelle a reçues
    *   en propre — elles se persistent par leurs ports dédiés.
    */
-  makeVariantDefault(variantId: string, variantsAsTiles: boolean): DefaultVariantChange {
-    return this.lineup.makeDefault(variantId, variantsAsTiles);
+  makeVariantDefault(variantId: string): DefaultVariantChange {
+    return this.lineup.makeDefault(variantId);
   }
 
   /** Le produit qu'une déclinaison de la fiche est devenue, ou `null`. */
@@ -212,12 +192,6 @@ export class ProductLineup {
   /** Les déclinaisons telles qu'elles se PERSISTENT — l'héritage non résolu. */
   ownVariants(): VariantSnapshot[] {
     return this.lineup.ownSnapshots();
-  }
-
-  /** Refuse de retirer les vignettes d'une fiche dont le défaut est sur mesure, ou dont une déclinaison a sa propre audience. */
-  refuseUntiled(variantsAsTiles: boolean): void {
-    this.lineup.refuseCustomDefaultWithoutTiles(this.lineup.defaultVariant, variantsAsTiles);
-    refuseUntiledOwnAudiences(this.lineup.all(), variantsAsTiles);
   }
 
   /** La mise en vente de la fiche publie toutes ses déclinaisons. */

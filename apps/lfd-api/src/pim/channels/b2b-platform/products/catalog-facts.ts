@@ -51,8 +51,6 @@ export interface CatalogProductHead {
   readonly thumbnail: SyncMedia | null;
   readonly operationOnly: boolean;
   readonly requiresCold: boolean;
-  /** Chaque déclinaison en vignette au rayon (fil v16, `plan-declinaisons-en-vignette.md`). */
-  readonly variantsAsTiles: boolean;
   /**
    * **Sur mesure de la fiche** (fil v17) — **relu, plus émis** : depuis la v18,
    * le fait est porté par chaque déclinaison (`CatalogVariantFact.customRecipe`,

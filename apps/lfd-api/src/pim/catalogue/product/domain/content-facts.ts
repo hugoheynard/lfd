@@ -100,9 +100,8 @@ const CONTENT_FACTS: Readonly<Record<string, boolean>> = {
   // un signataire qui l'a relue pour les pros voudrait la revoir ouverte au
   // public (lot 1 de `plan-catalogue-synchronise-par-audience.md`).
   [PIM_EVENTS.productAudienceChanged]: true,
-  // Montrer chaque déclinaison change ce que le client voit au rayon : un
-  // signataire qui a relu la fiche sous une seule vignette voudrait la revoir
-  // sous plusieurs (`plan-declinaisons-en-vignette.md`, V1).
+  // Fait passé, que plus rien n'émet : toute déclinaison en vente paraît au
+  // rayon. Il changeait ce que le client voyait, et se lit comme tel.
   [PIM_EVENTS.productVariantsAsTilesChanged]: true,
   // Le sur mesure change À QUI la fiche se vend, comme l'audience : un
   // signataire qui l'a relue ouverte voudrait la revoir réservée

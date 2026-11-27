@@ -133,9 +133,10 @@ export const PIM_EVENTS = {
    */
   productAudienceChanged: "product.audience_changed",
   /**
-   * La fiche montre chaque déclinaison en vignette au rayon, ou seulement la
-   * déclinaison par défaut (`plan-declinaisons-en-vignette.md`, V1). Un fait
-   * à part, sur sa propre route : il change CE QUI paraît en boutique.
+   * La fiche montrait chaque déclinaison en vignette au rayon, ou seulement la
+   * déclinaison par défaut. Plus rien ne l'émet — toute déclinaison en vente
+   * paraît au rayon — mais le type reste : une valeur écrite au journal se lit
+   * toujours.
    */
   productVariantsAsTilesChanged: "product.variants_as_tiles_changed",
   /**

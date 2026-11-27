@@ -108,7 +108,6 @@ function productOf(index: number, variantCount: number): SyncProduct {
     thumbnail: null,
     operationOnly: false,
     requiresCold: false,
-    variantsAsTiles: true,
   };
 }
 

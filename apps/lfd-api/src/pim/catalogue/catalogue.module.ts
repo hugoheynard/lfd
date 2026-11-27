@@ -66,7 +66,6 @@ import { PrismaIllustratedProductsReader } from "./product/infrastructure/prisma
 import { PrismaProductImageUsage } from "./product/infrastructure/prisma-product-image-usage.js";
 import { SetProductOperationOnlyHandler } from "./product/sale/set-product-operation-only.js";
 import { SetProductColdRequirementHandler } from "./product/sale/set-product-cold-requirement.js";
-import { SetProductVariantsAsTilesHandler } from "./product/sale/set-product-variants-as-tiles.js";
 import { SetVariantCustomRecipeHandler } from "./product/variants/set-variant-custom-recipe.js";
 import { SetVariantAudienceHandler } from "./product/variants/set-variant-audience.js";
 import { SetProductVatHandler } from "./product/sale/set-product-vat.js";
@@ -103,7 +102,6 @@ import { ProductIngredientAllergensController } from "./product/http/product-ing
 import { ProductSaleUnitUsageController } from "./product/http/product-sale-unit-usage.controller.js";
 import { GetProductSaleUnitUsageHandler } from "./product/sale/get-product-sale-unit-usage.js";
 import { ProductMinQuantitiesController } from "./product/http/product-min-quantities.controller.js";
-import { ProductVariantsAsTilesController } from "./product/http/product-variants-as-tiles.controller.js";
 import { ProductDeletionController } from "./product/http/product-deletion.controller.js";
 import { VariantCustomRecipeController } from "./product/http/variant-custom-recipe.controller.js";
 import { ProductOptionGroupsController } from "./product/http/product-option-groups.controller.js";
@@ -163,7 +161,6 @@ import { PrismaSkuAvailability } from "./product/infrastructure/prisma-sku-avail
     ProductSaleUnitUsageController,
     ProductIngredientAllergensController,
     ProductMinQuantitiesController,
-    ProductVariantsAsTilesController,
     VariantCustomRecipeController,
     ProductOptionGroupsController,
     VariantAudienceController,
@@ -197,7 +194,6 @@ import { PrismaSkuAvailability } from "./product/infrastructure/prisma-sku-avail
     OnMediaAssetDescribedHandler,
     SetProductOperationOnlyHandler,
     SetProductColdRequirementHandler,
-    SetProductVariantsAsTilesHandler,
     SetVariantCustomRecipeHandler,
     SetVariantAudienceHandler,
     SetProductVatHandler,

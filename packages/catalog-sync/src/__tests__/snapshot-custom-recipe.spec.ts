@@ -50,7 +50,6 @@ const product = {
   thumbnail: null,
   operationOnly: false,
   requiresCold: false,
-  variantsAsTiles: true,
 };
 
 function stored(version: number, products: readonly unknown[]) {

@@ -100,8 +100,7 @@ const TOUCHES: Readonly<Record<string, readonly string[] | "changes" | "*">> = {
   // L'audience n'est dans aucun champ de révision (`RevisionItemInput`,
   // vérifié le 2026-10-15) : aucune émission ne la lit avant le lot 2.
   [PIM_EVENTS.productAudienceChanged]: [],
-  // Les vignettes de déclinaison ne sont dans aucun champ de révision
-  // (`RevisionItemInput`, vérifié le 2026-10-29) : l'option traverse le fil v16.
+  // Fait passé, que plus rien n'émet ; il n'a jamais touché de champ de révision.
   [PIM_EVENTS.productVariantsAsTilesChanged]: [],
   // Le sur mesure n'est dans aucun champ de révision (`RevisionItemInput`,
   // vérifié le 2026-11-02) : il traverse le fil v17.

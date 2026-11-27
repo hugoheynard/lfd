@@ -156,7 +156,6 @@ function snapshot(): CatalogSnapshot {
         thumbnail: null,
         operationOnly: false,
         requiresCold: false,
-        variantsAsTiles: true,
       },
     ],
     orderTimeLimits: [],

@@ -641,15 +641,11 @@ export const syncProductSchema = z.object({
    */
   requiresCold: z.boolean(),
   /**
-   * **Montrer chaque déclinaison en vignette** au rayon (v16,
-   * `documentation/catalogue/plan-declinaisons-en-vignette.md`) — un fait de
-   * la fiche, que le récepteur descend sur ses articles : vrai, une
-   * déclinaison non défaut paraît au rayon et se vend sous son propre SKU.
-   *
-   * Obligatoire, comme `requiresCold` : un émetteur qui l'oublie échoue à
-   * l'émission plutôt que de laisser le récepteur choisir.
+   * **Montrer chaque déclinaison en vignette** (v16) — **relu, plus émis** :
+   * toute déclinaison en vente paraît au rayon. Facultatif pour qu'un fait
+   * émis avant reste lisible ; le récepteur l'ignore.
    */
-  variantsAsTiles: z.boolean(),
+  variantsAsTiles: z.boolean().optional(),
 });
 export type SyncProduct = z.infer<typeof syncProductSchema>;
 
@@ -814,9 +810,6 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
       // Absent avant la v12 : le froid ne traversait pas, et aucun article
       // n'était déclaré froid. C'est la VERSION qui dit comment lire.
       requiresCold: z.boolean().optional(),
-      // Absent avant la v16 : seule la déclinaison par défaut paraissait au
-      // rayon. C'est la VERSION qui dit comment lire.
-      variantsAsTiles: z.boolean().optional(),
       // Le sur mesure de la FICHE, porté par la v17 seule : absent avant (il
       // se posait au commerce), et descendu sur la déclinaison depuis la v18.
       // C'est la VERSION qui dit comment lire.

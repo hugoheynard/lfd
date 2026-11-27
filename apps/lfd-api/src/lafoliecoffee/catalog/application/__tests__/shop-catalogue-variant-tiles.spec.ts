@@ -4,9 +4,9 @@ import { withOrderLimits } from "../shop-catalogue-order-limits.js";
 import { catalogItem } from "./sale-operations-doubles.js";
 
 /**
- * **Chaque déclinaison en vignette** (`plan-declinaisons-en-vignette.md`, V1,
- * V4, V6) : une vignette par déclinaison vivante quand la fiche le dit, sous
- * son SKU de vente, à son prix, son minimum, son unité et son prix au kilo.
+ * **Chaque déclinaison en vignette** : une vignette par déclinaison en vente,
+ * sous son SKU de vente, à son prix, son minimum, son unité et son prix au
+ * kilo — aucune option de la fiche ne la retient.
  *
  * Une déclinaison archivée n'arrive pas ici : le commerce l'a retirée de la
  * vente (`STILL_SOLD`), le lecteur ne la rend pas.
@@ -19,13 +19,12 @@ const SALE = {
   audience: "public" as const,
 };
 
-function florentins(variantsAsTiles: boolean) {
+function florentins() {
   return [
-    catalogItem("CHO-001", { name: "Florentin", variantsAsTiles }),
+    catalogItem("CHO-001", { name: "Florentin" }),
     catalogItem("CHO-001", {
       sku: "CHO-001-2",
       isDefault: false,
-      variantsAsTiles,
       name: "Florentin — Boîte de 220 g",
       unitPriceMillicents: 1_250_000,
       minQuantities: { pro: 4, public: 2 },
@@ -38,8 +37,8 @@ function florentins(variantsAsTiles: boolean) {
 }
 
 describe("shopCatalogueOf — chaque déclinaison en vignette", () => {
-  it("option cochée : deux déclinaisons vivantes, deux vignettes, chacune sous son SKU de vente", () => {
-    const view = shopCatalogueOf(florentins(true), SALE);
+  it("toute déclinaison en vente paraît : deux déclinaisons, deux vignettes, chacune sous son SKU de vente", () => {
+    const view = shopCatalogueOf(florentins(), SALE);
 
     expect(view.items.map((item) => item.sku)).toEqual(["CHO-001-1", "CHO-001-2"]);
     expect(view.items[1]).toMatchObject({
@@ -52,14 +51,8 @@ describe("shopCatalogueOf — chaque déclinaison en vignette", () => {
     });
   });
 
-  it("option décochée : la déclinaison par défaut seule, comme avant", () => {
-    const view = shopCatalogueOf(florentins(false), SALE);
-
-    expect(view.items.map((item) => item.sku)).toEqual(["CHO-001-1"]);
-  });
-
   it("une déclinaison archivée — absente du vendable — n'a pas de vignette", () => {
-    const [byDefault, box] = florentins(true);
+    const [byDefault, box] = florentins();
     const view = shopCatalogueOf([byDefault!, box!].slice(0, 1), SALE);
 
     expect(view.items.map((item) => item.sku)).toEqual(["CHO-001-1"]);
@@ -69,7 +62,7 @@ describe("shopCatalogueOf — chaque déclinaison en vignette", () => {
     // La boîte se vend ici À LA PIÈCE : vendue au poids, elle n'aurait aucun
     // kilo indicatif, exclu côté serveur depuis K1
     // (`saisir-un-prix.md`, § 2).
-    const [byDefault, box] = florentins(true);
+    const [byDefault, box] = florentins();
     const sellable = [byDefault!, { ...box!, saleUnit: "piece" as const }];
     const view = shopCatalogueOf(sellable, SALE);
     const perKg = new Map([
@@ -85,7 +78,7 @@ describe("shopCatalogueOf — chaque déclinaison en vignette", () => {
   });
 
   it("la limite de commande d'une vignette est celle de SA déclinaison", () => {
-    const sellable = florentins(true);
+    const sellable = florentins();
     const items = withOrderLimits(shopCatalogueOf(sellable, SALE), sellable, []).items;
 
     expect(items[0]?.orderTimeLimit).toBeUndefined();
@@ -93,7 +86,7 @@ describe("shopCatalogueOf — chaque déclinaison en vignette", () => {
   });
 
   it("traduit chaque vignette par SA déclinaison", () => {
-    const [byDefault, box] = florentins(true);
+    const [byDefault, box] = florentins();
     const sellable = [
       byDefault!,
       {

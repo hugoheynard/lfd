@@ -8,7 +8,7 @@ import {
 } from "../../../production/channels/commerce/index.js";
 import { familyView } from "../domain/catalog-family.js";
 import { staffViewer } from "../domain/catalog-viewer.js";
-import { isShownAsTile, shopItemName, shopSkuOf } from "../domain/shop-sku.js";
+import { shopItemName, shopSkuOf } from "../domain/shop-sku.js";
 import { FLAT_LINEAGE, lineageFrom, type Lineage } from "./catalog-family-lineage.js";
 import { timeCatalogueRead } from "./catalogue-read-timing.js";
 import { type ItemRow, itemInclude, servedItem } from "./prisma-catalog.reader.js";
@@ -35,9 +35,8 @@ const AUDIENCE_VIEWERS = [staffViewer("pro"), staffViewer("public")] as const;
  * - `allArticles` l'écarte (`STILL_SOLD`) : la page Postes et la simulation
  *   listent ce qui reste à ranger, et un article retiré n'y a plus sa place.
  *
- * `sellable` suit la règle même de la vente, sans en écrire une copie : la
- * déclinaison paraît au rayon (`isShownAsTile`, la jumelle de
- * `soldUnderShopSkus`) et `servedItem` la sert à au moins une clientèle —
+ * `sellable` suit la règle même de la vente, sans en écrire une copie :
+ * `servedItem` sert la déclinaison à au moins une clientèle —
  * masquages, réservations, taux et prix compris ; un article retiré ne l'est
  * jamais. Un article réservé au réassort des boutiques (`resupply`) est
  * vendable aussi : il se commande, même si aucun acheteur ne le voit.
@@ -115,7 +114,6 @@ function articleOf(row: ArticleRow, lineage: Lineage): ProductionArticle {
     family: familyOf(row, lineage),
     sellable:
       row.withdrawnAt === null &&
-      isShownAsTile(row) &&
       (AUDIENCE_VIEWERS.some((viewer) => servedItem(row, viewer, lineage) !== null) ||
         servedToResupply(servableItemOf(row))),
   };

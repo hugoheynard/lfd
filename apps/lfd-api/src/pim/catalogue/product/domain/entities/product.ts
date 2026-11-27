@@ -79,17 +79,14 @@ export class Product {
     this.fields = { ...this.fields, vat: VatByContext.declare(vat, contexts) };
   }
 
-  // Les réglages de vente (`ProductCommerceOptions`) : seules les vignettes refusent, le
-  // reste se juge chez ceux qui vendent. Un geste rend `false` si la fiche le disait déjà.
+  // Les réglages de vente (`ProductCommerceOptions`) se jugent chez ceux qui vendent.
+  // Un geste rend `false` si la fiche le disait déjà.
 
   get operationOnly(): boolean {
     return this.fields.options.operationOnly;
   }
   get requiresCold(): boolean {
     return this.fields.options.requiresCold;
-  }
-  get variantsAsTiles(): boolean {
-    return this.fields.options.variantsAsTiles;
   }
   get audience(): Audience | null {
     return this.fields.options.audience;
@@ -102,18 +99,6 @@ export class Product {
   /** **Déclare que la fiche demande le froid** — ou le retire. */
   declareColdRequirement(requiresCold: boolean): boolean {
     return this.changeOptions(this.fields.options.withRequiresCold(requiresCold));
-  }
-  /**
-   * **Montre chaque déclinaison en vignette** au rayon — ou seulement le défaut.
-   * @throws {CustomRecipeDefaultWithoutTilesError} le défaut est sur mesure.
-   * @throws {TilesHoldVariantAudienceError} une déclinaison a sa propre audience.
-   */
-  showVariantsAsTiles(variantsAsTiles: boolean): boolean {
-    if (this.fields.options.variantsAsTiles === variantsAsTiles) {
-      return false;
-    }
-    this.lineup.refuseUntiled(variantsAsTiles);
-    return this.changeOptions(this.fields.options.withVariantsAsTiles(variantsAsTiles));
   }
   /** À qui la fiche vend — `null` la rend à sa famille. */
   changeAudience(audience: Audience | null): boolean {
@@ -271,19 +256,19 @@ export class Product {
     return this.lineup.changeMinQuantities(...args);
   }
   declareVariantCustomRecipe(variantId: string, customRecipe: boolean): boolean {
-    return this.lineup.declareVariantCustomRecipe(variantId, customRecipe, this.variantsAsTiles);
+    return this.lineup.declareVariantCustomRecipe(variantId, customRecipe);
   }
   discontinueVariant(...args: Parameters<ProductLineup["discontinueVariant"]>): void {
     this.lineup.discontinueVariant(...args);
   }
   restoreVariant(variantId: string, detachedProductLabel?: string): void {
-    this.lineup.restoreVariant(variantId, this.variantsAsTiles, detachedProductLabel);
+    this.lineup.restoreVariant(variantId, detachedProductLabel);
   }
   changeVariantAudience(variantId: string, next: Audience | null): boolean {
-    return this.lineup.changeVariantAudience(variantId, next, this.variantsAsTiles);
+    return this.lineup.changeVariantAudience(variantId, next);
   }
   makeVariantDefault(variantId: string): DefaultVariantChange {
-    return this.lineup.makeVariantDefault(variantId, this.variantsAsTiles);
+    return this.lineup.makeVariantDefault(variantId);
   }
   detachedProductOf(...args: Parameters<ProductLineup["detachedProductOf"]>): string | null {
     return this.lineup.detachedProductOf(...args);

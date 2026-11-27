@@ -77,7 +77,6 @@ const SQL_NAMES = {
   allergenTexts: "allergen_texts",
   operationOnly: "operation_only",
   requiresCold: "requires_cold",
-  variantsAsTiles: "variants_as_tiles",
   customRecipe: "custom_recipe",
   productName: "product_name",
   detachedFromSku: "detached_from_sku",

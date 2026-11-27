@@ -31,7 +31,6 @@ function item(sku: string, overrides: Partial<ResolvedCatalogItem> = {}): Resolv
     },
     family: VIENNOISERIES,
     isDefault: false,
-    variantsAsTiles: false,
     saleUnit: "piece",
     weightMinGrams: null,
     weightStepGrams: null,
@@ -48,14 +47,13 @@ function item(sku: string, overrides: Partial<ResolvedCatalogItem> = {}): Resolv
   };
 }
 
-/** Le défaut, une déclinaison en vignette, une déclinaison masquée au rayon. */
+/** Le défaut d'une fiche, et une autre déclinaison en vente. */
 const DEFAULT = item("VIE-001-1", { isDefault: true });
-const TILED = item("VIE-002-2", { variantsAsTiles: true });
-const HIDDEN = item("VIE-001-3");
+const TILED = item("VIE-002-2");
 
-/** Le catalogue doublé : il ÉTEND le port, et sert les mêmes trois articles. */
+/** Le catalogue doublé : il ÉTEND le port, et sert les mêmes deux articles. */
 class Catalog extends CatalogReader {
-  constructor(private readonly items: readonly ResolvedCatalogItem[] = [DEFAULT, TILED, HIDDEN]) {
+  constructor(private readonly items: readonly ResolvedCatalogItem[] = [DEFAULT, TILED]) {
     super();
   }
 
@@ -101,7 +99,7 @@ describe("CatalogResupplyCatalogue — un seul critère, celui du rayon", () => 
    * Régression E4 (audit final, 2026-11-03) : la liste ne proposait que le
    * défaut, et la validation acceptait une déclinaison masquée au rayon.
    */
-  it("propose le défaut et la déclinaison en vignette, jamais la masquée", async () => {
+  it("propose toute déclinaison en vente, le défaut comme les autres", async () => {
     const articles = await new CatalogResupplyCatalogue(
       new Catalog(),
       new ResupplyOnly(),
@@ -110,7 +108,7 @@ describe("CatalogResupplyCatalogue — un seul critère, celui du rayon", () => 
     expect(articles.map((article) => article.sku)).toEqual(["VIE-001-1", "VIE-002-2"]);
   });
 
-  it("valide ce qu'elle propose, et refuse la déclinaison masquée comme un article inconnu", async () => {
+  it("valide ce qu'elle propose, et refuse un article que le rayon ne vend pas", async () => {
     const catalogue = new CatalogResupplyCatalogue(new Catalog(), new ResupplyOnly());
 
     await expect(catalogue.article("VIE-002-2")).resolves.toMatchObject({ sku: "VIE-002-2" });

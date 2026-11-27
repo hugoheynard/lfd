@@ -83,13 +83,6 @@ export interface ProductSnapshot {
    * comme `VariantSnapshot.detachedToProductId` : l'agrégat le rend toujours.
    */
   readonly originVariantId?: string | null | undefined;
-  /**
-   * **Montrer chaque déclinaison en vignette** au rayon de la boutique
-   * (`plan-declinaisons-en-vignette.md`, V1) ; `false` = seule la déclinaison
-   * par défaut. Facultatif à la LECTURE (absent = `true`, la valeur de toute
-   * fiche) : l'agrégat le rend toujours.
-   */
-  readonly variantsAsTiles?: boolean | undefined;
 }
 
 /**

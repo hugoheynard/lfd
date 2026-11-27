@@ -1,12 +1,11 @@
 /**
- * E2E — **chaque déclinaison en vignette, de la case du référentiel jusqu'au
- * rayon et à la caisse** (`documentation/catalogue/plan-declinaisons-en-vignette.md`).
+ * E2E — **chaque déclinaison en vignette, du référentiel jusqu'au rayon et à
+ * la caisse** (`documentation/catalogue/plan-fin-du-sur-mesure.md`, V1).
  *
- * Ce que seul ce niveau prouve : que la route écrit la colonne, que le journal
- * porte le fait, que l'option et le nom de la fiche traversent le fil v16
+ * Ce que seul ce niveau prouve : que le nom de la fiche traverse le fil
  * jusqu'à `catalog_items`, que `/shop/catalogue` sert une vignette par
- * déclinaison vivante sous son SKU de vente — et que le devis vend CETTE
- * déclinaison, à son prix, sous ce SKU.
+ * déclinaison en vente sous son SKU de vente — sans option qui la retienne —
+ * et que le devis vend CETTE déclinaison, à son prix, sous ce SKU.
  */
 import type { ShopCatalogueView } from "@lfd/contracts";
 
@@ -98,7 +97,7 @@ async function florentins(): Promise<{ fiche: Fiche; boxSku: string; lotSku: str
 }
 
 describe("chaque déclinaison en vignette", () => {
-  it("cochée par défaut : deux déclinaisons vivantes, deux vignettes ; l'archivée n'en a pas", async () => {
+  it("toute déclinaison en vente a sa vignette ; l'archivée n'en a pas", async () => {
     const { fiche, boxSku, lotSku } = await florentins();
 
     const items = await shelf(fiche);
@@ -136,41 +135,15 @@ describe("chaque déclinaison en vignette", () => {
     );
   });
 
-  it("décochée : la route s'enregistre, se journalise, et le rayon revient au défaut seul", async () => {
-    const { fiche, boxSku } = await florentins();
-
-    await staff()
-      .put(`${PRODUCTS}/${fiche.id}/variants-as-tiles`)
-      .send({ variantsAsTiles: false })
-      .expect(200);
-    await relayAll(ctx);
-
-    expect(
-      jsonBody<{ variantsAsTiles: boolean }>(
-        await staff().get(`${PRODUCTS}/${fiche.id}`).expect(200),
-      ).variantsAsTiles,
-    ).toBe(false);
-    await ctx.drain();
-    const facts = await ctx.prisma.activityEvent.findMany({
-      where: { subjectId: fiche.id, type: "product.variants_as_tiles_changed" },
-      select: { payload: true },
-    });
-    expect(facts[0]?.payload).toMatchObject({ from: true, to: false });
-    expect((await shelf(fiche)).map((item) => item.sku)).toEqual([fiche.variantSku]);
-    // La caisse vend ce que la vitrine montre : la boîte n'est plus commandable.
-    const quote = await ctx
-      .http()
-      .post("/shop/quote")
-      .send({ lines: [{ sku: boxSku, quantity: 1 }], fulfillment: null });
-    expect(quote.status).not.toBe(200);
-  });
-
-  it("refuse une forme fausse (400)", async () => {
+  it("l'option n'a plus de route, et la fiche ne la sert plus", async () => {
     const fiche = await anActiveFiche(staff, "Cannelé", "both");
 
     await staff()
       .put(`${PRODUCTS}/${fiche.id}/variants-as-tiles`)
-      .send({ variantsAsTiles: "oui" })
-      .expect(400);
+      .send({ variantsAsTiles: false })
+      .expect(404);
+    expect(
+      jsonBody<Record<string, unknown>>(await staff().get(`${PRODUCTS}/${fiche.id}`).expect(200)),
+    ).not.toHaveProperty("variantsAsTiles");
   });
 });

@@ -31,8 +31,8 @@ export interface ProductFields {
 /**
  * Relit les champs d'une fiche depuis son instantané.
  *
- * Les champs facultatifs à la LECTURE (`variantsAsTiles`, `originVariantId`)
- * reprennent la valeur de toute fiche — l'agrégat, lui, les rend toujours.
+ * Le champ facultatif à la LECTURE (`originVariantId`) reprend la valeur de
+ * toute fiche — l'agrégat, lui, le rend toujours.
  */
 export function productFieldsFrom(snapshot: ProductSnapshot): ProductFields {
   return {
@@ -48,7 +48,6 @@ export function productFieldsFrom(snapshot: ProductSnapshot): ProductFields {
       operationOnly: snapshot.operationOnly,
       requiresCold: snapshot.requiresCold,
       audience: snapshot.audience,
-      variantsAsTiles: snapshot.variantsAsTiles ?? true,
     }),
     originVariantId: snapshot.originVariantId ?? null,
   };
@@ -80,7 +79,6 @@ export function productSnapshot(
     requiresCold: fields.options.requiresCold,
     audience: fields.options.audience,
     originVariantId: fields.originVariantId,
-    variantsAsTiles: fields.options.variantsAsTiles,
     variants: [...variants],
   };
 }

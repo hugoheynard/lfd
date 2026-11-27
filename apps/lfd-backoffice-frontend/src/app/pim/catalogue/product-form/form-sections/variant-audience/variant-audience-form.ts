@@ -12,10 +12,6 @@ import {
 import { ProductHttpApi } from '../../../product-http-api';
 import { ProductFormStore } from '../../product-form-store';
 
-/** La raison du sélecteur grisé (A3) : le geste demande les vignettes. */
-export const VARIANT_AUDIENCE_NEEDS_TILES =
-  'Cochez « Montrer chaque déclinaison » pour régler l’audience d’une déclinaison.';
-
 /**
  * **À qui la déclinaison ouverte vend** (`plan-audience-par-declinaison.md`,
  * Q2) : elle suit sa fiche, ou y déroge. Le défaut n'a pas d'audience propre
@@ -44,9 +40,6 @@ export class VariantAudienceForm {
 
   protected readonly isDefault = computed(() => this.variant()?.isDefault ?? true);
 
-  /** Sans vignettes, une déclinaison ne paraît pas seule : pas d'audience propre (A3). */
-  protected readonly needsTiles = computed(() => !this.store.variantsAsTiles());
-
   protected readonly options = computed(() => variantAudienceOptions(this.productAudience()));
 
   protected readonly choice = computed<VariantAudienceChoice>(
@@ -70,11 +63,7 @@ export class VariantAudienceForm {
     return own === null ? null : audienceLabel(own);
   });
 
-  protected readonly hint = computed(() =>
-    this.needsTiles()
-      ? VARIANT_AUDIENCE_NEEDS_TILES
-      : 'Suivre la fiche, ou vendre cette déclinaison à une autre clientèle.',
-  );
+  protected readonly hint = 'Suivre la fiche, ou vendre cette déclinaison à une autre clientèle.';
 
   protected async onChange(choice: VariantAudienceChoice): Promise<void> {
     const variant = this.variant();

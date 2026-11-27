@@ -11,7 +11,6 @@ import {
   VariantAlreadyDefaultError,
   VariantAlreadyDiscontinuedError,
 } from "../../errors/variant-lifecycle-errors.js";
-import { CustomRecipeDefaultWithoutTilesError } from "../../errors/custom-recipe-errors.js";
 import { Sku } from "../../value-objects/sku.value-object.js";
 import { VariantLineup } from "../variant-lineup.js";
 
@@ -96,8 +95,8 @@ describe("VariantLineup — les déclinaisons d'une fiche", () => {
   it("change de défaut : l'ancien cède, la nouvelle le devient, un refus ne mute rien", () => {
     const lineup = aLineup();
     const sister = withSister(lineup);
-    expect(() => lineup.makeDefault("var_1", true)).toThrow(VariantAlreadyDefaultError);
-    const change = lineup.makeDefault(sister, true);
+    expect(() => lineup.makeDefault("var_1")).toThrow(VariantAlreadyDefaultError);
+    const change = lineup.makeDefault(sister);
     expect(change.previousDefaultId).toBe("var_1");
     expect(lineup.defaultVariant.id).toBe(sister);
     expect(lineup.get("var_1").isDefault).toBe(false);
@@ -108,13 +107,14 @@ describe("VariantLineup — les déclinaisons d'une fiche", () => {
     const first = withSister(lineup);
     withSister(lineup, 3);
     lineup.discontinue(first);
-    expect(() => lineup.makeDefault(first, true)).toThrow(DiscontinuedVariantNotDefaultableError);
+    expect(() => lineup.makeDefault(first)).toThrow(DiscontinuedVariantNotDefaultableError);
   });
 
-  it("le défaut sur mesure exige les vignettes", () => {
+  it("rend défaut une déclinaison sur mesure", () => {
     const lineup = aLineup();
     const sister = withSister(lineup);
     lineup.get(sister).declareCustomRecipe(true);
-    expect(() => lineup.makeDefault(sister, false)).toThrow(CustomRecipeDefaultWithoutTilesError);
+    lineup.makeDefault(sister);
+    expect(lineup.defaultVariant.customRecipe).toBe(true);
   });
 });

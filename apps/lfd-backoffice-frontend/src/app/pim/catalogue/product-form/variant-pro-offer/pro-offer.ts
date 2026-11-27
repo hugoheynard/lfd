@@ -89,18 +89,15 @@ export interface ProOfferNote {
 }
 
 /**
- * Les mentions de la fiche : une par déclinaison MONTRÉE (le défaut, et les
- * autres quand la fiche les met en vignette) que le canal pro ne sert pas.
+ * Les mentions de la fiche : une par déclinaison que le canal pro ne sert pas
+ * — toute déclinaison en vente paraît au rayon.
  */
 export function proOfferNotesOf(
   entry: PublishedEntryView | undefined,
   tabs: readonly ProOfferTab[],
-  variantsAsTiles: boolean,
 ): readonly ProOfferNote[] {
-  return tabs
-    .filter((tab) => tab.isDefault || variantsAsTiles)
-    .flatMap((tab) => {
-      const cause = proOfferCauseOf(entry, tab.sku);
-      return cause === null ? [] : [{ id: tab.id, label: tab.label, sku: tab.sku, cause }];
-    });
+  return tabs.flatMap((tab) => {
+    const cause = proOfferCauseOf(entry, tab.sku);
+    return cause === null ? [] : [{ id: tab.id, label: tab.label, sku: tab.sku, cause }];
+  });
 }

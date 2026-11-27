@@ -95,14 +95,11 @@ describe("SnapshotCatalogReader — ce que chaque lecture réapplique", () => {
     await expect(inQuote(() => reader.listSellable(PUBLIC_VIEWER))).resolves.toEqual([]);
   });
 
-  it("une déclinaison non défaut ne se vend que si sa fiche est en vignettes", async () => {
+  it("toute déclinaison en vente se vend sous sa référence, le défaut comme les autres", async () => {
     const { base, reader } = await setup();
-    base.articles = [
-      article("V-2", { isDefault: false }),
-      article("T-2", { isDefault: false, variantsAsTiles: true }),
-    ];
+    base.articles = [article("V-2", { isDefault: false }), article("T-2", { isDefault: false })];
     const found = await inQuote(() => reader.listByShopSkus(["V-2", "T-2"], PRO_A));
-    expect([...found.keys()]).toEqual(["T-2"]);
+    expect([...found.keys()]).toEqual(["V-2", "T-2"]);
   });
 
   it("un SKU inconnu de l'instantané (retiré, jamais reçu) est absent", async () => {

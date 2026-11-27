@@ -4,7 +4,7 @@ import {
   type OrderLineClassification,
   OrderLineClassificationReader,
 } from "../../../orders/domain/ports/order-line-classification.reader.js";
-import { isShownAsTile, shopSkuOf } from "../../domain/shop-sku.js";
+import { shopSkuOf } from "../../domain/shop-sku.js";
 import { PrismaOrderLineClassificationReader } from "../prisma-order-line-classification.reader.js";
 import { CatalogueSnapshotStore } from "./catalogue-snapshot.store.js";
 
@@ -33,7 +33,7 @@ export class SnapshotOrderLineClassificationReader extends OrderLineClassificati
     const found = new Map<string, OrderLineClassification>();
     for (const sku of new Set(skus)) {
       const row = articles.bySku.get(sku);
-      if (row !== undefined && isShownAsTile(row)) {
+      if (row !== undefined) {
         found.set(shopSkuOf(row), {
           productId: row.productId,
           categoryId: row.categoryId,

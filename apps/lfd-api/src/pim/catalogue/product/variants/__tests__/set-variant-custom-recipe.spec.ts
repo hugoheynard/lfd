@@ -1,6 +1,5 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
-import { CustomRecipeDefaultWithoutTilesError } from "../../domain/errors/custom-recipe-errors.js";
 import { ProductNotFoundError } from "../../domain/errors/product-errors.js";
 import {
   SetVariantCustomRecipeCommand,
@@ -18,15 +17,14 @@ import {
  * La case « Sur mesure » d'une déclinaison (`plan-sur-mesure-par-declinaison.md`,
  * V1). Ce que ces cas tiennent : le geste passe par l'agrégat, s'écrit, s'émet
  * au catalogue — c'est le commerce qui en tire D3 — et se journalise, ou se
- * tait quand rien n'a bougé ; un refus V5 n'écrit, ne journalise ni n'émet rien.
+ * tait quand rien n'a bougé ; le défaut se coche comme ses sœurs.
  */
 
 const DEFAULT_ID = "prd_tarte_v1";
 const PARTS_ID = "prd_tarte_v2";
 
-function twoVariants(options: { partsCustom?: boolean; tiles?: boolean } = {}) {
+function twoVariants(options: { partsCustom?: boolean } = {}) {
   return tarte({
-    variantsAsTiles: options.tiles ?? true,
     variants: [
       bareVariant(),
       bareVariant({
@@ -117,15 +115,12 @@ describe("SetVariantCustomRecipeHandler — sur mesure par déclinaison", () => 
     expect(s.journal.types()).toEqual([]);
   });
 
-  it("refuse le défaut d'une fiche sans vignettes sans rien écrire, journaliser ni émettre", async () => {
-    const s = scene(new OneProduct(twoVariants({ tiles: false })));
+  it("coche le défaut comme ses sœurs", async () => {
+    const s = scene(new OneProduct(twoVariants()));
 
-    await expect(declare(s, DEFAULT_ID, true)).rejects.toBeInstanceOf(
-      CustomRecipeDefaultWithoutTilesError,
-    );
-    expect(s.products.stored).toEqual(twoVariants({ tiles: false }));
-    expect(s.journal.types()).toEqual([]);
-    expect(s.emitter.products).toEqual([]);
+    await declare(s, DEFAULT_ID, true);
+
+    expect(storedCustom(s.products, DEFAULT_ID)).toBe(true);
   });
 
   it("refuse une fiche inconnue sans rien journaliser ni émettre", async () => {

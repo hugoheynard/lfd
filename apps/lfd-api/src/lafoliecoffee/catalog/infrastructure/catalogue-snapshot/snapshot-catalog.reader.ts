@@ -2,7 +2,6 @@ import { Injectable } from "@nestjs/common";
 
 import { CatalogReader, type ResolvedCatalogItem } from "../../domain/ports/catalog.reader.js";
 import { viewerHolderIds, type CatalogViewer } from "../../domain/catalog-viewer.js";
-import { isShownAsTile } from "../../domain/shop-sku.js";
 import { PrismaCatalogReader, servedItem } from "../prisma-catalog.reader.js";
 import { CatalogueSnapshotStore, type RequestReservations } from "./catalogue-snapshot.store.js";
 import type { SnapshotArticleRow, SnapshotArticles } from "./catalogue-snapshot.loader.js";
@@ -100,5 +99,5 @@ export class SnapshotCatalogReader extends CatalogReader {
 /** L'article vendu sous ce SKU de vente — `soldUnderShopSkus`, sur l'index. */
 function soldUnder(articles: SnapshotArticles, shopSku: string): SnapshotArticleRow | null {
   const row = articles.bySku.get(shopSku);
-  return row !== undefined && isShownAsTile(row) ? row : null;
+  return row ?? null;
 }

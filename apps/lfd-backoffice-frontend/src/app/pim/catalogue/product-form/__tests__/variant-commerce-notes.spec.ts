@@ -113,7 +113,6 @@ class FakeApi {
         categoryId: 'cat_1',
         status: 'draft',
         variants: this.variants,
-        variantsAsTiles: true,
         vatByContext: {},
       },
       editorial: {

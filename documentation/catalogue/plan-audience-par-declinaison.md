@@ -30,6 +30,10 @@ au commerce : la vue « Catalogue publié » du back-office juge ses cellules
 sur l'audience de la **fiche** (§ 4 bis, 2). Le reste du changement tient au
 référentiel, au fil et à l'écran de la fiche, comme pour le sur mesure.
 
+> Depuis le 2026-11-27 (`plan-fin-du-sur-mesure.md`, V1), toute déclinaison
+> en vente paraît au rayon : la réserve qui suit, et le refus A3, n'ont plus
+> d'objet.
+
 ⚠️ **Le cookie formule demandera les vignettes.** Une déclinaison autre que le
 défaut ne paraît nulle part — ni au rayon, ni au réassort — si sa fiche ne
 montre pas chaque déclinaison (`isShownAsTile`,

@@ -1,5 +1,4 @@
 import { bareVariant, tarte } from "../../../shared/__tests__/audience-doubles.js";
-import { CustomRecipeDefaultWithoutTilesError } from "../../errors/custom-recipe-errors.js";
 import { VariantNotFoundError } from "../../errors/product-errors.js";
 import { Sku } from "../../value-objects/sku.value-object.js";
 import { Product } from "../product.js";
@@ -7,20 +6,17 @@ import { Product } from "../product.js";
 /**
  * **Sur mesure, par déclinaison** (`plan-sur-mesure-par-declinaison.md`) :
  * décoché à la naissance, réversible, une seule déclinaison bascule (V1), le
- * défaut d'une fiche sans vignettes ne le porte jamais (V5 (a), aux trois
- * gestes), une déclinaison ajoutée hérite du défaut, et un détachement emporte
+ * défaut le porte comme les autres, une déclinaison ajoutée hérite du défaut,
+ * et un détachement emporte
  * la valeur de sa déclinaison.
  */
 
 const DEFAULT_ID = "prd_tarte_v1";
 const PARTS_ID = "prd_tarte_v2";
 
-function twoVariants(
-  options: { defaultCustom?: boolean; partsCustom?: boolean; tiles?: boolean } = {},
-): Product {
+function twoVariants(options: { defaultCustom?: boolean; partsCustom?: boolean } = {}): Product {
   return Product.reconstitute(
     tarte({
-      variantsAsTiles: options.tiles ?? true,
       variants: [
         bareVariant({ priceCents: 3_200, customRecipe: options.defaultCustom ?? false }),
         bareVariant({
@@ -112,51 +108,16 @@ describe("Product — sur mesure par déclinaison", () => {
   });
 });
 
-describe("Product — V5 : le défaut d'une fiche sans vignettes n'est pas sur mesure", () => {
-  it("geste 1 : refuse de cocher le défaut d'une fiche sans vignettes, sans rien muter", () => {
-    const product = twoVariants({ tiles: false });
+describe("Product — le défaut peut être sur mesure", () => {
+  it("le défaut se coche, et se décoche", () => {
+    const product = twoVariants();
 
-    expect(() => product.declareVariantCustomRecipe(DEFAULT_ID, true)).toThrow(
-      CustomRecipeDefaultWithoutTilesError,
-    );
-    expect(customOf(product)[DEFAULT_ID]).toBe(false);
+    expect(product.declareVariantCustomRecipe(DEFAULT_ID, true)).toBe(true);
+    expect(customOf(product)[DEFAULT_ID]).toBe(true);
+    expect(product.declareVariantCustomRecipe(DEFAULT_ID, false)).toBe(true);
   });
 
-  it("geste 1 : la sœur d'une fiche sans vignettes, elle, se coche", () => {
-    expect(twoVariants({ tiles: false }).declareVariantCustomRecipe(PARTS_ID, true)).toBe(true);
-  });
-
-  it("geste 1 : le défaut se coche quand chaque déclinaison a sa vignette, et se décoche toujours", () => {
-    expect(twoVariants().declareVariantCustomRecipe(DEFAULT_ID, true)).toBe(true);
-    expect(
-      twoVariants({ tiles: false, defaultCustom: true }).declareVariantCustomRecipe(
-        DEFAULT_ID,
-        false,
-      ),
-    ).toBe(true);
-  });
-
-  it("geste 2 : refuse de décocher les vignettes quand le défaut est sur mesure", () => {
-    const product = twoVariants({ defaultCustom: true });
-
-    expect(() => product.showVariantsAsTiles(false)).toThrow(CustomRecipeDefaultWithoutTilesError);
-    expect(product.variantsAsTiles).toBe(true);
-  });
-
-  it("geste 2 : décocher les vignettes passe quand seule une sœur est sur mesure", () => {
-    expect(twoVariants({ partsCustom: true }).showVariantsAsTiles(false)).toBe(true);
-  });
-
-  it("geste 3 : refuse de faire d'une déclinaison sur mesure le défaut d'une fiche sans vignettes", () => {
-    const product = twoVariants({ tiles: false, partsCustom: true });
-
-    expect(() => product.makeVariantDefault(PARTS_ID)).toThrow(
-      CustomRecipeDefaultWithoutTilesError,
-    );
-    expect(product.persistenceSnapshot().variants.find((v) => v.isDefault)?.id).toBe(DEFAULT_ID);
-  });
-
-  it("geste 3 : la même bascule passe quand chaque déclinaison a sa vignette", () => {
+  it("une déclinaison sur mesure devient le défaut, et le garde", () => {
     const product = twoVariants({ partsCustom: true });
 
     product.makeVariantDefault(PARTS_ID);

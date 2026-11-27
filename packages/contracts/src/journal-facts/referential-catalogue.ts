@@ -475,9 +475,10 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
     payload({ subjectLabel: subjectLabel(), audience: fromTo(catalogueAudience().nullable()) }),
   ),
   /**
-   * La fiche montre chaque déclinaison en vignette au rayon (`to: true`), ou
-   * seulement la déclinaison par défaut (`to: false`) —
-   * `plan-declinaisons-en-vignette.md`, V1.
+   * La fiche montrait chaque déclinaison en vignette au rayon (`to: true`),
+   * ou seulement la déclinaison par défaut (`to: false`) — un fait du passé,
+   * plus émis depuis que toute déclinaison en vente paraît au rayon ; il
+   * reste lisible.
    */
   "product.variants_as_tiles_changed": fact(
     payload({ subjectLabel: subjectLabel(), from: z.boolean(), to: z.boolean() }),

@@ -51,9 +51,7 @@ export class VariantProOffer {
   private readonly entry = signal<PublishedEntryView | undefined>(undefined);
 
   protected readonly notes = computed(() =>
-    this.state() === 'ready'
-      ? proOfferNotesOf(this.entry(), this.store.variantTabs(), this.store.variantsAsTiles())
-      : [],
+    this.state() === 'ready' ? proOfferNotesOf(this.entry(), this.store.variantTabs()) : [],
   );
 
   constructor() {

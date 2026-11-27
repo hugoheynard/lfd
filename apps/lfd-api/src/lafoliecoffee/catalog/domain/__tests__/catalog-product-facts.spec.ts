@@ -66,7 +66,6 @@ function fact(): ReceivedCatalogItem {
     thumbnail: null,
     operationOnly: false,
     requiresCold: false,
-    variantsAsTiles: true,
     productName: null,
     receivedAt: new Date(0),
   };

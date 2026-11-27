@@ -82,7 +82,6 @@ function body(id: string): CatalogProductFactBody {
       thumbnail: null,
       operationOnly: false,
       requiresCold: false,
-      variantsAsTiles: true,
       customRecipe: true,
       detachedFromSku: null,
     },
@@ -150,16 +149,20 @@ describe("B2bCatalogFactsEmitter", () => {
     expect(CatalogProductChangedFact.fromPayload(older).body.audienceInherited).toBeNull();
   });
 
-  /** Fil v16 : un fait resté dans la boîte avant l'option se lit cochée — la valeur de la colonne. */
-  it("relit un fait émis avant `variantsAsTiles` en le disant coché", async () => {
+  /** Un fait resté dans la boîte qui porte encore l'option des vignettes se relit. */
+  it("relit un fait émis avec `variantsAsTiles`, et n'émet plus l'option", async () => {
     const { uow, emitter } = setup(["p_a"]);
     await uow.run(() => emitter.emitProducts(["p_a"]));
     const payload = uow.of(PIM_CATALOG_PRODUCT_CHANGED)[0]?.payload ?? {};
-    const { variantsAsTiles: _dropped, ...product } = payload["product"] as Record<string, unknown>;
+    const product = payload["product"] as Record<string, unknown>;
 
-    expect(
-      CatalogProductChangedFact.fromPayload({ ...payload, product }).body.product.variantsAsTiles,
-    ).toBe(true);
+    expect(product).not.toHaveProperty("variantsAsTiles");
+    expect(() =>
+      CatalogProductChangedFact.fromPayload({
+        ...payload,
+        product: { ...product, variantsAsTiles: false },
+      }),
+    ).not.toThrow();
   });
 
   /**

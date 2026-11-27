@@ -37,7 +37,6 @@ const CROISSANT: ResolvedCatalogItem = {
   },
   family: VIENNOISERIES,
   isDefault: true,
-  variantsAsTiles: true,
   saleUnit: "piece",
   weightMinGrams: null,
   weightStepGrams: null,
@@ -52,11 +51,9 @@ const CROISSANT: ResolvedCatalogItem = {
   thumbnail: null,
 };
 
-/** Le lecteur, sur la règle de `soldUnderShopSkus` : par SKU, défaut ou vignette. */
+/** Le lecteur, sur la règle de `soldUnderShopSkus` : par SKU. */
 function reader(items: readonly ResolvedCatalogItem[]): CatalogReader {
-  const byProduct = new Map(
-    items.filter((item) => item.isDefault || item.variantsAsTiles).map((i) => [i.sku, i]),
-  );
+  const byProduct = new Map(items.map((i) => [i.sku, i]));
   return {
     listSellable: () => Promise.resolve([...items]),
     findByShopSku: (shopSku) => Promise.resolve(byProduct.get(shopSku) ?? null),
@@ -129,15 +126,6 @@ describe("le catalogue du checkout, branché sur la base", () => {
     const item = await catalog.resolve("VIE-001-1", VIEWER);
 
     expect(item?.article.categoryPath).toEqual(["fam-tartes", "fam-patis"]);
-  });
-
-  /** Une fiche qui ne montre pas ses déclinaisons n'en vend que le défaut. */
-  it("ne liste que le défaut d'une fiche qui ne montre pas ses déclinaisons", async () => {
-    const single = { ...CROISSANT, variantsAsTiles: false };
-    const carton = { ...single, sku: "VIE-001-2", isDefault: false };
-    const catalog = new CatalogBackedProductCatalog(reader([single, carton]));
-
-    expect((await catalog.all(VIEWER)).map((item) => item.sku)).toEqual(["VIE-001-1"]);
   });
 
   /**

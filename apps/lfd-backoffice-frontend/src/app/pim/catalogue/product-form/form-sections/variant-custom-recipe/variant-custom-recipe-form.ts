@@ -12,8 +12,7 @@ import { ProductFormStore } from '../../product-form-store';
  * dans Catalogue publié.
  *
  * Elle écrit tout de suite sur sa propre route, hors de « Tout enregistrer ».
- * Un refus remet la case où elle était et affiche le message du serveur — par
- * exemple le défaut d'une fiche sans vignettes, qui ne peut être sur mesure.
+ * Un refus remet la case où elle était et affiche le message du serveur.
  */
 @Component({
   selector: 'app-variant-custom-recipe-form',

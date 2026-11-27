@@ -348,7 +348,8 @@ function variantCustomRecipeChanged(fact: PhraseFact): Said {
 
 /**
  * « … a montré chaque déclinaison de « Florentin » en vignette » / « … n'a
- * plus montré que la déclinaison par défaut de « Florentin » ».
+ * plus montré que la déclinaison par défaut de « Florentin » » — un fait
+ * passé, que plus rien n'émet ; il reste lisible au journal.
  */
 function variantsAsTilesChanged(fact: PhraseFact): Said {
   const tiles = fact.payload['to'] === true;

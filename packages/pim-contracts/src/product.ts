@@ -407,12 +407,6 @@ export interface ProductView {
    */
   readonly requiresCold: boolean;
   /**
-   * **Montrer chaque déclinaison en vignette** au rayon de la boutique ;
-   * `false` = seule la déclinaison par défaut (`plan-declinaisons-en-vignette.md`).
-   * `true` pour toute fiche tant que personne ne l'a décochée.
-   */
-  readonly variantsAsTiles: boolean;
-  /**
    * La clientèle **propre** à la fiche ; `null` = elle suit sa famille. La
    * dérogation seule, comme les canaux — l'effective est à côté.
    */
@@ -637,18 +631,6 @@ export const setProductColdRequirementPayloadSchema = z.strictObject({
 });
 export type SetProductColdRequirementPayload = z.infer<
   typeof setProductColdRequirementPayloadSchema
->;
-
-/**
- * **Montrer chaque déclinaison en vignette** au rayon, ou seulement la
- * déclinaison par défaut (`PUT /pim/catalogue/products/:id/variants-as-tiles`,
- * `documentation/catalogue/plan-declinaisons-en-vignette.md`). L'état de la case.
- */
-export const setProductVariantsAsTilesPayloadSchema = z.strictObject({
-  variantsAsTiles: z.boolean(),
-});
-export type SetProductVariantsAsTilesPayload = z.infer<
-  typeof setProductVariantsAsTilesPayloadSchema
 >;
 
 /**

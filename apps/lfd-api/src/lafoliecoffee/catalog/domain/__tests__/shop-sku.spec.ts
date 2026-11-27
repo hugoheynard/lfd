@@ -1,6 +1,6 @@
-import { isShownAsTile, shopItemName, shopSkuOf } from "../shop-sku.js";
+import { shopItemName, shopSkuOf } from "../shop-sku.js";
 
-/** Le SKU de vente et le nom d'une vignette (`plan-declinaisons-en-vignette.md`, V4, V5). */
+/** Le SKU de vente et le nom d'une vignette. */
 describe("shopSkuOf", () => {
   /**
    * Bascule du 2026-10-29 (`plan-defaut-sous-sa-reference.md`, L3) : le défaut
@@ -15,17 +15,6 @@ describe("shopSkuOf", () => {
   it("une autre déclinaison se vend sous son propre SKU", () => {
     const other = { sku: "VIE-001-2", productSku: "VIE-001", isDefault: false };
     expect(shopSkuOf(other)).toBe("VIE-001-2");
-  });
-});
-
-describe("isShownAsTile", () => {
-  it("le défaut paraît toujours, l'option décochée comprise", () => {
-    expect(isShownAsTile({ isDefault: true, variantsAsTiles: false })).toBe(true);
-  });
-
-  it("une autre déclinaison ne paraît que si la fiche montre chaque déclinaison", () => {
-    expect(isShownAsTile({ isDefault: false, variantsAsTiles: true })).toBe(true);
-    expect(isShownAsTile({ isDefault: false, variantsAsTiles: false })).toBe(false);
   });
 });
 

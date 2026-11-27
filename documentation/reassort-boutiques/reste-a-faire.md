@@ -276,7 +276,7 @@ Corrigé, chacun avec son test de régression :
   même geste.
 - **Le réassort sans commande ne se saisit qu'aujourd'hui** (E1,
   `resupply.receipt.unordered_not_today`).
-- **Un critère pour proposer et valider un article** (E4, `isShownAsTile`).
+- **Un critère pour proposer et valider un article** (E4 : celui du rayon, toute déclinaison en vente).
 - **La demande du comptoir a une borne** (200 articles,
   `resupply.order.too_many_lines`) ; **`restore` refuse un état impossible**
   (`resupply.order.impossible_state`) ; les lectures sous verrou passent en

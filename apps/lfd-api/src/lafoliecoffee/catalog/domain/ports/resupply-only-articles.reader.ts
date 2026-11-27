@@ -22,8 +22,7 @@ export interface ResupplyOnlyArticle {
  *
  * Les articles servis au public, eux, se lisent par `CatalogReader` comme la
  * vitrine : le réassort ajoute ceux-ci, il ne remplace rien. Jugés par
- * `servedToResupply` — la règle unique — et seulement ceux qui paraissent au
- * rayon (`isShownAsTile`).
+ * `servedToResupply` — la règle unique.
  */
 export abstract class ResupplyOnlyArticlesReader {
   /** Les articles réservés au réassort, dans l'ordre du référentiel. */

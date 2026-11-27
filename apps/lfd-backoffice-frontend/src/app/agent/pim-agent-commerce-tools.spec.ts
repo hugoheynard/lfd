@@ -79,7 +79,6 @@ function detailWith(
       vatByContext: overrides.vatByContext ?? {},
       operationOnly: false,
       requiresCold: false,
-      variantsAsTiles: true,
       audience: null,
     },
     editorial: {

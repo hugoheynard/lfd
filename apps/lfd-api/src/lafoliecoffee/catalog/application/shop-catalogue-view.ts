@@ -18,7 +18,7 @@ import {
   shopOperationsOf,
   type ShopSale,
 } from "./shop-catalogue-operations.js";
-import { isShownAsTile, shopSkuOf } from "../domain/shop-sku.js";
+import { shopSkuOf } from "../domain/shop-sku.js";
 import { shelfTranslationsOf, shelfTreeOf } from "./shop-shelf-tree.js";
 
 /**
@@ -53,11 +53,6 @@ export function shopCatalogueOf(
   const shown: ResolvedCatalogItem[] = [];
   const items: ShopItemView[] = [];
   for (const item of sellable) {
-    // Le défaut toujours ; une autre déclinaison quand sa fiche montre chaque
-    // déclinaison en vignette (`plan-declinaisons-en-vignette.md`, V1).
-    if (!isShownAsTile(item)) {
-      continue;
-    }
     const access = shopAccessOf(item, sale);
     if (access === "absent") {
       continue;
@@ -215,7 +210,7 @@ export function inShopLanguage(
 export function shownByShopSku(
   sellable: readonly ResolvedCatalogItem[],
 ): ReadonlyMap<string, ResolvedCatalogItem> {
-  return new Map(sellable.filter(isShownAsTile).map((item) => [shopSkuOf(item), item]));
+  return new Map(sellable.map((item) => [shopSkuOf(item), item]));
 }
 
 /**

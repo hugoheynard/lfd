@@ -5,18 +5,14 @@ import { VariantNotFoundError } from "../../errors/product-errors.js";
 import {
   DefaultVariantOwnAudienceError,
   OwnAudienceVariantNotDefaultableError,
-  RestoredVariantAudienceWithoutTilesError,
-  TilesHoldVariantAudienceError,
-  VariantAudienceWithoutTilesError,
 } from "../../errors/variant-audience-errors.js";
 import { Sku } from "../../value-objects/sku.value-object.js";
 import { Product } from "../product.js";
 
 /**
  * **L'audience par déclinaison** (`plan-audience-par-declinaison.md`, A1–A4) :
- * héritage à trois niveaux, le défaut suit toujours sa fiche (A2, aux trois
- * gestes), poser une audience demande les vignettes (A3), toute audience est
- * admise (A4), une déclinaison ajoutée naît `null`, et le détachement donne à
+ * héritage à trois niveaux, le défaut suit toujours sa fiche (A2), toute
+ * audience est admise (A4), une déclinaison ajoutée naît `null`, et le détachement donne à
  * la fiche neuve l'audience propre de sa déclinaison sinon celle que la fiche
  * d'origine pose.
  */
@@ -27,13 +23,11 @@ const FORMULA_ID = "prd_tarte_v2";
 function twoVariants(
   options: {
     formula?: Audience | null;
-    tiles?: boolean;
     productAudience?: Audience | null;
   } = {},
 ): Product {
   return Product.reconstitute(
     tarte({
-      variantsAsTiles: options.tiles ?? true,
       audience: options.productAudience ?? null,
       variants: [
         bareVariant({ priceCents: 3_200 }),
@@ -111,8 +105,8 @@ describe("Product — audience d'une déclinaison", () => {
     expect(twoVariants().changeVariantAudience(FORMULA_ID, null)).toBe(false);
   });
 
-  it("se remet sur la fiche avec `null`, même sans vignettes", () => {
-    const product = twoVariants({ formula: "pro", tiles: false });
+  it("se remet sur la fiche avec `null`", () => {
+    const product = twoVariants({ formula: "pro" });
 
     expect(product.changeVariantAudience(FORMULA_ID, null)).toBe(true);
     expect(audienceOf(product, FORMULA_ID)).toBeNull();
@@ -141,16 +135,7 @@ describe("Product — le défaut suit sa fiche, la déclinaison demande les vign
     expect(audienceOf(product, DEFAULT_ID)).toBeNull();
   });
 
-  it("A3 : refuse une audience sur une fiche sans vignettes, sans rien muter", () => {
-    const product = twoVariants({ tiles: false });
-
-    expect(() => product.changeVariantAudience(FORMULA_ID, "resupply")).toThrow(
-      VariantAudienceWithoutTilesError,
-    );
-    expect(audienceOf(product, FORMULA_ID)).toBeNull();
-  });
-
-  it("A2 geste 1 : refuse d'en faire le défaut tant qu'elle a sa propre audience", () => {
+  it("A2 : refuse d'en faire le défaut tant qu'elle a sa propre audience", () => {
     const product = twoVariants({ formula: "resupply" });
 
     expect(() => product.makeVariantDefault(FORMULA_ID)).toThrow(
@@ -159,7 +144,7 @@ describe("Product — le défaut suit sa fiche, la déclinaison demande les vign
     expect(product.snapshot().variants.find((v) => v.isDefault)?.id).toBe(DEFAULT_ID);
   });
 
-  it("A2 geste 1 : la même bascule passe une fois la déclinaison remise sur la fiche", () => {
+  it("A2 : la même bascule passe une fois la déclinaison remise sur la fiche", () => {
     const product = twoVariants({ formula: "resupply" });
     product.changeVariantAudience(FORMULA_ID, null);
 
@@ -168,45 +153,7 @@ describe("Product — le défaut suit sa fiche, la déclinaison demande les vign
     expect(product.snapshot().variants.find((v) => v.isDefault)?.id).toBe(FORMULA_ID);
   });
 
-  it("A2 geste 2 : refuse de décocher les vignettes quand une déclinaison a sa propre audience", () => {
-    const product = twoVariants({ formula: "resupply" });
-
-    expect(() => product.showVariantsAsTiles(false)).toThrow(TilesHoldVariantAudienceError);
-    expect(product.variantsAsTiles).toBe(true);
-  });
-
-  /** Sinon : arrêter la formule, décocher les vignettes, la restaurer — et elle n'apparaît nulle part. */
-  it("A2 geste 2 : une déclinaison ARRÊTÉE à audience propre retient aussi les vignettes", () => {
-    const product = twoVariants({ formula: "resupply" });
-    product.discontinueVariant(FORMULA_ID);
-
-    expect(() => product.showVariantsAsTiles(false)).toThrow(TilesHoldVariantAudienceError);
-  });
-
-  it("A2 geste 3 : refuse de restaurer une déclinaison à audience propre sur une fiche sans vignettes", () => {
-    const product = Product.reconstitute(
-      tarte({
-        variantsAsTiles: false,
-        variants: [
-          bareVariant({ priceCents: 3_200 }),
-          bareVariant({
-            id: FORMULA_ID,
-            sku: "PAT-7-2",
-            isDefault: false,
-            isDiscontinued: true,
-            position: 1,
-            audience: "resupply",
-          }),
-        ],
-      }),
-    );
-
-    expect(() => product.restoreVariant(FORMULA_ID)).toThrow(
-      RestoredVariantAudienceWithoutTilesError,
-    );
-  });
-
-  it("une restauration garde l'audience propre (vignettes cochées)", () => {
+  it("une restauration garde l'audience propre", () => {
     const product = twoVariants({ formula: "resupply" });
     product.discontinueVariant(FORMULA_ID);
 

@@ -52,7 +52,6 @@ export interface ItemRow {
   readonly orderLimitStaffMayExceed: boolean;
   readonly operationOnly: boolean;
   readonly requiresCold: boolean;
-  readonly variantsAsTiles: boolean;
   readonly customRecipe: boolean;
   readonly productName: string | null;
   readonly detachedFromSku: string | null;
@@ -165,7 +164,6 @@ export function toDomain(row: ItemRow): CatalogItem {
       thumbnail: thumbnailOf(row),
       operationOnly: row.operationOnly,
       requiresCold: row.requiresCold,
-      variantsAsTiles: row.variantsAsTiles,
       productName: row.productName,
       detachedFromSku: row.detachedFromSku,
       detachedFromVariantSku: row.detachedFromVariantSku,

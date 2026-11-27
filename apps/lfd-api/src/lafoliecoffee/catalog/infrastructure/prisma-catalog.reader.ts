@@ -48,8 +48,7 @@ export interface ItemRow extends AccessRow {
   readonly priceMillicents: number | null;
   readonly publicByContext: unknown;
   readonly isDefault: boolean;
-  /** Fil v16 : la fiche montre chaque déclinaison ; le nom de la fiche (`NULL` avant). */
-  readonly variantsAsTiles: boolean;
+  /** Le nom de la fiche (`NULL` avant le fil v16). */
   readonly productName: string | null;
   readonly position: number;
   readonly vatRatePercent: { toNumber: () => number } | null;
@@ -398,7 +397,6 @@ function resolve(
       ...familyLineageOf(lineage(row.category.id)),
     },
     isDefault: row.isDefault,
-    variantsAsTiles: row.variantsAsTiles,
     // Lue par la commande (P3) : l'unité dans laquelle la quantité se compte,
     // et ce contre quoi une quantité au poids se valide.
     saleUnit: saleUnitOf(row.sku, row.saleUnit),

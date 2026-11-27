@@ -49,7 +49,6 @@ function factsOf(sku: string): PimFacts {
     thumbnail: null,
     operationOnly: false,
     requiresCold: false,
-    variantsAsTiles: true,
     productName: null,
     orderTimeLimit: null,
     receivedAt: new Date(0),

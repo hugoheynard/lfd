@@ -20,17 +20,6 @@ export function shopSkuOf(item: { readonly sku: string }): string {
 }
 
 /**
- * **L'article paraît-il au rayon ?** Le défaut toujours ; une autre
- * déclinaison seulement quand sa fiche montre chaque déclinaison (V1).
- */
-export function isShownAsTile(item: {
-  readonly isDefault: boolean;
-  readonly variantsAsTiles: boolean;
-}): boolean {
-  return item.isDefault || item.variantsAsTiles;
-}
-
-/**
  * **Le nom d'un article en vente** : celui de la déclinaison, seul, pour le
  * défaut comme pour les autres.
  *

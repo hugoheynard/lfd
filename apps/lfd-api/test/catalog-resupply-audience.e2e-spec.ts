@@ -212,7 +212,7 @@ describe("une déclinaison réservée au réassort, sur une fiche publique", () 
     ).toBe(1);
   });
 
-  it("refuse une audience propre sur le défaut, et sur une fiche sans vignettes", async () => {
+  it("refuse une audience propre sur le défaut", async () => {
     const { cookie } = await cookieWithFormula();
     const detail = jsonBody<{ variants: { id: string; isDefault: boolean }[] }>(
       await staff().get(`${PRODUCTS}/${cookie.id}`).expect(200),
@@ -222,10 +222,6 @@ describe("une déclinaison réservée au réassort, sur une fiche publique", () 
     await staff()
       .put(`${PRODUCTS}/${cookie.id}/variants/${defaultId}/audience`)
       .send({ audience: "pro" })
-      .expect(409);
-    await staff()
-      .put(`${PRODUCTS}/${cookie.id}/variants-as-tiles`)
-      .send({ variantsAsTiles: false })
       .expect(409);
   });
 

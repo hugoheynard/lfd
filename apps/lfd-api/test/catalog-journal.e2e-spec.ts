@@ -108,7 +108,6 @@ function snapshot(skus: readonly string[]): CatalogSnapshot {
       thumbnail: null,
       operationOnly: false,
       requiresCold: false,
-      variantsAsTiles: true,
       productName: null,
     })),
     orderTimeLimits: [],

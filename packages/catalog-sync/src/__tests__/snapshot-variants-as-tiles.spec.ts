@@ -1,13 +1,9 @@
-import {
-  CATALOG_SNAPSHOT_VERSION,
-  storedCatalogSnapshotSchema,
-  syncProductSchema,
-} from "../snapshot.js";
+import { storedCatalogSnapshotSchema, syncProductSchema } from "../snapshot.js";
 
 /**
- * **L'option « chaque déclinaison en vignette » sur le fil, depuis la v16**
- * (`documentation/catalogue/plan-declinaisons-en-vignette.md`, V2) :
- * obligatoire pour l'émetteur, tolérée absente d'une arrivée stockée d'avant.
+ * **L'option « chaque déclinaison en vignette » ne voyage plus** : toute
+ * déclinaison en vente paraît au rayon. Le récepteur la tolère absente comme
+ * présente — un fait émis avant reste lisible — sans nouvelle version du fil.
  */
 
 const variant = {
@@ -45,34 +41,25 @@ const product = {
   thumbnail: null,
   operationOnly: false,
   requiresCold: false,
-  variantsAsTiles: false,
 };
 
 describe("syncProductSchema — variantsAsTiles", () => {
-  it("le fil est au moins en v16", () => {
-    expect(CATALOG_SNAPSHOT_VERSION).toBeGreaterThanOrEqual(16);
-  });
-
-  it("porte l'option telle que la fiche la dit", () => {
+  it("une fiche sans l'option se reçoit", () => {
     const parsed = syncProductSchema.safeParse(product);
     expect(parsed.success).toBe(true);
-    expect(parsed.data?.variantsAsTiles).toBe(false);
+    expect(parsed.data?.variantsAsTiles).toBeUndefined();
   });
 
-  it("l'émetteur qui l'oublie échoue", () => {
-    const { variantsAsTiles, ...rest } = product;
-    void variantsAsTiles;
-    expect(syncProductSchema.safeParse(rest).success).toBe(false);
+  it("une fiche émise avant, qui la porte encore, se reçoit aussi", () => {
+    expect(syncProductSchema.safeParse({ ...product, variantsAsTiles: false }).success).toBe(true);
   });
 
   it("une arrivée stockée v15 se relit sans elle", () => {
-    const { variantsAsTiles, ...rest } = product;
-    void variantsAsTiles;
     const parsed = storedCatalogSnapshotSchema.safeParse({
       version: 15,
       generatedAt: "2026-08-17T09:00:00+02:00",
       categories: [],
-      products: [rest],
+      products: [product],
       orderTimeLimits: [],
       operations: [],
     });

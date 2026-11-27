@@ -70,10 +70,7 @@ export function receivedProductOf(fact: CatalogProductChangedFact): ReceivedCata
       thumbnail: pimImageOf(product.thumbnail),
       operationOnly: product.operationOnly,
       requiresCold: product.requiresCold,
-      // Deux faits de la fiche descendus sur chaque article (fil v16,
-      // `plan-declinaisons-en-vignette.md`) : l'option, et le nom de la fiche
-      // qui précède celui de la déclinaison sur sa vignette.
-      variantsAsTiles: product.variantsAsTiles,
+      // Le nom de la fiche, descendu sur chaque article (fil v16).
       productName: product.name,
       // L7 de `plan-pro-voit-les-declinaisons.md` : la filiation du détachement.
       detachedFromSku: product.detachedFromSku,

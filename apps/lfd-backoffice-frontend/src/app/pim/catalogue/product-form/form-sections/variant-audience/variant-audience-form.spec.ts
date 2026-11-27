@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { NotifyService } from '../../../../../notify.service';
 import { ProductHttpApi } from '../../../product-http-api';
 import { ProductFormStore } from '../../product-form-store';
-import { VARIANT_AUDIENCE_NEEDS_TILES, VariantAudienceForm } from './variant-audience-form';
+import { VariantAudienceForm } from './variant-audience-form';
 
 interface FakeVariant {
   readonly id: string;
@@ -20,7 +20,7 @@ type Write = (
   value: CatalogueAudience | null,
 ) => Promise<void>;
 
-function setup(write: Write, options: { selected?: string; tiles?: boolean } = {}) {
+function setup(write: Write, options: { selected?: string } = {}) {
   const variants = signal<readonly FakeVariant[]>([
     { id: 'v-6', isDefault: true, audience: null },
     { id: 'v-8', isDefault: false, audience: null },
@@ -30,7 +30,6 @@ function setup(write: Write, options: { selected?: string; tiles?: boolean } = {
     variants,
     selectedVariantId: () => options.selected ?? 'v-8',
     productId: () => 'p-buche',
-    variantsAsTiles: signal(options.tiles ?? true),
     audience: signal<CatalogueAudience | null>(null),
     familyAudience: signal<CatalogueAudience | null>('both'),
     setVariantAudience: (variantId: string, audience: CatalogueAudience | null) =>
@@ -91,19 +90,12 @@ describe('VariantAudienceForm', () => {
 
   it('un refus remet le choix et dit le message du serveur', async () => {
     const { form, variants, said } = setup(async () => {
-      throw new Error('La fiche ne montre pas chaque déclinaison.');
+      throw new Error('La déclinaison est introuvable.');
     });
     await form['onChange']('public');
     expect(variants().map((entry) => entry.audience)).toEqual([null, null]);
     expect(form['busy']()).toBe(false);
-    expect(said).toEqual(['ko:La fiche ne montre pas chaque déclinaison.']);
-  });
-
-  it('est grisé avec sa raison sur une fiche sans vignettes', () => {
-    const { form, host } = setup(async () => undefined, { tiles: false });
-    expect(host.querySelector('fold-listbox')).not.toBeNull();
-    expect(form['needsTiles']()).toBe(true);
-    expect(form['hint']()).toBe(VARIANT_AUDIENCE_NEEDS_TILES);
+    expect(said).toEqual(['ko:La déclinaison est introuvable.']);
   });
 
   it('dit en clair qu’une déclinaison ne suit pas la fiche, et à qui elle vend', async () => {
