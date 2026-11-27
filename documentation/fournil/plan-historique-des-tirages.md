@@ -465,8 +465,53 @@ Décidé au bâti de H2 et H2b (2026-11-27), là où le plan ne tranchait pas :
   `productionCountPdfKey`, pour que les attentes existantes sur la clé par
   tirage ne changent pas.
 
-**H3 — comparer et expliquer.** `diffPlanVersions` (§ 1.16 à 1.21), tests
-unitaires exhaustifs, dont le cas du 2026-11-27 rejoué.
+~~**H3 — comparer et expliquer.** `diffPlanVersions` (§ 1.16 à 1.21), tests
+unitaires exhaustifs, dont le cas du 2026-11-27 rejoué.~~
+— 2026-11-27, bâti, non commité. Domaine pur, dans le noyau :
+`apps/lfd-api/src/production/day/domain/services/plan-version-diff/`
+(`plan-version-diff.ts`, `plan-version-step.ts`, `plan-version-diff.types.ts`,
+`plan-version-diff-summary.ts`) et `day/domain/errors/plan-version-diff-errors.ts` ;
+tests dans le `__tests__/` du même dossier (versions construites par
+`PlanVersion.next`, journée jouée geste par geste).
+
+Décidé au bâti de H3 (2026-11-27), là où le plan ne tranchait pas :
+
+- **Dans `day/`, sans nom de plus à `day/index.ts` (reste 79).** H4 lit les
+  versions, qui sont au noyau : sa requête y vivra et importe le diff en
+  interne. **H6 (le réenvoi, au plan) devra traverser la porte** : un nom de
+  plus (`summarizePlanVersionDiff`, ou une lecture « résumé depuis la
+  version n » publiée par le noyau, plus étroite) — à décider en H6.
+- **La sortie** : `from`/`to` (`PlanVersionMark` : numéro, cause, instant,
+  auteur, arrêt), `production` (par SKU : avant, après, écart, unité),
+  `changes` (union discriminée `entered` / `revised` /
+  `modified_during_reopen` / `lines_changed` / `withdrawn` /
+  `left_after_withdrawal`, chacun marqué de sa version), `resupplies`
+  (`launched` / `entered` / `left`), `toCheck` (`left_reason_at_commerce`,
+  gravité `to_check`) et `baselineUnknown`.
+- **La raison d'une entrée est rendue prête** (`reason`) : `retaken_off_plan`
+  pour « hors plan, intégrée au retirage », `rearrested_off_plan` pour
+  « refigée après réouverture (reçue hors plan) » — l'entrée d'abord (§ 1.7).
+  `offPlan` nul ne devient jamais « hors plan ».
+- **Les lignes se comparent par SKU, quantités sommées** : un changement
+  d'options seul, à quantité égale, n'est pas dit.
+- **Une réouverture l'emporte sur la cause** : des lignes changées entre deux
+  arrêts différents sont « modifiée pendant la réouverture », même si la
+  version porte une autre cause. Au même arrêt, hors `order_revised`, elles
+  sont `lines_changed` (aucun geste ne le fait aujourd'hui ; dit plutôt que
+  tu).
+- **Une retirée que le nouvel arrêt écarte** sort avec sa raison
+  (`left_after_withdrawal`), pas en orange : elle est au registre.
+- **`baselineUnknown`** : `from` est la version 1 sous une cause qui n'arrête
+  pas (journée arrêtée avant H1). Une entrée `unknown` au milieu de la
+  chaîne se dit `entered`, raison `unknown`.
+- **Erreurs** : `PlanVersionRangeInvertedError` (400) pour `from > to`,
+  `PlanVersionNotFoundError` (404) pour une version absente, bornes ou
+  intermédiaire. `from = to` rend un diff vide.
+- **Le résumé de l'e-mail** (`summarizePlanVersionDiff`) : la production
+  entière, les changements de commandes plafonnés (`SUMMARY_CHANGE_LIMIT` = 10,
+  `otherChanges` pour « et N autres »), les réassorts et les sorties à
+  vérifier entiers — une sortie à vérifier ne se cache pas derrière un
+  compte.
 
 **H4 — lire.** La liste des versions et la comparaison, deux requêtes et
 leurs routes sous le contrôleur de la journée ; droit de lecture du dossier.
