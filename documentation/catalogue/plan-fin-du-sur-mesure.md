@@ -1,7 +1,7 @@
 # Plan — une vignette par déclinaison, et seul le sur mesure s'attribue
 
-> 🟦 Demandé par Hugo le 2026-11-27. **V1 bâti** (commit local, non poussé) ;
-> V2, F1, F2, F3 restent. Contredit
+> 🟦 Demandé par Hugo le 2026-11-27. **Tout est bâti** (commits locaux, non
+> poussés) : V1, V2, F1, F2, F3. Reste l'ordre de déploiement, au § 4 bis. Contredit
 > deux fois par `vitruve` le même jour (v1 et v2) ; cette v3 intègre ses
 > objections et les décisions de Hugo qui ont suivi.
 >
@@ -219,6 +219,24 @@ Ordre : V1 → (déploiement) → V2 ; F1 indépendant ; F2 après V1 déployé 
 après F2 constaté vide en production. F3 attend aussi le commit du lot G2 des
 options de commande (même abonné, même module). `lecteur-de-migrations` avant
 toute promotion vers `main` (V2, F3).
+
+## 4 bis. Déployer — l'ordre compte
+
+1. **V1** seul (le code cesse de lire les colonnes).
+2. **V2, F1, F2** : les colonnes partent, la carte arrive, l'opération
+   « Passer sur mesure les articles attribués à des comptes clients » paraît
+   dans ops.
+3. **Hugo applique l'opération dans ops**, attend le relais, puis relance la
+   simulation : elle doit dire 0.
+4. **F3** seulement alors : refus, retrait par l'abonné, clé en base. Déployé
+   avant l'étape 3, l'abonné retirerait les attributions qu'elle garde, et la
+   migration de la clé échouerait sur la première attribution restante.
+
+Choix fait au bâti (2026-11-27) : un article **retiré de la vente** et
+attribué n'est pas passé sur mesure — la fiche ne le réécrit plus, la clé
+resterait violée — ; l'opération retire ses attributions par le geste
+journalisé du commerce. Il n'est servi à personne ; la limite de l'opération
+le dit avant « Appliquer ».
 
 ## 5. Ce qui n'est pas vérifié
 

@@ -1,5 +1,8 @@
 import { CatalogItemNotFoundError } from "../../../domain/errors/catalog-not-found.error.js";
-import { ReservationCompanyNotFoundError } from "../../../domain/errors/made-to-order-errors.js";
+import {
+  OrdinaryArticleReservationError,
+  ReservationCompanyNotFoundError,
+} from "../../../domain/errors/made-to-order-errors.js";
 import { ReleaseArticleCommand } from "../release-article.command.js";
 import { ReleaseArticleHandler } from "../release-article.handler.js";
 import { ReserveArticleCommand } from "../reserve-article.command.js";
@@ -15,8 +18,8 @@ import {
 
 const STAFF = "fiche-1";
 
-function setup() {
-  const doubles = buildMadeToOrder();
+function setup(customRecipe = true) {
+  const doubles = buildMadeToOrder(undefined, customRecipe);
   const { items, reservations, companies, events, uow, clock } = doubles;
   return {
     ...doubles,
@@ -60,6 +63,15 @@ describe("ReserveArticleHandler — réserver un article à une société", () =
     await expect(
       reserve.execute(new ReserveArticleCommand(SKU, "co_inconnue", STAFF)),
     ).rejects.toBeInstanceOf(ReservationCompanyNotFoundError);
+    expect(steps).toEqual([]);
+  });
+
+  it("refuse un article qui n'est pas sur mesure, AVANT toute écriture (D2)", async () => {
+    const { reserve, steps } = setup(false);
+
+    await expect(
+      reserve.execute(new ReserveArticleCommand(SKU, COMPANY, STAFF)),
+    ).rejects.toBeInstanceOf(OrdinaryArticleReservationError);
     expect(steps).toEqual([]);
   });
 

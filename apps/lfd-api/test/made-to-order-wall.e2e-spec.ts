@@ -114,6 +114,7 @@ beforeEach(async () => {
 const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 
 async function reserve(companyId: string, visibility: "hidden" | "visible_locked"): Promise<void> {
+  await markCustomRecipe(ctx, X);
   await staff().put(`/admin/catalog/${X}/reservations/${companyId}`).expect(204);
   await staff().put(`/admin/catalog/${X}/reserved-visibility`).send({ visibility }).expect(204);
 }

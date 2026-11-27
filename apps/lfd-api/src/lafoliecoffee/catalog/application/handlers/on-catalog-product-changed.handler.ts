@@ -13,6 +13,7 @@ import { itemsOnSale } from "../../domain/catalog-product-facts.js";
 import { CatalogOptionGroupsProjection } from "../../domain/ports/catalog-option-groups.projection.js";
 import { CatalogProductFactsProjection } from "../../domain/ports/catalog-product-facts.projection.js";
 import { OrderLimitsRefresher } from "../order-limits-refresher.service.js";
+import { OrdinaryArticleReleases } from "./ordinary-article-releases.js";
 import {
   receivedFamilyOf,
   receivedOptionGroupsOf,
@@ -33,17 +34,20 @@ export const PROJECT_CATALOG_PRODUCT = "catalog.project-catalog-product";
  * 2. l'entrée `catalog_entries` s'écrit **si ce fait est plus récent** que la
  *    ligne (`applied_seq`) — sinon rien d'autre ne s'écrit : un fait ancien
  *    rejoué, ou livré deux fois, est inerte ;
- * 3. les déclinaisons vendables d'une fiche active sont mises en vente, chacune
+ * 3. un article en vente reçu « pas sur mesure » perd ses comptes attribués
+ *    (`plan-fin-du-sur-mesure.md`, D4) — AVANT d'être écrit, la clé
+ *    `(sku, custom_recipe)` refusant l'ordre inverse ;
+ * 4. les déclinaisons vendables d'une fiche active sont mises en vente, chacune
  *    à SON audience — une ligne NEUVE naît « à valider » pour chaque clientèle
  *    que son audience contient (lot 3), et une ligne existante le redevient
  *    quand son audience s'élargit à une clientèle (Q1 de
  *    `plan-audience-par-declinaison.md`, décidé par Hugo le 2026-11-24) ;
- * 4. tout autre article de la fiche encore en vente est retiré — fiche
+ * 5. tout autre article de la fiche encore en vente est retiré — fiche
  *    inactive ou archivée, déclinaison devenue incomplète, SKU renommé ;
- * 5. les limites de commande des articles en vente de la fiche sont
+ * 6. les limites de commande des articles en vente de la fiche sont
  *    redescendues de l'échelle reçue (lot 2b) — un article neuf reçoit les
  *    siennes. Sans échelle reçue, rien ne bouge ;
- * 6. les groupes d'options de chaque déclinaison sont réécrits
+ * 7. les groupes d'options de chaque déclinaison sont réécrits
  *    (`plan-options-de-commande.md`, § 3.2), toutes clientèles confondues.
  *
  * ## Ce qu'il ne fait jamais
@@ -66,6 +70,7 @@ export class OnCatalogProductChangedHandler implements DurableSubscriber {
     private readonly projection: CatalogProductFactsProjection,
     private readonly limits: OrderLimitsRefresher,
     private readonly optionGroups: CatalogOptionGroupsProjection,
+    private readonly releases: OrdinaryArticleReleases,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -78,6 +83,7 @@ export class OnCatalogProductChangedHandler implements DurableSubscriber {
       return;
     }
     const onSale = itemsOnSale(product);
+    await this.releases.release(onSale, delivery.eventId);
     await this.projection.putOnSale(onSale);
     await this.projection.withdrawOthers(
       product.productId,

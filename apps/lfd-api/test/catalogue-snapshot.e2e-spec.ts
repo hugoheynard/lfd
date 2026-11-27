@@ -21,6 +21,7 @@ import { randomUUID } from "node:crypto";
 import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { CatalogueSnapshotStore } from "../src/lafoliecoffee/catalog/infrastructure/catalogue-snapshot/catalogue-snapshot.store.js";
 import { Clock } from "../src/platform/time/clock.js";
+import { markCustomRecipe } from "./custom-recipe-fixture.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { agentsFor, contentOf, shopQuoteBody } from "./pricing-golden-master-bodies.js";
@@ -100,8 +101,13 @@ function only(sku: string): GoldenBasket {
   return { ...BASKET, lines: [{ sku, quantity: 2 }] };
 }
 
-function reserve(sku: string, companyId: string) {
-  return agents().as(E2E_STAFF_SUB).put(`/admin/catalog/${sku}/reservations/${companyId}`);
+/** Seul le sur mesure s'attribue : l'article est marqué avant d'être attribué. */
+async function reserve(sku: string, companyId: string): Promise<void> {
+  await markCustomRecipe(ctx, sku);
+  await agents()
+    .as(E2E_STAFF_SUB)
+    .put(`/admin/catalog/${sku}/reservations/${companyId}`)
+    .expect(204);
 }
 
 async function catalogVersion(): Promise<bigint> {
@@ -152,7 +158,7 @@ describe("l'instantané — le mur entre sociétés", () => {
   it("un pro ne voit pas l'article réservé à une autre société ; elle, si", async () => {
     // La mémoire chauffée AVANT la réservation : le numéro doit la défaire.
     await subtotalOf(BUYER_SUB, scene.pro.companyId);
-    await reserve(CROISSANT, scene.proWithoutCredit.companyId).expect(204);
+    await reserve(CROISSANT, scene.proWithoutCredit.companyId);
 
     const other = await quoteAs(BUYER_SUB, scene.pro.companyId, only(CROISSANT));
     expect(other.status).toBeGreaterThanOrEqual(400);
@@ -164,7 +170,7 @@ describe("l'instantané — le mur entre sociétés", () => {
     const quoted = await quoteAs(BUYER_SUB, scene.pro.companyId);
     expect(quoted.status).toBe(200);
     const { totalCents } = quoted.body as { totalCents: number };
-    await reserve(PAIN, scene.proWithoutCredit.companyId).expect(204);
+    await reserve(PAIN, scene.proWithoutCredit.companyId);
     const ordersBefore = await ctx.prisma.order.count();
 
     const placed = await agents()

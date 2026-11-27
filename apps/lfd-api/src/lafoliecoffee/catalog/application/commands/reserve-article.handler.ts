@@ -3,7 +3,10 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { ReservationCompanyNotFoundError } from "../../domain/errors/made-to-order-errors.js";
+import {
+  OrdinaryArticleReservationError,
+  ReservationCompanyNotFoundError,
+} from "../../domain/errors/made-to-order-errors.js";
 import { ReservationChangedEvent } from "../../domain/events/made-to-order.events.js";
 import { CatalogItemRepository } from "../../domain/ports/catalog-item.repository.js";
 import { CatalogReservations } from "../../domain/ports/catalog-reservations.js";
@@ -16,6 +19,7 @@ import { ReserveArticleCommand } from "./reserve-article.command.js";
  * n'écrit pas de second fait.
  *
  * @throws {CatalogItemNotFoundError} le SKU n'est plus au catalogue.
+ * @throws {OrdinaryArticleReservationError} l'article n'est pas sur mesure.
  * @throws {ReservationCompanyNotFoundError} la société n'existe pas.
  */
 @CommandHandler(ReserveArticleCommand)
@@ -32,6 +36,9 @@ export class ReserveArticleHandler implements ICommandHandler<ReserveArticleComm
   async execute(command: ReserveArticleCommand): Promise<void> {
     await this.uow.run(async () => {
       const item = await loadOrFail(this.items, command.sku);
+      if (!item.customRecipe) {
+        throw new OrdinaryArticleReservationError(command.sku);
+      }
       const companyName = await this.companies.nameOf(command.companyId);
       if (companyName === null) {
         throw new ReservationCompanyNotFoundError(command.companyId);

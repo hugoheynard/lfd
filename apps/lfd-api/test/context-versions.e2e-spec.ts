@@ -10,6 +10,7 @@
  * un article), sur `INSERT` et `DELETE`, sous une écriture SQL à la main
  * aussi ; jamais sur une colonne ignorée. Rien ne lit encore ces numéros (M1b).
  */
+import { markCustomRecipe } from "./custom-recipe-fixture.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 
 let ctx: E2eContext;
@@ -210,6 +211,8 @@ describe("les versions par contexte — ce qui fait disparaître un article", ()
 
   it("poser puis lever une réservation la font monter (INSERT, DELETE)", async () => {
     const sku = await anySku();
+    // Seul le sur mesure s'attribue : la base refuse une attribution sur un article ouvert.
+    await markCustomRecipe(ctx, sku);
     await expectBump(() =>
       ctx.prisma.catalogItemReservation.create({
         data: { sku, companyId: "co_stamp", reservedAt: new Date(0), reservedBy: "e2e" },

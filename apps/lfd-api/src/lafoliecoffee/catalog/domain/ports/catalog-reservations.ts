@@ -21,4 +21,18 @@ export abstract class CatalogReservations {
 
   /** @returns faux si l'article n'était pas réservé à cette société. */
   abstract release(sku: string, companyId: string): Promise<boolean>;
+
+  /**
+   * Retire **toutes** les attributions de ces articles, en une écriture —
+   * l'article a cessé d'être sur mesure (`plan-fin-du-sur-mesure.md`, D4).
+   *
+   * @returns les couples retirés, pour en écrire les faits ; vide si aucun.
+   */
+  abstract releaseAllOf(skus: readonly string[]): Promise<readonly ReleasedReservation[]>;
+}
+
+/** Une attribution retirée : l'article et la société. */
+export interface ReleasedReservation {
+  readonly sku: string;
+  readonly companyId: string;
 }

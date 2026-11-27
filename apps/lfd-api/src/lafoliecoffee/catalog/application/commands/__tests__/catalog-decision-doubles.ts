@@ -20,7 +20,7 @@ export const NEGOTIATED = 190_000;
 /** Le nom de l'article, que chaque fait fige en `subjectLabel` (lot B du plan des phrases). */
 export const NAME = "Croissant";
 
-function article(placement: Placement, sku: string = SKU): CatalogItem {
+function article(placement: Placement, sku: string = SKU, customRecipe = false): CatalogItem {
   const facts: PimFacts = {
     sku,
     productId: "p_VIE-001",
@@ -53,6 +53,7 @@ function article(placement: Placement, sku: string = SKU): CatalogItem {
     requiresCold: false,
     productName: null,
     orderTimeLimit: null,
+    customRecipe,
     receivedAt: new Date("2026-01-01T00:00:00.000Z"),
   };
   return CatalogItem.reconstitute({ facts, withdrawnAt: null, decision: null, placement });
@@ -144,12 +145,14 @@ export function build(
   seed: (item: CatalogItem) => void = () => undefined,
   placement: Placement = PUSHED,
   extraSkus: readonly string[] = [],
+  /** Sur mesure : seul un article sur mesure s'attribue (`plan-fin-du-sur-mesure.md`, D2). */
+  customRecipe = false,
 ) {
   const steps: string[] = [];
   const items = new InMemoryCatalog(steps);
   const events = new StepRecordingPublisher(steps);
   const uow = new DirectUnitOfWork();
-  const item = article(placement);
+  const item = article(placement, SKU, customRecipe);
   seed(item);
   items.put(item);
   for (const sku of extraSkus) {

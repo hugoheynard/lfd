@@ -1,5 +1,12 @@
 # Articles sur mesure — réservés à des comptes pros
 
+> 🔴 **Depuis le 2026-11-27, seul un article sur mesure s'attribue** (Hugo ;
+> [`plan-fin-du-sur-mesure.md`](plan-fin-du-sur-mesure.md), D2–D4). La
+> réservation indépendante du marqueur (S1) et « un article réservé non sur
+> mesure garde son badge » (§ 13) ne valent plus : attribuer un article
+> ordinaire est refusé, la base le tient par une clé, et un article qui cesse
+> d'être sur mesure perd ses comptes attribués à la réception de sa fiche.
+
 > 📐 Plan (Hugo, 2026-10-30). L1a commité, L1b bâti (§ 10 bis). **Révision 2**
 > (2026-10-30) : contredit par `vitruve`, objections intégrées — cf. § 11.
 > Chaque affirmation sur l'existant cite un `fichier:ligne` ouvert le
@@ -839,7 +846,8 @@ Bâti, non commité. Chemins relatifs à `apps/lfd-backoffice-frontend/src/app/`
   de « · validation pro en attente » quand `proReviewPending` (13.6-7)
   (`customRecipeLabel`, `made-to-order.ts`). Sans le droit
   `lfc_made_to_order:read`, le badge ne dit que « Sur mesure ». Un article
-  réservé non sur mesure garde son badge « réservé à N comptes ». « Sur
+  non sur mesure n'a plus de compte attribué (`plan-fin-du-sur-mesure.md`,
+  D2). « Sur
   mesure… » devient **« Attribuer… »**, offert sur un article sur mesure
   seulement ; le panneau (`made-to-order-panel/`) ne porte plus la case :
   visibilité et comptes réservataires. `setMadeToOrder` est retiré du service.

@@ -23,8 +23,14 @@ import {
   CatalogOptionGroupsProjection,
   type ReceivedOptionGroups,
 } from "../../../domain/ports/catalog-option-groups.projection.js";
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
+import {
+  InMemoryCatalogReservations,
+  KnownCompanies,
+} from "../../commands/__tests__/made-to-order-doubles.js";
 import { OnCatalogCategoryChangedHandler } from "../on-catalog-category-changed.handler.js";
 import { OnCatalogProductChangedHandler } from "../on-catalog-product-changed.handler.js";
+import { OrdinaryArticleReleases } from "../ordinary-article-releases.js";
 
 /**
  * Les récepteurs des faits du catalogue (2a4) : l'ORCHESTRATION — famille
@@ -150,19 +156,133 @@ function refresher(limits = new RecordingOrderLimits([])): OrderLimitsRefresher 
   return new OrderLimitsRefresher(limits);
 }
 
+/** Le retrait des attributions, sur des réservations vides par défaut. */
+function releasesOf(
+  reservations = new InMemoryCatalogReservations([]),
+  events = new RecordingPublisher(),
+): OrdinaryArticleReleases {
+  return new OrdinaryArticleReleases(
+    reservations,
+    new KnownCompanies(new Map([["co_a", "Boulangerie A"]])),
+    events,
+  );
+}
+
 async function deliver(
   projection: CatalogProductFactsProjection,
   fact: CatalogProductChangedFact,
   limits = new RecordingOrderLimits([]),
   groups = new RecordingOptionGroups(),
+  releases = releasesOf(),
 ): Promise<void> {
-  await new OnCatalogProductChangedHandler(projection, refresher(limits), groups).handle({
+  await new OnCatalogProductChangedHandler(projection, refresher(limits), groups, releases).handle({
     eventId: "evt_1",
     ...fact.durableFact(),
   });
 }
 
 describe("OnCatalogProductChangedHandler", () => {
+  describe("un article qui n'est plus sur mesure perd ses comptes attribués (D4)", () => {
+    function reservedTo(calls: string[], sku: string): InMemoryCatalogReservations {
+      const reservations = new InMemoryCatalogReservations(calls);
+      for (const companyId of ["co_a", "co_b"]) {
+        reservations.rows.set(`${sku}|${companyId}`, {
+          sku,
+          companyId,
+          reservedAt: new Date(EMITTED),
+          reservedBy: "stf_1",
+        });
+      }
+      return reservations;
+    }
+
+    it("retire les attributions AVANT d'écrire l'article, et journalise un fait par compte", async () => {
+      const projection = new SpyingProduct(true);
+      const reservations = reservedTo(projection.calls, "VIE-1-1");
+      const events = new RecordingPublisher();
+
+      await deliver(
+        projection,
+        productFact("active", { variants: [{ ...VARIANT, customRecipe: false }] }),
+        undefined,
+        undefined,
+        releasesOf(reservations, events),
+      );
+
+      expect(projection.calls).toEqual([
+        "family:fam_1",
+        "entry",
+        "release:VIE-1-1:co_a",
+        "release:VIE-1-1:co_b",
+        "onSale",
+        "withdraw:prd_1",
+      ]);
+      expect(reservations.rows.size).toBe(0);
+      expect(events.traced.map((event) => event.journalFact())).toEqual([
+        expect.objectContaining({
+          type: "catalog_item.reservation_released",
+          idempotencyKey: "catalog_item.reservation_released:evt_1:VIE-1-1:co_a",
+          payload: expect.objectContaining({ companyName: "Boulangerie A" }),
+        }),
+        expect.objectContaining({
+          idempotencyKey: "catalog_item.reservation_released:evt_1:VIE-1-1:co_b",
+          // Une société introuvable garde son fait, sans nom inventé.
+          payload: expect.objectContaining({ companyName: null }),
+        }),
+      ]);
+    });
+
+    it.each([
+      ["encore sur mesure", true],
+      ["d'un fait qui ne le disait pas", undefined],
+    ])("garde les attributions d'un article %s", async (_case, customRecipe) => {
+      const projection = new SpyingProduct(true);
+      const reservations = reservedTo(projection.calls, "VIE-1-1");
+
+      await deliver(
+        projection,
+        productFact("active", {
+          variants: [customRecipe === undefined ? VARIANT : { ...VARIANT, customRecipe }],
+        }),
+        undefined,
+        undefined,
+        releasesOf(reservations),
+      );
+
+      expect(reservations.rows.size).toBe(2);
+    });
+
+    it("garde les attributions d'une fiche inactive : rien n'y est réécrit", async () => {
+      const projection = new SpyingProduct(true);
+      const reservations = reservedTo(projection.calls, "VIE-1-1");
+
+      await deliver(
+        projection,
+        productFact("inactive", { variants: [{ ...VARIANT, customRecipe: false }] }),
+        undefined,
+        undefined,
+        releasesOf(reservations),
+      );
+
+      expect(reservations.rows.size).toBe(2);
+    });
+
+    it("ne retire rien sur un fait ancien", async () => {
+      const projection = new SpyingProduct(false);
+      const reservations = reservedTo(projection.calls, "VIE-1-1");
+
+      await deliver(
+        projection,
+        productFact("active", { variants: [{ ...VARIANT, customRecipe: false }] }),
+        undefined,
+        undefined,
+        releasesOf(reservations),
+      );
+
+      expect(reservations.rows.size).toBe(2);
+    });
+  });
+
   it("crée la famille d'abord, écrit l'entrée, met en vente, retire le reste", async () => {
     const projection = new SpyingProduct(true);
 
@@ -286,6 +406,7 @@ describe("OnCatalogProductChangedHandler", () => {
       projection,
       refresher(),
       new RecordingOptionGroups(),
+      releasesOf(),
     ).handle({
       eventId: "evt_1",
       type: durable.type,
@@ -324,6 +445,7 @@ describe("OnCatalogProductChangedHandler", () => {
       projection,
       refresher(),
       new RecordingOptionGroups(),
+      releasesOf(),
     ).handle({
       eventId: "evt_1",
       type: durable.type,
@@ -357,6 +479,7 @@ describe("OnCatalogProductChangedHandler", () => {
       projection,
       refresher(),
       new RecordingOptionGroups(),
+      releasesOf(),
     ).handle({
       eventId: "evt_1",
       type: durable.type,
@@ -411,6 +534,7 @@ describe("OnCatalogProductChangedHandler", () => {
         projection,
         refresher(),
         new RecordingOptionGroups(),
+        releasesOf(),
       ).handle({
         eventId: "evt_1",
         type: "pim.catalog_product_changed",

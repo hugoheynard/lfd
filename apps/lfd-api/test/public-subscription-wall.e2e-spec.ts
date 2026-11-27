@@ -91,8 +91,11 @@ const GESTURES: readonly [string, () => Promise<unknown>][] = [
   ],
   ["sur mesure", () => markCustomRecipe(ctx, X)],
   [
-    "réservé à un pro",
-    () => staff().put(`/admin/catalog/${X}/reservations/${company}`).expect(204),
+    "sur mesure réservé à un pro",
+    async () => {
+      await markCustomRecipe(ctx, X);
+      await staff().put(`/admin/catalog/${X}/reservations/${company}`).expect(204);
+    },
   ],
 ];
 

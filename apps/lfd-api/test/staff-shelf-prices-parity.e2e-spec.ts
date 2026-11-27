@@ -19,6 +19,7 @@ import type {
 import type request from "supertest";
 
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
+import { markCustomRecipe } from "./custom-recipe-fixture.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
@@ -109,6 +110,7 @@ async function expectParity(companyId: string, sub: string): Promise<CustomerShe
 }
 
 async function reserve(companyId: string, visibility: "hidden" | "visible_locked"): Promise<void> {
+  await markCustomRecipe(ctx, RESERVED);
   await staff().put(`/admin/catalog/${RESERVED}/reservations/${companyId}`).expect(204);
   await staff()
     .put(`/admin/catalog/${RESERVED}/reserved-visibility`)
