@@ -37,8 +37,8 @@
 .line {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-2xs);
-  padding: var(--fold-space-2xs) var(--fold-space-xs);
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-xs) var(--fold-space-xs);
   border: 1px solid transparent;
   border-radius: var(--fold-radius-sm);
 }
@@ -55,7 +55,7 @@
 .line-head {
   display: flex;
   align-items: center;
-  gap: var(--fold-space-2xs);
+  gap: var(--fold-space-xs);
 }
 
 .name {
@@ -73,7 +73,7 @@
 .foot {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-2xs);
+  gap: var(--fold-space-xs);
 }
 
 .state {
