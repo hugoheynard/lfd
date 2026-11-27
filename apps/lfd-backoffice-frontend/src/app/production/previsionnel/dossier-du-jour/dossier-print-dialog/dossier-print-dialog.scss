@@ -4,11 +4,34 @@
   gap: var(--fold-space-lg);
 }
 
+/* Les sections à gauche, les commandes à droite ; empilées sur écran étroit. */
+.dpd-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: var(--fold-space-xl);
+  align-items: start;
+
+  @media (max-width: 48rem) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.dpd-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.dpd-count {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
 /* Une liste de commandes peut être longue : elle défile dans la fenêtre. */
 .dpd-orders {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-xs);
-  max-height: 40vh;
+  max-height: 50vh;
   overflow-y: auto;
 }

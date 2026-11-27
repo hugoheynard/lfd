@@ -27,6 +27,7 @@ import {
   FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
+  FoldSearchComponent,
   type FoldChoiceOption,
   type FoldPanelContent,
   type FoldPanelDefaults,
@@ -49,8 +50,11 @@ export interface DossierPrintDialogData {
   readonly present: (pdf: Blob) => string | null;
 }
 
-/** Comment choisir les commandes. */
-export type OrdersMode = 'all' | 'since' | 'chosen';
+/**
+ * Comment choisir les commandes : par les cases de la liste (toutes cochées =
+ * « toutes », sinon « choisies »), ou « nouvelles ou modifiées depuis #N ».
+ */
+export type OrdersMode = 'list' | 'since';
 
 /** Les parties du dossier, dans l'ordre du papier, et leur nom à l'écran. */
 export const DOSSIER_PART_LABELS: readonly {
@@ -109,12 +113,13 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
+    FoldSearchComponent,
   ],
   templateUrl: './dossier-print-dialog.html',
   styleUrl: './dossier-print-dialog.scss',
 })
 export class DossierPrintDialog implements FoldPanelContent<DossierPrintDialogData>, OnInit {
-  static readonly foldPanel: FoldPanelDefaults = { side: 'center', width: 'md', surface: 'solid' };
+  static readonly foldPanel: FoldPanelDefaults = { side: 'center', width: 'xl', surface: 'solid' };
 
   readonly data = input.required<DossierPrintDialogData>();
 
@@ -131,9 +136,12 @@ export class DossierPrintDialog implements FoldPanelContent<DossierPrintDialogDa
   protected readonly parts = signal<ReadonlySet<ProductionDossierPart>>(new Set(ALL_PARTS));
   protected readonly allGroups = signal(true);
   protected readonly groups = signal<ReadonlySet<string>>(new Set());
-  protected readonly ordersMode = signal<OrdersMode>('all');
+  protected readonly ordersMode = signal<OrdersMode>('list');
   protected readonly sinceRun = signal<number | null>(null);
+  /** Les commandes cochées ; toutes à l'ouverture, et à chaque relecture si toutes l'étaient. */
   protected readonly chosen = signal<ReadonlySet<string>>(new Set());
+  /** Le terme de recherche : il masque des lignes, il ne décoche rien. */
+  protected readonly search = signal('');
 
   protected readonly printing = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -158,18 +166,37 @@ export class DossierPrintDialog implements FoldPanelContent<DossierPrintDialogDa
       : ALL_PARTS.filter((part) => part !== 'functionSheets'),
   );
   protected readonly orders = computed(() => this.options()?.orders ?? []);
+  /** Les commandes que la recherche laisse voir (référence ou client, sans appel serveur). */
+  protected readonly visibleOrders = computed(() => {
+    const term = normalized(this.search().trim());
+    if (term === '') return this.orders();
+    return this.orders().filter(
+      (order) =>
+        normalized(order.reference).includes(term) ||
+        normalized(order.customerLabel).includes(term),
+    );
+  });
+  protected readonly allChosen = computed(() =>
+    this.orders().every((order) => this.chosen().has(order.orderId)),
+  );
+  protected readonly chosenCount = computed(
+    () => this.orders().filter((order) => this.chosen().has(order.orderId)).length,
+  );
+  protected readonly chosenLabel = computed(() => {
+    const count = this.chosenCount();
+    const total = this.orders().length;
+    return `${String(count)} commande${count > 1 ? 's' : ''} sélectionnée${count > 1 ? 's' : ''} sur ${String(total)}`;
+  });
   protected readonly groupNames = computed(() => this.options()?.groups ?? []);
   protected readonly groupsLegend = computed(() =>
     this.options()?.grouping === 'workstation' ? 'Postes' : 'Rayons',
   );
 
   /** « Nouvelles ou modifiées » : avant l'arrêt, et s'il y a déjà eu une impression. */
+  protected readonly sinceAvailable = computed(() => !this.arrested() && this.prints().length > 0);
   protected readonly modes = computed<readonly FoldChoiceOption[]>(() => [
-    { key: 'all', label: 'Toutes' },
-    ...(!this.arrested() && this.prints().length > 0
-      ? [{ key: 'since', label: 'Nouvelles ou modifiées' }]
-      : []),
-    { key: 'chosen', label: 'Choisies' },
+    { key: 'list', label: 'Commandes cochées' },
+    { key: 'since', label: 'Nouvelles ou modifiées' },
   ]);
 
   protected readonly runOptions = computed(() =>
@@ -182,8 +209,7 @@ export class DossierPrintDialog implements FoldPanelContent<DossierPrintDialogDa
     if (!this.allGroups() && this.groups().size === 0) return false;
     const mode = this.ordersMode();
     if (mode === 'since') return this.sinceRun() !== null;
-    if (mode === 'chosen') return this.chosen().size > 0;
-    return true;
+    return this.orders().length === 0 || this.chosenCount() > 0;
   });
 
   protected readonly fileName = computed(() => `dossier-${this.data().date}.pdf`);
@@ -196,8 +222,10 @@ export class DossierPrintDialog implements FoldPanelContent<DossierPrintDialogDa
     this.state.set('loading');
     try {
       const options = await this.api.printOptions(this.data().date);
+      const everyChosen = this.options() === null || this.allChosen();
       const hadSheets = (this.options()?.functionSheets.length ?? 0) > 0;
       this.options.set(options);
+      if (everyChosen) this.chosen.set(new Set(options.orders.map((order) => order.orderId)));
       if (options.functionSheets.length === 0) {
         this.togglePart('functionSheets', false);
       } else if (!hadSheets) {
@@ -205,7 +233,7 @@ export class DossierPrintDialog implements FoldPanelContent<DossierPrintDialogDa
       }
       this.sinceRun.set(options.prints.at(-1)?.run ?? null);
       if (this.ordersMode() === 'since' && (options.arrested || options.prints.length === 0)) {
-        this.ordersMode.set('all');
+        this.ordersMode.set('list');
       }
       this.state.set('ready');
     } catch {
@@ -225,8 +253,13 @@ export class DossierPrintDialog implements FoldPanelContent<DossierPrintDialogDa
     this.chosen.update((chosen) => toggled(chosen, orderId, checked));
   }
 
+  /** La case maître : coche ou décoche toutes les commandes, recherche ou pas. */
+  protected toggleAllOrders(checked: boolean): void {
+    this.chosen.set(new Set(checked ? this.orders().map((order) => order.orderId) : []));
+  }
+
   protected selectMode(key: string): void {
-    if (key === 'all' || key === 'since' || key === 'chosen') {
+    if (key === 'list' || key === 'since') {
       this.ordersMode.set(key);
     }
   }
@@ -296,14 +329,10 @@ export class DossierPrintDialog implements FoldPanelContent<DossierPrintDialogDa
 
   private ordersChoice(): ProvisionalPrintOrders {
     const run = this.sinceRun();
-    switch (this.ordersMode()) {
-      case 'since':
-        return run === null ? { kind: 'all' } : { kind: 'since', run };
-      case 'chosen':
-        return { kind: 'chosen', orderIds: this.checkedOrders() };
-      default:
-        return { kind: 'all' };
+    if (this.ordersMode() === 'since') {
+      return run === null ? { kind: 'all' } : { kind: 'since', run };
     }
+    return this.allChosen() ? { kind: 'all' } : { kind: 'chosen', orderIds: this.checkedOrders() };
   }
 
   /** Après l'arrêt : seul ce qui est décoché part en paramètre ; rien → le dossier archivé. */
@@ -313,7 +342,9 @@ export class DossierPrintDialog implements FoldPanelContent<DossierPrintDialogDa
     return {
       ...(parts.length < available.length ? { parts } : {}),
       ...(this.allGroups() ? {} : { groups: this.checkedGroups() }),
-      ...(this.ordersMode() === 'chosen' ? { orders: this.checkedOrders() } : {}),
+      ...(this.ordersMode() === 'list' && !this.allChosen()
+        ? { orders: this.checkedOrders() }
+        : {}),
     };
   }
 
@@ -337,4 +368,12 @@ function toggled<T>(set: ReadonlySet<T>, value: T, checked: boolean): ReadonlySe
     next.delete(value);
   }
   return next;
+}
+
+/** Insensible à la casse et aux accents : « cafe » trouve « Café des Halles ». */
+function normalized(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
 }

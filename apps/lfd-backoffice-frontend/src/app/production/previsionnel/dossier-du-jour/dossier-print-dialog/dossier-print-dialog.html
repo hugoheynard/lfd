@@ -34,74 +34,99 @@
           </fold-callout>
         }
 
-        <fold-fieldset legend="Parties" direction="horizontal">
-          @for (entry of partLabels; track entry.part) {
-            <fold-checkbox
-              [label]="entry.label"
-              [checked]="parts().has(entry.part)"
-              [disabled]="entry.part === 'functionSheets' && functionSheets().length === 0"
-              [hint]="entry.part === 'functionSheets' ? functionSheetsLabel() : undefined"
-              (checkedChange)="togglePart(entry.part, $event)"
-              [attr.data-part]="entry.part"
-            />
-          }
-        </fold-fieldset>
-
-        @if (groupNames().length > 0) {
-          <fold-fieldset [legend]="groupsLegend()" direction="horizontal">
-            <fold-checkbox
-              label="Tous"
-              [checked]="allGroups()"
-              (checkedChange)="allGroups.set($event)"
-              data-all-groups
-            />
-            @if (!allGroups()) {
-              @for (group of groupNames(); track group) {
+        <div class="dpd-columns">
+          <div class="dpd-column" data-column="sections">
+            <fold-fieldset legend="Parties">
+              @for (entry of partLabels; track entry.part) {
                 <fold-checkbox
-                  [label]="group"
-                  [checked]="groups().has(group)"
-                  (checkedChange)="toggleGroup(group, $event)"
+                  [label]="entry.label"
+                  [checked]="parts().has(entry.part)"
+                  [disabled]="entry.part === 'functionSheets' && functionSheets().length === 0"
+                  [hint]="entry.part === 'functionSheets' ? functionSheetsLabel() : undefined"
+                  (checkedChange)="togglePart(entry.part, $event)"
+                  [attr.data-part]="entry.part"
                 />
               }
-            }
-          </fold-fieldset>
-        }
+            </fold-fieldset>
 
-        <fold-fieldset legend="Commandes">
-          <fold-choice-row
-            ariaLabel="Commandes à imprimer"
-            [options]="modes()"
-            [activeKey]="ordersMode()"
-            (selected)="selectMode($event)"
-          />
-          @if (ordersMode() === 'since') {
-            <fold-listbox
-              label="Depuis l’impression"
-              [options]="runOptions()"
-              [value]="sinceRun()"
-              (selectionChange)="sinceRun.set($event)"
-            />
-          }
-          @if (ordersMode() === 'chosen') {
-            @if (orders().length === 0) {
-              <fold-empty-state
-                title="Aucune commande ce jour-là"
-                subtitle="Rien à cocher : imprimez les réassorts avec « Toutes »."
-              />
-            } @else {
-              <div class="dpd-orders">
-                @for (order of orders(); track order.orderId) {
-                  <fold-checkbox
-                    [label]="order.reference + ' — ' + order.customerLabel"
-                    [checked]="chosen().has(order.orderId)"
-                    (checkedChange)="toggleOrder(order.orderId, $event)"
-                    [attr.data-order]="order.orderId"
-                  />
+            @if (groupNames().length > 0) {
+              <fold-fieldset [legend]="groupsLegend()">
+                <fold-checkbox
+                  label="Tous"
+                  [checked]="allGroups()"
+                  (checkedChange)="allGroups.set($event)"
+                  data-all-groups
+                />
+                @if (!allGroups()) {
+                  @for (group of groupNames(); track group) {
+                    <fold-checkbox
+                      [label]="group"
+                      [checked]="groups().has(group)"
+                      (checkedChange)="toggleGroup(group, $event)"
+                    />
+                  }
                 }
-              </div>
+              </fold-fieldset>
             }
-          }
-        </fold-fieldset>
+          </div>
+
+          <div class="dpd-column" data-column="orders">
+            <fold-fieldset legend="Commandes">
+              @if (sinceAvailable()) {
+                <fold-choice-row
+                  ariaLabel="Commandes à imprimer"
+                  [options]="modes()"
+                  [activeKey]="ordersMode()"
+                  (selected)="selectMode($event)"
+                />
+              }
+              @if (ordersMode() === 'since') {
+                <fold-listbox
+                  label="Depuis l’impression"
+                  [options]="runOptions()"
+                  [value]="sinceRun()"
+                  (selectionChange)="sinceRun.set($event)"
+                />
+              } @else if (orders().length === 0) {
+                <fold-empty-state
+                  title="Aucune commande ce jour-là"
+                  subtitle="Les autres parties du dossier s’impriment quand même."
+                />
+              } @else {
+                <fold-search
+                  placeholder="Référence ou client…"
+                  ariaLabel="Rechercher une commande"
+                  [(value)]="search"
+                  [resultCount]="search().trim() === '' ? null : visibleOrders().length"
+                  resultLabel="affichées"
+                />
+                <fold-checkbox
+                  label="Toutes les commandes"
+                  [checked]="allChosen()"
+                  [indeterminate]="!allChosen() && chosenCount() > 0"
+                  (checkedChange)="toggleAllOrders($event)"
+                  data-all-orders
+                />
+                <p class="dpd-count" data-chosen-count>{{ chosenLabel() }}</p>
+                <div class="dpd-orders">
+                  @for (order of visibleOrders(); track order.orderId) {
+                    <fold-checkbox
+                      [label]="order.reference + ' — ' + order.customerLabel"
+                      [checked]="chosen().has(order.orderId)"
+                      (checkedChange)="toggleOrder(order.orderId, $event)"
+                      [attr.data-order]="order.orderId"
+                    />
+                  } @empty {
+                    <fold-empty-state
+                      title="Aucune commande ne correspond"
+                      subtitle="Les commandes cochées restent sélectionnées."
+                    />
+                  }
+                </div>
+              }
+            </fold-fieldset>
+          </div>
+        </div>
 
         @if (error(); as message) {
           <fold-callout appearance="inset" variant="alert" announce data-error>{{

@@ -198,16 +198,15 @@ describe('DossierPrintDialog — avant l’arrêt', () => {
     api.views = [OPEN_DAY];
     const { el, printButton, settle } = await render(api);
 
-    chooseMode(el(), 'Choisies');
+    checkbox(el(), 'Toutes les commandes').click();
     await settle();
     expect(printButton().disabled).toBe(true);
     checkbox(el(), 'ORD-0143').click();
-    checkbox(el(), 'ORD-0142').click();
     await settle();
     printButton().click();
     await settle();
 
-    expect(api.draws[0]?.payload.orders).toEqual({ kind: 'chosen', orderIds: ['o1', 'o2'] });
+    expect(api.draws[0]?.payload.orders).toEqual({ kind: 'chosen', orderIds: ['o2'] });
   });
 
   it('sans partie cochée, n’imprime rien', async () => {
@@ -255,6 +254,98 @@ describe('DossierPrintDialog — avant l’arrêt', () => {
     await settle();
 
     expect(el().querySelector('[data-blocked] a')?.getAttribute('href')).toBe('blob:x');
+  });
+});
+
+describe('DossierPrintDialog — la liste des commandes', () => {
+  const THREE: ProductionPrintOptionsView = {
+    ...OPEN_DAY,
+    orders: [
+      ...OPEN_DAY.orders,
+      { orderId: 'o3', reference: 'ORD-0150', customerLabel: 'Boulangerie Été' },
+    ],
+  };
+
+  it('range les sections à gauche et les commandes à droite', async () => {
+    const api = new FakeApi();
+    api.views = [THREE];
+    const { el } = await render(api);
+    const sections = el().querySelector('[data-column="sections"]');
+    const orders = el().querySelector('[data-column="orders"]');
+    expect(sections?.querySelector('[data-part="cover"]')).not.toBeNull();
+    expect(orders?.querySelector('[data-order="o1"]')).not.toBeNull();
+    expect(orders?.querySelector('fold-search')).not.toBeNull();
+  });
+
+  it('coche tout à l’ouverture et le compte', async () => {
+    const api = new FakeApi();
+    api.views = [THREE];
+    const { el } = await render(api);
+    expect(checkbox(el(), 'Toutes les commandes').checked).toBe(true);
+    expect(el().querySelector('[data-chosen-count]')?.textContent).toContain(
+      '3 commandes sélectionnées sur 3',
+    );
+  });
+
+  it('une commande décochée met la case maître en état mixte et part en « choisies »', async () => {
+    const api = new FakeApi();
+    api.views = [THREE];
+    const { el, printButton, settle } = await render(api);
+
+    checkbox(el(), 'ORD-0143').click();
+    await settle();
+    const master = checkbox(el(), 'Toutes les commandes');
+    expect(master.indeterminate).toBe(true);
+    expect(master.checked).toBe(false);
+    expect(el().querySelector('[data-chosen-count]')?.textContent).toContain(
+      '2 commandes sélectionnées sur 3',
+    );
+    printButton().click();
+    await settle();
+
+    expect(api.draws[0]?.payload.orders).toEqual({ kind: 'chosen', orderIds: ['o1', 'o3'] });
+  });
+
+  it('tout recoché à la main repart en « toutes »', async () => {
+    const api = new FakeApi();
+    api.views = [THREE];
+    const { el, printButton, settle } = await render(api);
+
+    checkbox(el(), 'ORD-0143').click();
+    await settle();
+    checkbox(el(), 'ORD-0143').click();
+    await settle();
+    expect(checkbox(el(), 'Toutes les commandes').indeterminate).toBe(false);
+    printButton().click();
+    await settle();
+
+    expect(api.draws[0]?.payload.orders).toEqual({ kind: 'all' });
+  });
+
+  it('la recherche masque sans décocher, sur la référence comme sur le client', async () => {
+    const api = new FakeApi();
+    api.views = [THREE];
+    const { fixture, el, printButton, settle } = await render(api);
+    const input = el().querySelector<HTMLInputElement>('fold-search input');
+    if (input === null) throw new Error('champ de recherche absent');
+
+    input.value = 'ete';
+    input.dispatchEvent(new Event('input'));
+    await settle();
+    expect(el().querySelector('[data-order="o3"]')).not.toBeNull();
+    expect(el().querySelector('[data-order="o1"]')).toBeNull();
+
+    input.value = '0142';
+    input.dispatchEvent(new Event('input'));
+    await settle();
+    expect(el().querySelector('[data-order="o1"]')).not.toBeNull();
+    expect(el().querySelector('[data-order="o2"]')).toBeNull();
+    expect(el().querySelector('[data-chosen-count]')?.textContent).toContain('3 commandes');
+
+    fixture.detectChanges();
+    printButton().click();
+    await settle();
+    expect(api.draws[0]?.payload.orders).toEqual({ kind: 'all' });
   });
 });
 
