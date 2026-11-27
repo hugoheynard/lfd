@@ -138,6 +138,7 @@
   "test/company-closed-wall.e2e-spec.ts": 9900,
   "test/company-naf-race.e2e-spec.ts": 2849,
   "test/company-openers-backfill.e2e-spec.ts": 5658,
+  "test/company-order-summary-in-house.e2e-spec.ts": 8000,
   "test/company-order-summary.e2e-spec.ts": 8474,
   "test/company-pricing.e2e-spec.ts": 9507,
   "test/company-races.e2e-spec.ts": 2128,
@@ -411,6 +412,7 @@
   "test/order-handover-proof.e2e-spec.ts": 6124,
   "test/order-item-limit-override-revision.e2e-spec.ts": 6000,
   "test/order-item-limit-override.e2e-spec.ts": 5400,
+  "test/order-line-options.e2e-spec.ts": 8000,
   "test/order-mail-bell.e2e-spec.ts": 3623,
   "test/order-mails.e2e-spec.ts": 3617,
   "test/order-min-quantity.e2e-spec.ts": 6118,
@@ -741,6 +743,5 @@
   "test/vitrine-xml.e2e-spec.ts": 3602,
   "test/volume-commitment-carry-over.e2e-spec.ts": 3505,
   "test/volume-ladder-carry-over.e2e-spec.ts": 4493,
-  "test/write-replay.e2e-spec.ts": 35238,
-  "test/company-order-summary-in-house.e2e-spec.ts": 8000
+  "test/write-replay.e2e-spec.ts": 35238
 }
