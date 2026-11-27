@@ -63,6 +63,13 @@ export class DeliveryAddressForm {
    */
   readonly showStopMinutes = input(false);
 
+  /**
+   * Montrer la case « par défaut ». Vrai par défaut ; la boutique la cache à
+   * qui ajoute une adresse sans gérer le carnet — le défaut d'une autre
+   * adresse ne lui appartient pas, et l'API le refuserait.
+   */
+  readonly showDefault = input(true);
+
   /** Le réglage général « créneau ou échéance », dont l'adresse hérite (CA-D2). */
   readonly globalWindowMode = input<WindowMode>('deadline');
 

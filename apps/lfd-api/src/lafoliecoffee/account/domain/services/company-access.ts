@@ -37,6 +37,26 @@ export function ensureCompanyAdmin(role: CompanyRole | null, companyId: string):
 }
 
 /**
+ * **Ajouter une adresse de livraison** : tout membre, `orders` et `billing`
+ * compris (décidé par Hugo le 2026-11-27) — qui commande pour un lieu neuf
+ * doit pouvoir y faire livrer. Lui donner le défaut que portait une autre
+ * adresse reste au gestionnaire : c'est elle que lisent les autres membres.
+ *
+ * @throws {CompanyNotFoundError} le demandeur n'est pas membre.
+ * @throws {CompanyAdminRequiredError} il demande le défaut sans être gestionnaire.
+ */
+export function ensureCanAddDeliveryAddress(
+  role: CompanyRole | null,
+  companyId: string,
+  takesDefault: boolean,
+): void {
+  ensureCompanyMember(role, companyId);
+  if (takesDefault) {
+    ensureCompanyAdmin(role, companyId);
+  }
+}
+
+/**
  * Variante « simple appartenance » : n'importe quel rôle passe, seul l'absence de
  * rattachement échoue (404 non-divulguant). Pour les lectures d'une entreprise
  * — voir/télécharger le KBIS — où être membre suffit, sans être gestionnaire.

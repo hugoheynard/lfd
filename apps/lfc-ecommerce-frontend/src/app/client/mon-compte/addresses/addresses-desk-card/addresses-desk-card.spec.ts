@@ -101,10 +101,12 @@ describe('AddressesDeskCard', () => {
     expect(two.textContent).toContain(`${FR.account.deliveryHead} · 2 adresses`);
   });
 
-  it('ses gestes ouvrent leur dialogue, aux seuls rôles qui écrivent', () => {
+  it('ses gestes ouvrent leur dialogue ; un membre qui ne gère pas ne fait qu’ajouter', () => {
     const reader = bootCard(AddressesDeskCard, [asRole('orders')], carnet(null, []))
       .nativeElement as HTMLElement;
-    expect(reader.querySelectorAll('button').length).toBe(0);
+    expect(Array.from(reader.querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual(
+      [FR.account.addressAdd],
+    );
 
     vi.stubGlobal('matchMedia', matchMediaAt(false));
     const writer = bootCard(AddressesDeskCard, [TOMMEUSES], carnet(null, []))
@@ -120,6 +122,7 @@ describe('AddressesDeskCard', () => {
         knownContacts: [{ prenom: 'Hugo', nom: 'Heynard', telephone: '06 12 44 08 71' }],
         signatureFloor: false,
         firstOfBook: true,
+        canSetDefault: true,
       },
     });
 

@@ -169,6 +169,7 @@ function readerRecorder(recorder: Recorder): CompanyAddressReader {
 
 /**
  * Écritures d'adresses : mur `owner`/`admin` (non-membre → 404, membre → 403,
+ * sauf l'AJOUT d'une adresse de livraison, ouvert à tout membre hors défaut,
  * gestionnaire → agit). Lecture : mur `member` (un simple membre lit, un
  * non-membre reçoit 404). Un refus ne doit **rien** toucher.
  */
@@ -226,6 +227,62 @@ describe("handlers d'adresses — les murs member / admin", () => {
       ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY, randomUUID())),
     ).rejects.toBeInstanceOf(CompanyNotFoundError);
     expect(recorder.writes).toEqual([]);
+  });
+
+  function addHandler(
+    role: "owner" | "orders" | "billing",
+    recorder: Recorder,
+    repo: CompanyAddressRepository = addressesRecorder(recorder),
+  ) {
+    return new AddDeliveryAddressHandler(
+      membershipReturning(role),
+      repo,
+      events(),
+      new FixedIdGenerator("addr"),
+      clock(),
+      new DirectUnitOfWork(),
+      journalNames(companiesReturningSample()),
+      silentGestures(),
+      inMemoryIntents(),
+    );
+  }
+
+  it.each(["orders", "billing"] as const)("un membre %s ajoute une adresse", async (role) => {
+    const recorder: Recorder = { writes: [] };
+    await addHandler(role, recorder).execute(
+      new AddDeliveryAddressCommand("u1", "c1", { ...DELIVERY, isDefault: false }, randomUUID()),
+    );
+    expect(recorder.writes).toHaveLength(1);
+  });
+
+  it.each(["orders", "billing"] as const)(
+    "un membre %s qui la veut par défaut reçoit 403 et rien n'est écrit",
+    async (role) => {
+      const recorder: Recorder = { writes: [] };
+      await expect(
+        addHandler(role, recorder).execute(
+          new AddDeliveryAddressCommand("u1", "c1", { ...DELIVERY, isDefault: true }, randomUUID()),
+        ),
+      ).rejects.toBeInstanceOf(CompanyAdminRequiredError);
+      expect(recorder.writes).toEqual([]);
+    },
+  );
+
+  it("un membre orders coche « par défaut » sur la première adresse d'un carnet vide", async () => {
+    const recorder: Recorder = { writes: [] };
+    const empty = DeliveryAddressBook.reconstitute({
+      companyId: "c1",
+      entries: [],
+      defaultId: null,
+    });
+    const repo: CompanyAddressRepository = {
+      ...addressesRecorder(recorder),
+      loadDeliveryBook: () => Promise.resolve(empty),
+    };
+    await addHandler("orders", recorder, repo).execute(
+      new AddDeliveryAddressCommand("u1", "c1", { ...DELIVERY, isDefault: true }, randomUUID()),
+    );
+    expect(recorder.writes).toEqual(["carnet:1"]);
   });
 
   it("un simple membre reçoit 403 et rien n'est écrit", async () => {

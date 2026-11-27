@@ -244,10 +244,11 @@ describe("le RIB d'un site atteint — l'héritage n'ouvre aucun geste", () => {
 
 /**
  * Les rôles du principal jouent sur ses sites (Hugo, 2026-11-27) : un `orders`
- * ou un `billing` hérité y vaut son rôle, jamais `admin`. Les gestes
- * d'administration du site lui restent fermés.
+ * ou un `billing` hérité y vaut son rôle, jamais `admin`. Il ajoute une
+ * adresse de livraison comme tout membre ; prendre le défaut d'une autre
+ * adresse reste au gestionnaire.
  */
-describe("un `orders` ou un `billing` du principal sur l'administration d'un site", () => {
+describe("un `orders` ou un `billing` du principal sur les adresses d'un site", () => {
   const ADDRESS = {
     label: "Boutique",
     ligne1: "9 rue de la Roquette",
@@ -265,22 +266,25 @@ describe("un `orders` ou un `billing` du principal sur l'administration d'un sit
     },
   };
 
+  function add(sub: string, site: string, isDefault: boolean) {
+    return ctx
+      .asSub(sub)
+      .post(`/companies/${site}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ ...ADDRESS, isDefault });
+  }
+
   it.each([CustomerRole.orders, CustomerRole.billing])(
-    "%s du principal : lit les adresses du site, n'en ajoute pas (403)",
+    "%s du principal : ajoute une adresse au site, ne lui prend pas le défaut",
     async (role) => {
       const f = await family();
       const heir = await customer();
       await member(heir.id, f.principal, { role });
-      const before = await ctx.prisma.address.count({ where: { companyId: f.site } });
 
-      await ctx.asSub(heir.sub).get(`/companies/${f.site}/addresses`).expect(200);
-      await ctx
-        .asSub(heir.sub)
-        .post(`/companies/${f.site}/delivery-addresses`)
-        .set(INTENT_KEY, freshIntent())
-        .send(ADDRESS)
-        .expect(403);
-      expect(await ctx.prisma.address.count({ where: { companyId: f.site } })).toBe(before);
+      await add(f.siteOwner.sub, f.site, true).expect(201);
+      await add(heir.sub, f.site, false).expect(201);
+      await add(heir.sub, f.site, true).expect(403);
+      expect(await ctx.prisma.address.count({ where: { companyId: f.site } })).toBe(2);
     },
   );
 });

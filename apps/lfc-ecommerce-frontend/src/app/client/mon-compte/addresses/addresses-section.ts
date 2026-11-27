@@ -36,6 +36,16 @@ export function canWriteAddresses(company: CompanyView | null): boolean {
 }
 
 /**
+ * Ajouter une adresse de livraison : tout membre, `orders` et `billing`
+ * compris (`ensureCanAddDeliveryAddress`, décidé par Hugo le 2026-11-27).
+ * La corriger, la supprimer ou lui donner le défaut reste à
+ * {@link canWriteAddresses}.
+ */
+export function canAddDeliveryAddress(company: CompanyView | null): boolean {
+  return company !== null;
+}
+
+/**
  * « 1 adresse », « 3 adresses » — la phrase lue par les deux cartes et le
  * panneau. Elle disait « 1 adresses » partout où une maison n'en a qu'une,
  * c'est-à-dire chez la plupart.

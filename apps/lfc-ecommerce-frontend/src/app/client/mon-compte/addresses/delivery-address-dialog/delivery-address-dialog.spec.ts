@@ -44,6 +44,7 @@ const CREATE: DeliveryAddressDialogData = {
   knownContacts: [HUGO],
   signatureFloor: false,
   firstOfBook: true,
+  canSetDefault: true,
 };
 
 interface Wire {
@@ -304,6 +305,7 @@ describe('DeliveryAddressDialog', () => {
           knownContacts: [HUGO],
           signatureFloor: TOMMEUSES.fulfillmentPreference.signatureRequired,
           firstOfBook: true,
+          canSetDefault: true,
         },
       });
     });

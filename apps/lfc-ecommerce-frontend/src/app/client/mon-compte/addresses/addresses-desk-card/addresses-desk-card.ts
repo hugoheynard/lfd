@@ -11,6 +11,7 @@ import { screenCopy } from '../../../copy/shop-copy-composer';
 import { ServicePoints } from '../../../shop/pickup-points.store';
 import { BillingAddressDialog } from '../billing-address-dialog/billing-address-dialog';
 import {
+  canAddDeliveryAddress,
   canWriteAddresses,
   deliveryCountLabel,
   deliveryRows,
@@ -59,6 +60,7 @@ export class AddressesDeskCard {
   private readonly panels = inject(FoldPanelHostService);
 
   protected readonly canWrite = computed(() => canWriteAddresses(this.client.company()));
+  protected readonly canAdd = computed(() => canAddDeliveryAddress(this.client.company()));
 
   protected readonly billing = computed(() => {
     const billing = this.addresses.billing();

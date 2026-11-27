@@ -186,6 +186,7 @@ describe('AddressesPanel', () => {
   const BILLING: AddressesPanelData = {
     companyId: 'cmp_1',
     canManage: true,
+    canAdd: true,
     view: 'billing',
   };
   const DELIVERY: AddressesPanelData = { ...BILLING, view: 'delivery' };
@@ -212,11 +213,21 @@ describe('AddressesPanel', () => {
     expect(() => button(FR.account.addressAdd)).not.toThrow();
   });
 
-  it('ne propose aucune écriture à un rôle qui ne gère pas la société', () => {
+  it('ne propose aucune écriture à qui ne gère pas et n’ajoute pas', () => {
     for (const data of [BILLING, DELIVERY]) {
-      fixture = boot({ ...data, canManage: false }, { billing: null, deliveries: [] });
+      fixture = boot(
+        { ...data, canManage: false, canAdd: false },
+        { billing: null, deliveries: [] },
+      );
       expect(el().querySelectorAll('button[foldButton]').length).toBe(0);
     }
+  });
+
+  it('à un membre qui ne gère pas, seul l’ajout d’une livraison est proposé', () => {
+    fixture = boot({ ...DELIVERY, canManage: false }, { billing: null, deliveries: [] });
+    expect(() => button(FR.account.addressAdd)).not.toThrow();
+    fixture = boot({ ...BILLING, canManage: false }, { billing: null, deliveries: [] });
+    expect(el().querySelectorAll('button[foldButton]').length).toBe(0);
   });
 
   /**
@@ -237,6 +248,7 @@ describe('AddressesPanel', () => {
         knownContacts: [{ prenom: 'Hugo', nom: 'Heynard', telephone: '06 12 44 08 71' }],
         signatureFloor: false,
         firstOfBook: true,
+        canSetDefault: true,
       },
     });
     // Le panneau ne bascule plus sur un formulaire postal : la liste reste dessous.

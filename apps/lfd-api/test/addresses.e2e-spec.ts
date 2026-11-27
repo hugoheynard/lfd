@@ -95,13 +95,19 @@ describe("le mur des adresses", () => {
       .expect(404);
   });
 
-  it("un simple membre lit, mais ne peut pas écrire (403)", async () => {
+  it("un simple membre lit et ajoute une livraison, sans prendre le défaut (403)", async () => {
     await ctx.asSub(MEMBER).get(`/companies/${companyId}/addresses`).expect(200);
     await ctx
       .asSub(MEMBER)
       .post(`/companies/${companyId}/delivery-addresses`)
       .set(INTENT_KEY, freshIntent())
       .send(delivery())
+      .expect(201);
+    await ctx
+      .asSub(MEMBER)
+      .post(`/companies/${companyId}/delivery-addresses`)
+      .set(INTENT_KEY, freshIntent())
+      .send(delivery({ isDefault: true }))
       .expect(403);
   });
 });

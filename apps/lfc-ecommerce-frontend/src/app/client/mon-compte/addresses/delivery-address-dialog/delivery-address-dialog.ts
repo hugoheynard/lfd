@@ -37,7 +37,7 @@ import { ClientAddresses } from '../../../client-addresses.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { dialogSide } from '../../../panel-side';
 import { ServicePoints } from '../../../shop/pickup-points.store';
-import { knownDeliveryContacts } from '../addresses-section';
+import { canWriteAddresses, knownDeliveryContacts } from '../addresses-section';
 
 /** Charge d'ouverture — la même que `DeliveryAddressPanelData` du back-office, plus le rang. */
 export interface DeliveryAddressDialogData {
@@ -50,6 +50,8 @@ export interface DeliveryAddressDialogData {
   readonly signatureFloor: boolean;
   /** Le carnet est vide : la première adresse est cochée « par défaut » d'office. */
   readonly firstOfBook: boolean;
+  /** Montrer la case « par défaut » : au gestionnaire, ou sur un carnet vide. */
+  readonly canSetDefault: boolean;
 }
 
 /**
@@ -144,6 +146,7 @@ export class DeliveryAddressDialog {
         knownContacts: knownDeliveryContacts(company),
         signatureFloor: company.fulfillmentPreference.signatureRequired,
         firstOfBook,
+        canSetDefault: firstOfBook || canWriteAddresses(company),
       },
     });
   }

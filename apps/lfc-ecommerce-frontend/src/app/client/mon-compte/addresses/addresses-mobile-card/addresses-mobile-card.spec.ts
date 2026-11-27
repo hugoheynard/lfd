@@ -84,6 +84,7 @@ describe('AddressesMobileCard', () => {
     expect(openedPanel()?.data).toEqual({
       companyId: 'cmp_1',
       canManage: false,
+      canAdd: true,
       view: 'billing',
     });
 

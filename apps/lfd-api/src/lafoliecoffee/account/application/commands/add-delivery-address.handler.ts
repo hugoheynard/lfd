@@ -8,7 +8,7 @@ import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { CompanyStepReachedEvent } from "../../domain/events/company-step-reached.event.js";
 import { CompanyAddressRepository } from "../../domain/ports/company-address.repository.js";
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
-import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
+import { ensureCanAddDeliveryAddress } from "../../domain/services/company-access.js";
 import { AddDeliveryAddressCommand } from "./address-commands.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
 import { deliveryAddressOf } from "../../domain/events/journal-names.js";
@@ -22,7 +22,8 @@ import { customerIntentActor } from "../../../../platform/intent/customer-intent
 const ADD_DELIVERY_GESTURE = "account.add-delivery-address";
 
 /**
- * Ajoute une adresse de livraison, réservé au gestionnaire de l'entreprise.
+ * Ajoute une adresse de livraison : tout membre de l'entreprise ; la poser en
+ * défaut reste au gestionnaire (`ensureCanAddDeliveryAddress`).
  *
  * Le handler n'arbitre rien : c'est le carnet qui sait si cette adresse devient
  * le défaut — notamment quand c'est la première, cas qu'aucun écran ne demande
@@ -58,7 +59,7 @@ export class AddDeliveryAddressHandler implements ICommandHandler<
 
   async execute(command: AddDeliveryAddressCommand): Promise<string> {
     const role = await this.memberships.roleOf(command.actorUserId, command.companyId);
-    ensureCompanyAdmin(role, command.companyId);
+    ensureCanAddDeliveryAddress(role, command.companyId, await this.takesDefault(command));
     return this.intents.runSealed(
       {
         actorId: customerIntentActor(command.actorUserId),
@@ -69,6 +70,19 @@ export class AddDeliveryAddressHandler implements ICommandHandler<
       CREATED_ID_REPLAY,
       (seal) => this.add(command, seal),
     );
+  }
+
+  /**
+   * L'adresse prend-elle le défaut à une AUTRE ? La première d'un carnet vide
+   * devient le défaut quoi qu'il arrive (le carnet le décide) : la cocher ne
+   * retire rien à personne, tout membre le peut.
+   */
+  private async takesDefault(command: AddDeliveryAddressCommand): Promise<boolean> {
+    if (!command.payload.isDefault) {
+      return false;
+    }
+    const book = await this.addresses.loadDeliveryBook(command.companyId);
+    return book.defaultId() !== null;
   }
 
   private async add(

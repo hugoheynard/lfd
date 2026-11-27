@@ -19,6 +19,7 @@ import { ServicePoints } from '../../../shop/pickup-points.store';
 import { BillingAddressDialog } from '../billing-address-dialog/billing-address-dialog';
 import {
   type AddressesView,
+  canAddDeliveryAddress,
   canWriteAddresses,
   deliveryCountLabel,
   deliveryRows,
@@ -33,6 +34,8 @@ export interface AddressesPanelData {
   readonly companyId: string;
   /** `owner`/`admin` : ceux que l'API laisse écrire (`ensureCompanyAdmin`). */
   readonly canManage: boolean;
+  /** Tout membre ajoute une adresse de livraison (`canAddDeliveryAddress`). */
+  readonly canAdd: boolean;
   /** La partie du carnet par laquelle on entre — chaque bouton de carte ouvre la sienne. */
   readonly view: AddressesView;
 }
@@ -90,7 +93,12 @@ export class AddressesPanel {
   static open(panels: FoldPanelHostService, company: CompanyView, view: AddressesView): void {
     panels.open(AddressesPanel, {
       side: panelSide(),
-      data: { companyId: company.id, canManage: canWriteAddresses(company), view },
+      data: {
+        companyId: company.id,
+        canManage: canWriteAddresses(company),
+        canAdd: canAddDeliveryAddress(company),
+        view,
+      },
     });
   }
 
@@ -174,7 +182,8 @@ export class AddressesPanel {
    */
   private async openDelivery(address: DeliveryAddressView | null): Promise<void> {
     const company = this.client.company();
-    if (company === null || !this.data().canManage) {
+    const allowed = address === null ? this.data().canAdd : this.data().canManage;
+    if (company === null || !allowed) {
       return;
     }
     const firstOfBook = this.addresses.deliveries().length === 0;
