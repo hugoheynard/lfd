@@ -13,7 +13,7 @@ import { PRODUCT_SEGMENT } from '@lfd/contracts/product-path';
 import { PIECE_SKU_PARAM } from './client/shop/piece-route';
 import { noProVisitGuard } from './client/shop/pro-visit.guard';
 import { settleGuard } from './client/commande/reglement-page/settle.guard';
-import { FEATURE_DASHBOARD, FEATURE_PRO_SPACE } from './feature-flags';
+import { FEATURE_DASHBOARD, FEATURE_PLANNER, FEATURE_PRO_SPACE } from './feature-flags';
 
 /**
  * Accueil `/` : le tableau de bord quand son feature flag est actif, sinon une
@@ -229,6 +229,20 @@ export const routes: Routes = [
             (m) => m.BasketsPage,
           ),
       },
+      // LE PLANIFICATEUR DE COMMANDES (plan `plan-planificateur-de-commandes.md`,
+      // § 6.1) : écran de SOCIÉTÉ, derrière son drapeau tant que le client
+      // demandeur n'est pas ouvert (Q7).
+      ...(FEATURE_PLANNER
+        ? [
+            {
+              path: 'planificateur',
+              canActivate: [companyWorkspaceGuard],
+              data: pageTitle('planner'),
+              loadComponent: () =>
+                import('./client/planner/planner-page/planner-page').then((m) => m.PlannerPage),
+            },
+          ]
+        : []),
       {
         // LE DOSSIER, écrit pour celui qui le possède. Sept cartes et pas sept
         // écrans : le back-office a des onglets parce qu'un commercial y passe

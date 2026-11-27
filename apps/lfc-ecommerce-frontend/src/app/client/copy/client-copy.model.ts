@@ -23,6 +23,8 @@ export interface PageTitles {
   readonly orders: string;
   readonly invoices: string;
   readonly baskets: string;
+  /** Le planificateur de commandes (`/planificateur`). */
+  readonly planner: string;
   readonly account: string;
   readonly profile: string;
   readonly loyalty: string;
@@ -166,6 +168,8 @@ export interface ClientCopy {
       readonly orders: string;
       readonly invoices: string;
       readonly baskets: string;
+      /** Le planificateur de commandes d'une société. */
+      readonly planner: string;
       readonly account: string;
       readonly loyalty: string;
       /** Les sites d'un compte principal — à son propriétaire et à son administrateur. */

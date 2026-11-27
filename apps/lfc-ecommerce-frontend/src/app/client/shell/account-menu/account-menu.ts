@@ -49,6 +49,7 @@ const DESTINATION_ICONS: Readonly<Record<string, FoldIconName>> = {
   loyalty: 'star',
   invoices: 'receipt',
   baskets: 'repeat',
+  planner: 'calendar',
   account: 'company',
   sites: 'store',
 };

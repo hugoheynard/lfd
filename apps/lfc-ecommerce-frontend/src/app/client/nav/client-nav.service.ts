@@ -12,10 +12,12 @@ import { AccountService } from '../../account/account.service';
 import { companyScreensClosed } from '../company-screens';
 import { ProOnboarding } from '../pro-onboarding.service';
 import { ManageableSites } from '../site-menu/manageable-sites';
+import { FEATURE_PLANNER } from '../../feature-flags';
 
 /** Une destination du menu, telle qu'elle est DÉCLARÉE — sans compteur ni libellé. */
 interface Destination {
-  readonly id: 'shop' | 'orders' | 'loyalty' | 'invoices' | 'baskets' | 'account' | 'sites';
+  readonly id:
+    'shop' | 'orders' | 'loyalty' | 'invoices' | 'baskets' | 'planner' | 'account' | 'sites';
   readonly route: string;
   /**
    * L'écran existe-t-il ?
@@ -79,6 +81,10 @@ const DESTINATIONS: readonly Destination[] = [
   { id: 'loyalty', route: '/ma-fidelite', ready: true, loyaltyOnly: true },
   { id: 'invoices', route: '/mes-factures', ready: true, companyOnly: true },
   { id: 'baskets', route: '/paniers-recurrents', ready: true, companyOnly: true },
+  // Derrière son drapeau (Q7 du plan du planificateur) : absent, il ne décale rien.
+  ...(FEATURE_PLANNER
+    ? [{ id: 'planner', route: '/planificateur', ready: true, companyOnly: true } as const]
+    : []),
   { id: 'account', route: '/mon-compte', ready: true, companyOnly: true },
   { id: 'sites', route: '/mes-sites', ready: true, companyOnly: true, sitesOnly: true },
 ];

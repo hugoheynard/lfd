@@ -1,0 +1,127 @@
+:host {
+  display: block;
+  background: var(--fold-color-bg-page);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-2xl) var(--lfc-inset) var(--fold-space-4xl);
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-lg);
+}
+
+.site {
+  margin: 0;
+  color: var(--fold-color-text-secondary);
+  font-weight: var(--fold-weight-medium);
+}
+
+// La grille : les favoris, la colonne des créneaux, un jour par colonne,
+// puis « ＋ ». Chaque élément y est placé explicitement par le gabarit.
+.board {
+  display: grid;
+  grid-template-columns:
+    minmax(12rem, 16rem) auto repeat(var(--planner-days, 1), minmax(14rem, 1fr))
+    auto;
+  align-items: stretch;
+  gap: var(--fold-space-sm);
+  overflow-x: auto;
+}
+
+.favorites {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-subtle);
+}
+
+.favorite-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.favorite {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2xs);
+  padding: var(--fold-space-xs);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-card);
+  cursor: grab;
+}
+
+.favorite-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.favorite-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fold-text-sm);
+}
+
+.corner,
+.slot {
+  align-self: start;
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  white-space: nowrap;
+}
+
+.day-head {
+  margin: 0;
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.add-day,
+.add-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-2xs);
+}
+
+.hint {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+// Les onglets des jours ne servent qu'en pile.
+.day-tabs {
+  display: none;
+}
+
+// Au téléphone : les jours en onglets, une case sous l'autre.
+@media (max-width: 899.98px) {
+  .day-tabs {
+    display: block;
+  }
+
+  .board {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .corner,
+  .is-off {
+    display: none;
+  }
+}

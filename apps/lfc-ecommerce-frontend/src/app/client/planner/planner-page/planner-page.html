@@ -1,0 +1,235 @@
+<ng-template clientBanner>
+  <app-client-banner-block [title]="copy().title" [lead]="copy().lead" />
+</ng-template>
+
+<div class="page">
+  @switch (board.status()) {
+    @case ('loading') {
+      <fold-loading [message]="copy().loading" />
+    }
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        data-planner-failed
+        [title]="copy().loadFailedTitle"
+        [subtitle]="copy().loadFailedBody"
+      >
+        <button foldButton emphasis="solid" intent="primary" type="button" (click)="retry()">
+          {{ copy().retry }}
+        </button>
+      </fold-empty-state>
+    }
+    @default {
+      <div class="top">
+        <fold-date
+          type="date"
+          size="sm"
+          [label]="copy().fromLabel"
+          [value]="board.from()"
+          [min]="today()"
+          [max]="board.lastPlannableDay() ?? undefined"
+          (valueChange)="changeFrom($event)"
+        />
+        <p class="site" data-planner-site>{{ siteLine() }}</p>
+      </div>
+
+      @if (board.writeError(); as message) {
+        <fold-callout variant="alert" announce data-planner-write-error>
+          {{ copy().saveFailed.replace('{message}', message) }}
+        </fold-callout>
+      }
+      @if (board.reloadedAfterConflict()) {
+        <fold-callout variant="info" announce data-planner-reloaded>
+          {{ copy().reloaded }}
+        </fold-callout>
+      }
+
+      @if (board.routing() === null) {
+        <fold-callout variant="warning" data-planner-no-routing>
+          <strong>{{ copy().noRoutingTitle }}</strong> {{ copy().noRouting }}
+          <a actions foldButton emphasis="soft" intent="neutral" size="sm" routerLink="/boutique">
+            {{ copy().chooseService }}
+          </a>
+        </fold-callout>
+      }
+
+      <fold-view-nav
+        class="day-tabs"
+        activeStyle="fill"
+        [items]="dayTabs()"
+        [activeKey]="activeDay()"
+        (activeKeyChange)="activeDay.set($event)"
+      />
+
+      <div class="board" [style.--planner-days]="days().length">
+        <section
+          class="favorites"
+          [style.grid-row]="'1 / span ' + (windows().length + 1)"
+          [attr.aria-label]="copy().favoritesTitle"
+        >
+          @if (favoriteRows().length === 0) {
+            <fold-empty-state [title]="copy().favoritesTitle" [subtitle]="copy().favoritesEmpty">
+              <fold-icon empty-icon name="heart" />
+            </fold-empty-state>
+          } @else {
+            <fold-element-title variant="title" [level]="3" [title]="copy().favoritesTitle" />
+            <ul class="favorite-list">
+              @for (favorite of favoriteRows(); track favorite.sku) {
+                <li
+                  class="favorite"
+                  draggable="true"
+                  [attr.data-planner-favorite]="favorite.sku"
+                  (dragstart)="startFavoriteDrag($event, favorite.sku)"
+                  (dragend)="endDrag()"
+                >
+                  <div class="favorite-head">
+                    <span class="favorite-name">{{ favorite.name }}</span>
+                    <fold-dropdown [ariaLabel]="copy().addToName.replace('{name}', favorite.name)">
+                      <button
+                        foldPopoverTrigger="menu"
+                        foldButton
+                        type="button"
+                        emphasis="soft"
+                        intent="neutral"
+                        size="sm"
+                        [attr.aria-label]="copy().addToName.replace('{name}', favorite.name)"
+                      >
+                        {{ copy().addTo }}
+                      </button>
+                      @for (target of targetsFrom(null)(favorite.sku); track target.key) {
+                        <fold-dropdown-item
+                          icon="plus"
+                          [disabled]="target.refusal !== null"
+                          [attr.data-planner-add]="target.key"
+                          (selected)="addTo(favorite.sku, target.key)"
+                        >
+                          {{ target.label }}
+                          @if (target.refusal !== null) {
+                            — {{ target.refusal }}
+                          }
+                        </fold-dropdown-item>
+                      }
+                    </fold-dropdown>
+                  </div>
+                  @if (favorite.notOrderable; as note) {
+                    <fold-callout variant="info" appearance="flat" data-planner-not-orderable>
+                      {{ note }}
+                    </fold-callout>
+                  }
+                </li>
+              }
+            </ul>
+          }
+          <a
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            size="sm"
+            icon="heart"
+            routerLink="/boutique"
+            data-planner-add-items
+            [queryParams]="favoritesShelf"
+          >
+            {{ copy().addItems }}
+          </a>
+        </section>
+
+        <span class="corner" [style.grid-row]="1" [style.grid-column]="2">
+          {{ copy().slotColumn }}
+        </span>
+
+        @for (day of days(); track day; let col = $index) {
+          <h3
+            class="day-head"
+            [class.is-off]="day !== activeDay()"
+            [style.grid-row]="1"
+            [style.grid-column]="col + 3"
+          >
+            {{ dayLabel(day) }}
+          </h3>
+        }
+
+        <div
+          class="add-day"
+          [style.grid-row]="'1 / span ' + (windows().length + 1)"
+          [style.grid-column]="days().length + 3"
+        >
+          <button
+            foldButton
+            emphasis="soft"
+            intent="neutral"
+            size="sm"
+            icon="plus"
+            type="button"
+            data-planner-add-day
+            [disabled]="nextDayToAdd() === null"
+            (click)="addDay()"
+          >
+            {{ copy().addDay }}
+          </button>
+          @if (nextDayToAdd() === null) {
+            <span class="hint">{{ copy().noMoreDays }}</span>
+          }
+        </div>
+
+        @for (window of windows(); track cellKeyOf('', window); let row = $index) {
+          <span class="slot" [style.grid-row]="row + 2" [style.grid-column]="2">
+            {{ windowLabel(window) }}
+          </span>
+          @for (day of days(); track day; let col = $index) {
+            @let cell = cellOf(day, window);
+            <app-planner-cell
+              [class.is-off]="day !== activeDay()"
+              [style.grid-row]="row + 2"
+              [style.grid-column]="col + 3"
+              [cell]="cell"
+              [label]="cellLabel(cell)"
+              [checks]="board.checks()"
+              [total]="board.totals().get(cell.key)"
+              [editable]="editable(cell)"
+              [targetsFor]="targetsFrom(cell.key)"
+              [dropState]="dropState(cell)"
+              (quantityChange)="board.setQuantity(cell.key, $event.sku, $event.quantity)"
+              (moveLine)="board.move($event.sku, cell.key, $event.to)"
+              (lineDragStart)="board.dragging.set({ sku: $event, from: cell.key })"
+              (lineDragEnd)="endDrag()"
+              (dropped)="dropOn(cell)"
+            />
+          }
+        }
+      </div>
+
+      @if (windows().length === 0) {
+        <fold-empty-state [title]="copy().noSlotTitle" [subtitle]="copy().noSlot">
+          <fold-icon empty-icon name="clock" />
+        </fold-empty-state>
+      }
+
+      <div class="add-slot">
+        <fold-dropdown [ariaLabel]="copy().addSlotMenu">
+          <button
+            foldPopoverTrigger="menu"
+            foldButton
+            emphasis="soft"
+            intent="neutral"
+            size="sm"
+            icon="plus"
+            type="button"
+            data-planner-add-slot
+            [disabled]="freeSlots().length === 0"
+          >
+            {{ copy().addSlot }}
+          </button>
+          @for (slot of freeSlots(); track cellKeyOf('', slot)) {
+            <fold-dropdown-item icon="clock" (selected)="board.addWindow(slot)">
+              {{ windowLabel(slot) }}
+            </fold-dropdown-item>
+          }
+        </fold-dropdown>
+        @if (freeSlots().length === 0) {
+          <span class="hint">{{ copy().noMoreSlots }}</span>
+        }
+      </div>
+    }
+  }
+</div>

@@ -156,6 +156,13 @@ export const OTHER_SPACES = [
   },
   {
     kind: "screen",
+    space: "planner",
+    title: "Planificateur — les commandes des pros préparées jour par jour",
+    file: "screens/planner.copy.ts",
+    fn: "plannerCopy",
+  },
+  {
+    kind: "screen",
     space: "deliveryProcedure",
     title: "La procédure de livraison d’une adresse",
     file: "screens/delivery-procedure.copy.ts · .fr/.en/.it.ts",

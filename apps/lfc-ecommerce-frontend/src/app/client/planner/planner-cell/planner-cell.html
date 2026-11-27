@@ -1,0 +1,123 @@
+<fold-card
+  padding="sm"
+  class="cell"
+  [ariaLabel]="label()"
+  [class.is-refused]="dropState() !== null && dropState() !== ''"
+  [class.is-target]="dropState() === '' && editable()"
+  [attr.data-planner-cell]="cell().key"
+  (dragover)="onDragOver($event)"
+  (drop)="onDrop($event)"
+>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    [level]="4"
+    [title]="totalText()"
+    [subtitle]="copy().indicative"
+  />
+
+  @if (dropState() !== null && dropState() !== '') {
+    <fold-callout variant="info" data-planner-drop-refusal>{{ dropState() }}</fold-callout>
+  }
+
+  @if (rows().length === 0) {
+    @if (editable()) {
+      <p class="hint">{{ dropState() === '' ? copy().dropHere : copy().emptyCell }}</p>
+    }
+  } @else {
+    <ul class="lines">
+      @for (row of rows(); track row.sku) {
+        <li
+          class="line"
+          [class.is-blocking]="row.blocking !== null"
+          [attr.draggable]="editable() ? 'true' : null"
+          [attr.data-planner-line]="row.sku"
+          (dragstart)="onDragStart($event, row.sku)"
+          (dragend)="lineDragEnd.emit()"
+        >
+          <div class="line-head">
+            <span class="name">{{ row.name }}</span>
+            <span class="quantity">{{ row.quantityText }}</span>
+            @if (editable()) {
+              <fold-button-icon
+                icon="minus"
+                size="sm"
+                [tooltip]="named(copy().decreaseName, row.name)"
+                (clicked)="decrease(row.sku, row.quantity)"
+              />
+              <fold-button-icon
+                icon="plus"
+                size="sm"
+                [tooltip]="named(copy().increaseName, row.name)"
+                (clicked)="increase(row.sku, row.quantity)"
+              />
+              <fold-dropdown [ariaLabel]="named(copy().lineActionsName, row.name)">
+                <fold-button-icon
+                  foldPopoverTrigger="menu"
+                  icon="more-vertical"
+                  size="sm"
+                  [tooltip]="named(copy().lineActionsName, row.name)"
+                />
+                @for (target of row.targets; track target.key) {
+                  <fold-dropdown-item
+                    icon="arrow-right"
+                    [disabled]="target.refusal !== null"
+                    [attr.data-planner-move]="target.key"
+                    (selected)="moveLine.emit({ sku: row.sku, to: target.key })"
+                  >
+                    {{ copy().moveTo }} {{ target.label }}
+                    @if (target.refusal !== null) {
+                      — {{ target.refusal }}
+                    }
+                  </fold-dropdown-item>
+                }
+                <fold-dropdown-item
+                  icon="bin"
+                  tone="danger"
+                  data-planner-remove
+                  (selected)="remove(row.sku)"
+                >
+                  {{ copy().remove }}
+                </fold-dropdown-item>
+              </fold-dropdown>
+            }
+          </div>
+          @if (row.blocking !== null) {
+            <fold-callout variant="warning" announce data-planner-blocking>
+              {{ row.blocking }}
+            </fold-callout>
+          }
+        </li>
+      }
+    </ul>
+  }
+
+  <div cardFooter class="foot">
+    @if (blockingCount() > 0) {
+      <fold-callout variant="warning" appearance="flat" data-planner-blocking-count>
+        {{ blockingText() }}
+      </fold-callout>
+    }
+    @if (stateText(); as state) {
+      <span class="state" data-planner-state>{{ state }}</span>
+      @if (cell().status === 'placed' && cell().orderId; as orderId) {
+        <a
+          foldButton
+          emphasis="soft"
+          intent="neutral"
+          size="sm"
+          [routerLink]="['/mes-commandes', orderId]"
+        >
+          {{ copy().viewOrder }}
+        </a>
+      }
+      @if (cell().refusal; as refusal) {
+        <fold-callout variant="warning" appearance="flat">{{ refusal.reason }}</fold-callout>
+      }
+    } @else if (cell().lines.length > 0) {
+      <span class="converts" data-planner-converts>
+        {{ editable() ? convertsText() : copy().frozen }}
+      </span>
+    }
+  </div>
+</fold-card>

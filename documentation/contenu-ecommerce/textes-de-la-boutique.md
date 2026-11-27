@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 2041 textes
+## Sommaire — 2094 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -36,8 +36,8 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Confirmation](#espace-done) | `done` | 33 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
 | **Le reste de la boutique** | | |
-| [Le cadre — bandeaux et erreurs générales](#espace-chrome) | `chrome` | 62 |
-| [La navigation](#espace-nav) | `nav` | 17 |
+| [Le cadre — bandeaux et erreurs générales](#espace-chrome) | `chrome` | 63 |
+| [La navigation](#espace-nav) | `nav` | 18 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
 | [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 293 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
@@ -48,12 +48,13 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
 | [Mes sites — la carte de chaque site, réglée par le compte principal](#espace-sitemenu) | `siteMenu` | 78 |
 | [Mes paniers récurrents — les paniers et leurs prochaines commandes](#espace-recurringbaskets) | `recurringBaskets` | 65 |
+| [Planificateur — les commandes des pros préparées jour par jour](#espace-planner) | `planner` | 51 |
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **2041** |
+| **Total** | | **2094** |
 
 ## Le parcours de commande
 
@@ -967,7 +968,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Le cadre — bandeaux et erreurs générales — `chrome`
 
-Source : `fr.ts · en.ts · it.ts` · 62 textes.
+Source : `fr.ts · en.ts · it.ts` · 63 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1017,6 +1018,7 @@ Source : `fr.ts · en.ts · it.ts` · 62 textes.
 | `chrome.pageTitles.orders` | Mes commandes — La Folie Coffee | My orders — La Folie Coffee | I miei ordini — La Folie Coffee |  |
 | `chrome.pageTitles.invoices` | Mes factures — La Folie Coffee | My invoices — La Folie Coffee | Le mie fatture — La Folie Coffee |  |
 | `chrome.pageTitles.baskets` | Mes paniers récurrents — La Folie Coffee | My recurring baskets — La Folie Coffee | I miei carrelli ricorrenti — La Folie Coffee |  |
+| `chrome.pageTitles.planner` | Planificateur — La Folie Coffee | Planner — La Folie Coffee | Pianificatore — La Folie Coffee |  |
 | `chrome.pageTitles.account` | Mon compte — La Folie Coffee | My account — La Folie Coffee | Il mio conto — La Folie Coffee |  |
 | `chrome.pageTitles.profile` | Mon profil — La Folie Coffee | My profile — La Folie Coffee | Il mio profilo — La Folie Coffee |  |
 | `chrome.pageTitles.loyalty` | Ma fidélité — La Folie Coffee | My loyalty — La Folie Coffee | La mia fedeltà — La Folie Coffee |  |
@@ -1038,7 +1040,7 @@ Source : `fr.ts · en.ts · it.ts` · 62 textes.
 
 ### La navigation — `nav`
 
-Source : `fr.ts · en.ts · it.ts` · 17 textes.
+Source : `fr.ts · en.ts · it.ts` · 18 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1046,6 +1048,7 @@ Source : `fr.ts · en.ts · it.ts` · 17 textes.
 | `nav.destinations.orders` | Commandes | Orders | Ordini |  |
 | `nav.destinations.invoices` | Factures | Invoices | Fatture |  |
 | `nav.destinations.baskets` | Paniers récurrents | Recurring baskets | Carrelli ricorrenti |  |
+| `nav.destinations.planner` | Planificateur | Planner | Pianificatore |  |
 | `nav.destinations.account` | Mon compte | My account | Il mio account |  |
 | `nav.destinations.loyalty` | Ma fidélité | My loyalty | La mia fedeltà |  |
 | `nav.destinations.sites` | Mes sites | My sites | I miei siti |  |
@@ -2280,6 +2283,66 @@ Source : `screens/recurring-baskets.copy.ts` · 65 textes.
 | `recurringBaskets.atLeastOne` | Gardez au moins un article, ou sautez cette commande. | Keep at least one item, or skip this order. | Tenete almeno un articolo, oppure saltate questo ordine. |  |
 | `recurringBaskets.save` | Enregistrer | Save | Salva |  |
 | `recurringBaskets.close` | Fermer | Close | Chiudi |  |
+
+<a id="espace-planner"></a>
+
+### Planificateur — les commandes des pros préparées jour par jour — `planner`
+
+Source : `screens/planner.copy.ts` · 51 textes.
+
+| Clé | FR | EN | IT | Variables |
+| --- | --- | --- | --- | --- |
+| `planner.title` | Planificateur | Planner | Pianificatore |  |
+| `planner.lead` | Préparez vos commandes jour par jour : chaque case devient une commande quand ce jour ferme. | Prepare your orders day by day: each cell becomes an order when that day closes. | Preparate i vostri ordini giorno per giorno: ogni casella diventa un ordine quando quel giorno chiude. |  |
+| `planner.loading` | Chargement du planificateur… | Loading the planner… | Caricamento del pianificatore… |  |
+| `planner.loadFailedTitle` | Le planificateur n’a pas pu être chargé | The planner could not be loaded | Non è stato possibile caricare il pianificatore |  |
+| `planner.loadFailedBody` | Vérifiez votre connexion, puis réessayez. | Check your connection, then try again. | Verificate la connessione, poi riprovate. |  |
+| `planner.retry` | Réessayer | Try again | Riprova |  |
+| `planner.fromLabel` | À partir du | Starting on | A partire dal |  |
+| `planner.pickup` | Retrait | Pickup | Ritiro |  |
+| `planner.deliveryTo` | Livraison à {city} | Delivery to {city} | Consegna a {city} | `{city}` |
+| `planner.noRoutingTitle` | Choisissez d’abord votre mode de service | First choose how you are served | Scegliete prima la modalità di servizio |  |
+| `planner.noRouting` | Le planificateur reprend le retrait ou la livraison choisis dans la boutique. | The planner uses the pickup or delivery chosen in the shop. | Il pianificatore riprende il ritiro o la consegna scelti nel negozio. |  |
+| `planner.chooseService` | Choisir dans la boutique | Choose in the shop | Scegliere nel negozio |  |
+| `planner.favoritesTitle` | Favoris | Favourites | Preferiti |  |
+| `planner.favoritesEmpty` | Aucun favori dans cet espace. Le cœur d’un article l’ajoute ici. | No favourites in this space. An item’s heart adds it here. | Nessun preferito in questo spazio. Il cuore di un articolo lo aggiunge qui. |  |
+| `planner.addItems` | Ajouter des articles | Add items | Aggiungere articoli |  |
+| `planner.notOrderableOn` | Pas commandable {days} | Not orderable {days} | Non ordinabile {days} | `{days}` |
+| `planner.addTo` | Ajouter à… | Add to… | Aggiungi a… |  |
+| `planner.addToName` | Ajouter {name} à un jour | Add {name} to a day | Aggiungi {name} a un giorno | `{name}` |
+| `planner.moveTo` | Déplacer vers… | Move to… | Sposta a… |  |
+| `planner.remove` | Retirer | Remove | Togli |  |
+| `planner.lineActionsName` | Actions sur {name} | Actions on {name} | Azioni su {name} | `{name}` |
+| `planner.increaseName` | Plus de {name} | More {name} | Più {name} | `{name}` |
+| `planner.decreaseName` | Moins de {name} | Less {name} | Meno {name} | `{name}` |
+| `planner.addDay` | Un jour de plus | One more day | Un giorno in più |  |
+| `planner.noMoreDays` | On ne prépare pas plus loin pour l’instant. | You cannot plan further ahead for now. | Per ora non si pianifica oltre. |  |
+| `planner.addSlot` | Un créneau | A time slot | Una fascia oraria |  |
+| `planner.addSlotMenu` | Ajouter un créneau | Add a time slot | Aggiungi una fascia oraria |  |
+| `planner.noMoreSlots` | Tous les créneaux sont déjà là. | All time slots are already shown. | Tutte le fasce orarie sono già presenti. |  |
+| `planner.noSlotTitle` | Aucun créneau choisi | No time slot chosen | Nessuna fascia oraria scelta |  |
+| `planner.noSlot` | Ajoutez un créneau : chaque créneau est une rangée, et chaque case une commande. | Add a time slot: each slot is a row, and each cell an order. | Aggiungete una fascia oraria: ogni fascia è una riga, e ogni casella un ordine. |  |
+| `planner.before` | avant | before | prima delle |  |
+| `planner.slotColumn` | Créneau | Time slot | Fascia oraria |  |
+| `planner.daysNav` | Jours | Days | Giorni |  |
+| `planner.totalHt` | {amount} HT | {amount} excl. VAT | {amount} IVA escl. | `{amount}` |
+| `planner.indicative` | Prix indicatif | Indicative price | Prezzo indicativo |  |
+| `planner.totalPending` | Calcul du total… | Working out the total… | Calcolo del totale… |  |
+| `planner.totalFailed` | Total indisponible | Total unavailable | Totale non disponibile |  |
+| `planner.emptyCell` | Glissez un favori ici, ou passez par « Ajouter à… ». | Drag a favourite here, or use “Add to…”. | Trascinate qui un preferito, oppure usate «Aggiungi a…». |  |
+| `planner.dropHere` | Déposer ici | Drop here | Rilasciare qui |  |
+| `planner.convertsAt` | Se commande {when} | Ordered {when} | Ordinato {when} | `{when}` |
+| `planner.convertsUnknown` | Heure de commande à venir | Order time to come | Ora dell’ordine da definire |  |
+| `planner.frozen` | Ce jour se commande : modifiez la commande. | This day is being ordered: change the order instead. | Questo giorno è in ordinazione: modificate l’ordine. |  |
+| `planner.states.placed` | Commandée | Ordered | Ordinato |  |
+| `planner.states.refused` | Non passée | Not placed | Non passato |  |
+| `planner.states.missed` | Manquée | Missed | Mancato |  |
+| `planner.viewOrder` | Voir la commande | View the order | Vedi l’ordine |  |
+| `planner.blockingOne` | 1 article empêche la commande | 1 item prevents the order | 1 articolo impedisce l’ordine |  |
+| `planner.blockingMany` | {n} articles empêchent la commande | {n} items prevent the order | {n} articoli impediscono l’ordine | `{n}` |
+| `planner.saveFailed` | Ce changement n’a pas été enregistré : {message} | This change was not saved: {message} | Questa modifica non è stata salvata: {message} | `{message}` |
+| `planner.reloaded` | Ce jour avait changé ailleurs : le planificateur a été relu. | This day had changed elsewhere: the planner was reloaded. | Questo giorno era cambiato altrove: il pianificatore è stato ricaricato. |  |
+| `planner.cellName` | {day}, {slot} | {day}, {slot} | {day}, {slot} | `{day}` `{slot}` |
 
 <a id="espace-deliveryprocedure"></a>
 

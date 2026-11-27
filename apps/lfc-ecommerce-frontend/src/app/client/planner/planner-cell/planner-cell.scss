@@ -1,0 +1,87 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.cell {
+  display: block;
+  height: 100%;
+}
+
+// Pendant un glisser : la case qui accepte se marque, celle qui refuse s'éteint.
+.cell.is-target {
+  outline: 2px dashed var(--fold-color-primary-border);
+  outline-offset: -2px;
+}
+
+.cell.is-refused {
+  background: var(--fold-color-surface-sunken);
+  color: var(--fold-color-text-muted);
+}
+
+.hint {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2xs);
+  padding: var(--fold-space-2xs) var(--fold-space-xs);
+  border: 1px solid transparent;
+  border-radius: var(--fold-radius-sm);
+}
+
+.line[draggable='true'] {
+  cursor: grab;
+}
+
+.line.is-blocking {
+  background: var(--fold-color-warning-surface);
+  border-color: var(--fold-color-warning-border);
+}
+
+.line-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-2xs);
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fold-text-sm);
+}
+
+.quantity {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2xs);
+}
+
+.state {
+  font-weight: var(--fold-weight-semibold);
+  font-size: var(--fold-text-sm);
+}
+
+.converts {
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-xs);
+}

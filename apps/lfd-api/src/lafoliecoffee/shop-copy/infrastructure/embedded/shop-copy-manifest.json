@@ -5267,6 +5267,13 @@
           "variables": []
         },
         {
+          "key": "chrome.pageTitles.planner",
+          "fr": "Planificateur — La Folie Coffee",
+          "en": "Planner — La Folie Coffee",
+          "it": "Pianificatore — La Folie Coffee",
+          "variables": []
+        },
+        {
           "key": "chrome.pageTitles.account",
           "fr": "Mon compte — La Folie Coffee",
           "en": "My account — La Folie Coffee",
@@ -5413,6 +5420,13 @@
           "fr": "Paniers récurrents",
           "en": "Recurring baskets",
           "it": "Carrelli ricorrenti",
+          "variables": []
+        },
+        {
+          "key": "nav.destinations.planner",
+          "fr": "Planificateur",
+          "en": "Planner",
+          "it": "Pianificatore",
           "variables": []
         },
         {
@@ -13392,6 +13406,366 @@
           "en": "Close",
           "it": "Chiudi",
           "variables": []
+        }
+      ],
+      "unrecorded": []
+    },
+    {
+      "space": "planner",
+      "title": "Planificateur — les commandes des pros préparées jour par jour",
+      "source": "screens/planner.copy.ts",
+      "journey": false,
+      "entries": [
+        {
+          "key": "planner.title",
+          "fr": "Planificateur",
+          "en": "Planner",
+          "it": "Pianificatore",
+          "variables": []
+        },
+        {
+          "key": "planner.lead",
+          "fr": "Préparez vos commandes jour par jour : chaque case devient une commande quand ce jour ferme.",
+          "en": "Prepare your orders day by day: each cell becomes an order when that day closes.",
+          "it": "Preparate i vostri ordini giorno per giorno: ogni casella diventa un ordine quando quel giorno chiude.",
+          "variables": []
+        },
+        {
+          "key": "planner.loading",
+          "fr": "Chargement du planificateur…",
+          "en": "Loading the planner…",
+          "it": "Caricamento del pianificatore…",
+          "variables": []
+        },
+        {
+          "key": "planner.loadFailedTitle",
+          "fr": "Le planificateur n’a pas pu être chargé",
+          "en": "The planner could not be loaded",
+          "it": "Non è stato possibile caricare il pianificatore",
+          "variables": []
+        },
+        {
+          "key": "planner.loadFailedBody",
+          "fr": "Vérifiez votre connexion, puis réessayez.",
+          "en": "Check your connection, then try again.",
+          "it": "Verificate la connessione, poi riprovate.",
+          "variables": []
+        },
+        {
+          "key": "planner.retry",
+          "fr": "Réessayer",
+          "en": "Try again",
+          "it": "Riprova",
+          "variables": []
+        },
+        {
+          "key": "planner.fromLabel",
+          "fr": "À partir du",
+          "en": "Starting on",
+          "it": "A partire dal",
+          "variables": []
+        },
+        {
+          "key": "planner.pickup",
+          "fr": "Retrait",
+          "en": "Pickup",
+          "it": "Ritiro",
+          "variables": []
+        },
+        {
+          "key": "planner.deliveryTo",
+          "fr": "Livraison à {city}",
+          "en": "Delivery to {city}",
+          "it": "Consegna a {city}",
+          "variables": ["city"]
+        },
+        {
+          "key": "planner.noRoutingTitle",
+          "fr": "Choisissez d’abord votre mode de service",
+          "en": "First choose how you are served",
+          "it": "Scegliete prima la modalità di servizio",
+          "variables": []
+        },
+        {
+          "key": "planner.noRouting",
+          "fr": "Le planificateur reprend le retrait ou la livraison choisis dans la boutique.",
+          "en": "The planner uses the pickup or delivery chosen in the shop.",
+          "it": "Il pianificatore riprende il ritiro o la consegna scelti nel negozio.",
+          "variables": []
+        },
+        {
+          "key": "planner.chooseService",
+          "fr": "Choisir dans la boutique",
+          "en": "Choose in the shop",
+          "it": "Scegliere nel negozio",
+          "variables": []
+        },
+        {
+          "key": "planner.favoritesTitle",
+          "fr": "Favoris",
+          "en": "Favourites",
+          "it": "Preferiti",
+          "variables": []
+        },
+        {
+          "key": "planner.favoritesEmpty",
+          "fr": "Aucun favori dans cet espace. Le cœur d’un article l’ajoute ici.",
+          "en": "No favourites in this space. An item’s heart adds it here.",
+          "it": "Nessun preferito in questo spazio. Il cuore di un articolo lo aggiunge qui.",
+          "variables": []
+        },
+        {
+          "key": "planner.addItems",
+          "fr": "Ajouter des articles",
+          "en": "Add items",
+          "it": "Aggiungere articoli",
+          "variables": []
+        },
+        {
+          "key": "planner.notOrderableOn",
+          "fr": "Pas commandable {days}",
+          "en": "Not orderable {days}",
+          "it": "Non ordinabile {days}",
+          "variables": ["days"]
+        },
+        {
+          "key": "planner.addTo",
+          "fr": "Ajouter à…",
+          "en": "Add to…",
+          "it": "Aggiungi a…",
+          "variables": []
+        },
+        {
+          "key": "planner.addToName",
+          "fr": "Ajouter {name} à un jour",
+          "en": "Add {name} to a day",
+          "it": "Aggiungi {name} a un giorno",
+          "variables": ["name"]
+        },
+        {
+          "key": "planner.moveTo",
+          "fr": "Déplacer vers…",
+          "en": "Move to…",
+          "it": "Sposta a…",
+          "variables": []
+        },
+        {
+          "key": "planner.remove",
+          "fr": "Retirer",
+          "en": "Remove",
+          "it": "Togli",
+          "variables": []
+        },
+        {
+          "key": "planner.lineActionsName",
+          "fr": "Actions sur {name}",
+          "en": "Actions on {name}",
+          "it": "Azioni su {name}",
+          "variables": ["name"]
+        },
+        {
+          "key": "planner.increaseName",
+          "fr": "Plus de {name}",
+          "en": "More {name}",
+          "it": "Più {name}",
+          "variables": ["name"]
+        },
+        {
+          "key": "planner.decreaseName",
+          "fr": "Moins de {name}",
+          "en": "Less {name}",
+          "it": "Meno {name}",
+          "variables": ["name"]
+        },
+        {
+          "key": "planner.addDay",
+          "fr": "Un jour de plus",
+          "en": "One more day",
+          "it": "Un giorno in più",
+          "variables": []
+        },
+        {
+          "key": "planner.noMoreDays",
+          "fr": "On ne prépare pas plus loin pour l’instant.",
+          "en": "You cannot plan further ahead for now.",
+          "it": "Per ora non si pianifica oltre.",
+          "variables": []
+        },
+        {
+          "key": "planner.addSlot",
+          "fr": "Un créneau",
+          "en": "A time slot",
+          "it": "Una fascia oraria",
+          "variables": []
+        },
+        {
+          "key": "planner.addSlotMenu",
+          "fr": "Ajouter un créneau",
+          "en": "Add a time slot",
+          "it": "Aggiungi una fascia oraria",
+          "variables": []
+        },
+        {
+          "key": "planner.noMoreSlots",
+          "fr": "Tous les créneaux sont déjà là.",
+          "en": "All time slots are already shown.",
+          "it": "Tutte le fasce orarie sono già presenti.",
+          "variables": []
+        },
+        {
+          "key": "planner.noSlotTitle",
+          "fr": "Aucun créneau choisi",
+          "en": "No time slot chosen",
+          "it": "Nessuna fascia oraria scelta",
+          "variables": []
+        },
+        {
+          "key": "planner.noSlot",
+          "fr": "Ajoutez un créneau : chaque créneau est une rangée, et chaque case une commande.",
+          "en": "Add a time slot: each slot is a row, and each cell an order.",
+          "it": "Aggiungete una fascia oraria: ogni fascia è una riga, e ogni casella un ordine.",
+          "variables": []
+        },
+        {
+          "key": "planner.before",
+          "fr": "avant",
+          "en": "before",
+          "it": "prima delle",
+          "variables": []
+        },
+        {
+          "key": "planner.slotColumn",
+          "fr": "Créneau",
+          "en": "Time slot",
+          "it": "Fascia oraria",
+          "variables": []
+        },
+        { "key": "planner.daysNav", "fr": "Jours", "en": "Days", "it": "Giorni", "variables": [] },
+        {
+          "key": "planner.totalHt",
+          "fr": "{amount} HT",
+          "en": "{amount} excl. VAT",
+          "it": "{amount} IVA escl.",
+          "variables": ["amount"]
+        },
+        {
+          "key": "planner.indicative",
+          "fr": "Prix indicatif",
+          "en": "Indicative price",
+          "it": "Prezzo indicativo",
+          "variables": []
+        },
+        {
+          "key": "planner.totalPending",
+          "fr": "Calcul du total…",
+          "en": "Working out the total…",
+          "it": "Calcolo del totale…",
+          "variables": []
+        },
+        {
+          "key": "planner.totalFailed",
+          "fr": "Total indisponible",
+          "en": "Total unavailable",
+          "it": "Totale non disponibile",
+          "variables": []
+        },
+        {
+          "key": "planner.emptyCell",
+          "fr": "Glissez un favori ici, ou passez par « Ajouter à… ».",
+          "en": "Drag a favourite here, or use “Add to…”.",
+          "it": "Trascinate qui un preferito, oppure usate «Aggiungi a…».",
+          "variables": []
+        },
+        {
+          "key": "planner.dropHere",
+          "fr": "Déposer ici",
+          "en": "Drop here",
+          "it": "Rilasciare qui",
+          "variables": []
+        },
+        {
+          "key": "planner.convertsAt",
+          "fr": "Se commande {when}",
+          "en": "Ordered {when}",
+          "it": "Ordinato {when}",
+          "variables": ["when"]
+        },
+        {
+          "key": "planner.convertsUnknown",
+          "fr": "Heure de commande à venir",
+          "en": "Order time to come",
+          "it": "Ora dell’ordine da definire",
+          "variables": []
+        },
+        {
+          "key": "planner.frozen",
+          "fr": "Ce jour se commande : modifiez la commande.",
+          "en": "This day is being ordered: change the order instead.",
+          "it": "Questo giorno è in ordinazione: modificate l’ordine.",
+          "variables": []
+        },
+        {
+          "key": "planner.states.placed",
+          "fr": "Commandée",
+          "en": "Ordered",
+          "it": "Ordinato",
+          "variables": []
+        },
+        {
+          "key": "planner.states.refused",
+          "fr": "Non passée",
+          "en": "Not placed",
+          "it": "Non passato",
+          "variables": []
+        },
+        {
+          "key": "planner.states.missed",
+          "fr": "Manquée",
+          "en": "Missed",
+          "it": "Mancato",
+          "variables": []
+        },
+        {
+          "key": "planner.viewOrder",
+          "fr": "Voir la commande",
+          "en": "View the order",
+          "it": "Vedi l’ordine",
+          "variables": []
+        },
+        {
+          "key": "planner.blockingOne",
+          "fr": "1 article empêche la commande",
+          "en": "1 item prevents the order",
+          "it": "1 articolo impedisce l’ordine",
+          "variables": []
+        },
+        {
+          "key": "planner.blockingMany",
+          "fr": "{n} articles empêchent la commande",
+          "en": "{n} items prevent the order",
+          "it": "{n} articoli impediscono l’ordine",
+          "variables": ["n"]
+        },
+        {
+          "key": "planner.saveFailed",
+          "fr": "Ce changement n’a pas été enregistré : {message}",
+          "en": "This change was not saved: {message}",
+          "it": "Questa modifica non è stata salvata: {message}",
+          "variables": ["message"]
+        },
+        {
+          "key": "planner.reloaded",
+          "fr": "Ce jour avait changé ailleurs : le planificateur a été relu.",
+          "en": "This day had changed elsewhere: the planner was reloaded.",
+          "it": "Questo giorno era cambiato altrove: il pianificatore è stato ricaricato.",
+          "variables": []
+        },
+        {
+          "key": "planner.cellName",
+          "fr": "{day}, {slot}",
+          "en": "{day}, {slot}",
+          "it": "{day}, {slot}",
+          "variables": ["day", "slot"]
         }
       ],
       "unrecorded": []

@@ -88,6 +88,7 @@ const KEYS: Readonly<Record<PageTitleKey, true>> = {
   orders: true,
   invoices: true,
   baskets: true,
+  planner: true,
   account: true,
   profile: true,
   loyalty: true,
