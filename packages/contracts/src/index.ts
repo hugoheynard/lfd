@@ -3735,5 +3735,4 @@ export {
   type PlannerQuery,
   type PlannerView,
   type PutPlannedColumnPayload,
-  type WishlistItemView,
 } from "./planner.js";

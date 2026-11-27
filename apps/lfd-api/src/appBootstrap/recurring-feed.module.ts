@@ -12,6 +12,8 @@ import { RecurringOccurrencePlacement } from "../lafoliecoffee/orders/applicatio
 import { OrdersModule } from "../lafoliecoffee/orders/orders.module.js";
 import { SiteBasketPickupPoints } from "../lafoliecoffee/pickup-addresses/infrastructure/site-basket-pickup-points.js";
 import { PickupAddressesModule } from "../lafoliecoffee/pickup-addresses/pickup-addresses.module.js";
+import { ShopFavoritesPlannerFavoriteSkus } from "../lafoliecoffee/shop-favorites/infrastructure/shop-favorites-planner-favorite-skus.js";
+import { ShopFavoritesModule } from "../lafoliecoffee/shop-favorites/shop-favorites.module.js";
 import {
   BasketArticles,
   BasketBuyerContacts,
@@ -21,6 +23,7 @@ import {
   OccurrencePlacement,
   PlannedBasketCheck,
   PlannedColumnPlacement,
+  PlannerFavoriteSkus,
 } from "../recurring/channels/commerce/index.js";
 
 /**
@@ -28,14 +31,14 @@ import {
  * § 6.1) : les ports que `recurring/channels/commerce/` déclare, branchés sur
  * leurs implémentations du commerce — la passation d'une échéance, les CGV et
  * ce que dirait la passation d'un panier planifié et sa passation (`orders`), l'acheteur et son adresse (`account`), les articles (`catalog`), les points de
- * retrait (`pickup-addresses`).
+ * retrait (`pickup-addresses`), les favoris de la société (`shop-favorites`).
  *
  * `@Global` pour la raison des autres fils : `recurring` ne peut pas importer
  * le commerce, et le commerce n'importe de lui que son canal.
  */
 @Global()
 @Module({
-  imports: [OrdersModule, AccountModule, CatalogModule, PickupAddressesModule],
+  imports: [OrdersModule, AccountModule, CatalogModule, PickupAddressesModule, ShopFavoritesModule],
   providers: [
     { provide: OccurrencePlacement, useExisting: RecurringOccurrencePlacement },
     { provide: BasketSalesTerms, useExisting: OrdersBasketSalesTerms },
@@ -45,6 +48,7 @@ import {
     { provide: BasketBuyerContacts, useClass: AccountBasketBuyerContacts },
     { provide: BasketArticles, useClass: CatalogBasketArticles },
     { provide: BasketPickupPoints, useClass: SiteBasketPickupPoints },
+    { provide: PlannerFavoriteSkus, useExisting: ShopFavoritesPlannerFavoriteSkus },
   ],
   exports: [
     OccurrencePlacement,
@@ -55,6 +59,7 @@ import {
     BasketBuyerContacts,
     BasketArticles,
     BasketPickupPoints,
+    PlannerFavoriteSkus,
   ],
 })
 export class RecurringFeedModule {}

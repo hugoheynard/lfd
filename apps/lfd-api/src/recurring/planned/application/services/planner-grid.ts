@@ -1,9 +1,4 @@
-import type {
-  PlannedColumnView,
-  PlannedDayView,
-  PlannedLineCheckView,
-  WishlistItemView,
-} from "@lfd/contracts";
+import type { PlannedColumnView, PlannedDayView, PlannedLineCheckView } from "@lfd/contracts";
 
 import type {
   PlannedBasketCheckItem,
@@ -62,13 +57,13 @@ export function groupByDay(columns: readonly PlannedColumnView[]): PlannedDayVie
 
 /**
  * La grille à vérifier (§ 4 bis) : chaque ligne d'une colonne en brouillon
- * d'un jour affiché, par colonne ; et chaque article de la liste d'envies,
- * pour chaque jour affiché.
+ * d'un jour affiché, par colonne ; et chaque favori de la société, pour
+ * chaque jour affiché.
  */
 export function gridItems(
   shown: readonly string[],
   columns: readonly PlannedColumnView[],
-  wishlist: readonly WishlistItemView[],
+  favorites: readonly string[],
 ): PlannedBasketCheckItem[] {
   const items: PlannedBasketCheckItem[] = [];
   for (const day of shown) {
@@ -79,7 +74,7 @@ export function gridItems(
         );
       }
     }
-    wishlist.forEach((item) => items.push({ sku: item.sku, day, columnId: null, quantity: null }));
+    favorites.forEach((sku) => items.push({ sku, day, columnId: null, quantity: null }));
   }
   return items;
 }

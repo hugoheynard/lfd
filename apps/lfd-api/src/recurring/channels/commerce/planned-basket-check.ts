@@ -2,7 +2,7 @@ import type { OccurrenceRefusalCause } from "../../occurrence/domain/refusal-cau
 
 /**
  * Un article demandé pour un jour : une ligne d'une colonne (`columnId`), ou
- * un article de la liste d'envies ce jour-là (`columnId` à `null`). Les juges
+ * un favori de la société ce jour-là (`columnId` à `null`). Les juges
  * d'aujourd'hui ne dépendent pas du créneau ; la colonne est rendue telle
  * quelle, pour qu'un juge qui en dépendrait réponde par colonne.
  */
@@ -12,7 +12,7 @@ export interface PlannedBasketCheckItem {
   readonly day: string;
   readonly columnId: string | null;
   /**
-   * La quantité de la ligne ; `null` pour un article de la liste d'envies,
+   * La quantité de la ligne ; `null` pour un favori de la société,
    * dont la quantité se règle après le dépôt : seuls les juges qui tiennent à
    * l'article et au jour lui répondent.
    */

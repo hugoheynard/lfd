@@ -1,7 +1,6 @@
 import {
   openPlannedColumnPayloadSchema,
   plannerQuerySchema,
-  plannerSkuSchema,
   putPlannedColumnPayloadSchema,
   type OpenPlannedColumnPayload,
   type PlannedColumnOpened,
@@ -29,11 +28,9 @@ import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
-import { ZodBody, ZodParam, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
-import { AddWishlistItemCommand } from "../application/commands/add-wishlist-item.command.js";
+import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { OpenPlannedColumnCommand } from "../application/commands/open-planned-column.command.js";
 import { PutPlannedColumnCommand } from "../application/commands/put-planned-column.command.js";
-import { RemoveWishlistItemCommand } from "../application/commands/remove-wishlist-item.command.js";
 import { WithdrawPlannedColumnCommand } from "../application/commands/withdraw-planned-column.command.js";
 import { GetPlannerQuery } from "../application/queries/get-planner.query.js";
 
@@ -103,36 +100,6 @@ export class PlannerController {
   ): Promise<void> {
     await this.commands.execute<WithdrawPlannedColumnCommand, void>(
       new WithdrawPlannedColumnCommand(user.userId, companyId, id),
-    );
-  }
-
-  @Put("wishlist/:sku")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Idempotent(
-    "par l'état visé : reposer un article déjà dans la liste ne crée rien (clé primaire personne + société + SKU, insertion qui saute un doublon) et ne change pas sa date",
-  )
-  async addToWishlist(
-    @CurrentUser() user: Principal,
-    @ActingCompany() companyId: string | null,
-    @Param("sku", new ZodParam(plannerSkuSchema, "sku")) sku: string,
-  ): Promise<void> {
-    await this.commands.execute<AddWishlistItemCommand, void>(
-      new AddWishlistItemCommand(user.userId, companyId, sku),
-    );
-  }
-
-  @Delete("wishlist/:sku")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Idempotent(
-    "par l'état visé : retirer un article absent ne change rien, la suppression est bornée à la personne, la société et le SKU",
-  )
-  async removeFromWishlist(
-    @CurrentUser() user: Principal,
-    @ActingCompany() companyId: string | null,
-    @Param("sku", new ZodParam(plannerSkuSchema, "sku")) sku: string,
-  ): Promise<void> {
-    await this.commands.execute<RemoveWishlistItemCommand, void>(
-      new RemoveWishlistItemCommand(user.userId, companyId, sku),
     );
   }
 }

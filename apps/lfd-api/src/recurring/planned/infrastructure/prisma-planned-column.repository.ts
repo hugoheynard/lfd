@@ -2,7 +2,6 @@ import { Injectable } from "@nestjs/common";
 
 import { isUniqueViolation } from "../../../platform/database/json-columns.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import type { IsoDate } from "../../basket/domain/value-objects/iso-date.js";
 import type { PlannedColumn } from "../domain/entities/planned-column.js";
 import {
   PlannedColumnVersionConflictError,
@@ -11,6 +10,7 @@ import {
 import {
   PlannedColumnRepository,
   type PlannedColumnSlot,
+  type PlannedColumnSweep,
 } from "../domain/ports/planned-column.repository.js";
 import { plannedColumnFields, plannedColumnFromRow } from "./planned-column-row.mapper.js";
 
@@ -49,9 +49,15 @@ export class PrismaPlannedColumnRepository extends PlannedColumnRepository {
     return row === null ? null : plannedColumnFromRow(row);
   }
 
-  async draftsThrough(lastDay: IsoDate, limit: number): Promise<PlannedColumn[]> {
+  async draftsToSweep(sweep: PlannedColumnSweep, limit: number): Promise<PlannedColumn[]> {
     const rows = await this.prisma.plannedColumn.findMany({
-      where: { status: DRAFT, serviceDay: { lte: lastDay.toUtcDate() } },
+      where: {
+        status: DRAFT,
+        OR: [
+          { serviceDay: { lte: sweep.lastDay.toUtcDate() } },
+          { convertsAt: { lte: sweep.now } },
+        ],
+      },
       orderBy: [{ serviceDay: "asc" }, { convertsAt: "asc" }, { id: "asc" }],
       take: limit,
     });

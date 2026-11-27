@@ -73,7 +73,7 @@ export class PlannedColumnFrozenError extends BusinessError {
   constructor(readonly day: string) {
     super(
       "planner.day.frozen",
-      `La colonne du ${day} se commande : il ne se modifie plus ici. Modifiez la commande elle-même depuis vos commandes.`,
+      `La colonne du ${day} se commande : elle ne se modifie plus ici. Modifiez la commande elle-même depuis vos commandes.`,
     );
   }
 }

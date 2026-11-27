@@ -6,7 +6,7 @@ import { PlannerProOnlyError } from "../../../domain/errors/planned-column-error
 import { PlannerWall } from "../../services/planner-wall.js";
 import {
   FixedPlannedColumnsReader,
-  InMemoryWishlist,
+  FixedFavoriteSkus,
   RecordingBasketCheck,
   type OwnedColumn,
 } from "../../__tests__/planner-doubles.js";
@@ -37,24 +37,23 @@ function column(id: string, day: string, overrides: Partial<PlannedColumnView> =
   };
 }
 
-async function scene(columns: readonly OwnedColumn[]) {
-  const wishlist = new InMemoryWishlist();
-  await wishlist.add("user_1", "chalet", "BAG-01", NOW);
+function scene(columns: readonly OwnedColumn[]) {
+  const favorites = new FixedFavoriteSkus({ chalet: ["BAG-01"], autre: ["AUTRE-01"] });
   const check = new RecordingBasketCheck();
   const reader = new FixedPlannedColumnsReader(columns);
   const handler = new GetPlannerHandler(
     new PlannerWall(new FixedStanding(new Set(["user_1/chalet"]))),
     reader,
-    wishlist,
+    favorites,
     check,
     new FixedClock(NOW),
   );
-  return { handler, check, reader };
+  return { handler, check, reader, favorites };
 }
 
 describe("GetPlannerHandler", () => {
-  it("rend les colonnes groupées par jour, la liste d'envies, et l'horizon de 28 jours", async () => {
-    const { handler, reader } = await scene([
+  it("rend les colonnes groupées par jour, les favoris de la société, et l'horizon de 28 jours", async () => {
+    const { handler, reader } = scene([
       column("a", "2026-12-12"),
       column("b", "2026-12-12", {
         routing: { ...column("x", "").routing, window: { start: "11:00", end: "12:00" } },
@@ -69,11 +68,11 @@ describe("GetPlannerHandler", () => {
       ["2026-12-12", ["a", "b"]],
       ["2026-12-14", ["c"]],
     ]);
-    expect(view.wishlist.map((item) => item.sku)).toEqual(["BAG-01"]);
+    expect(view.favorites).toEqual(["BAG-01"]);
   });
 
-  it("vérifie la grille en UNE question : lignes par colonne, liste d'envies par jour", async () => {
-    const { handler, check } = await scene([column("a", "2026-12-12"), column("b", "2026-12-12")]);
+  it("vérifie la grille en UNE question : lignes par colonne, favoris par jour", async () => {
+    const { handler, check } = scene([column("a", "2026-12-12"), column("b", "2026-12-12")]);
     const view = await handler.execute(new GetPlannerQuery("user_1", "chalet", "2026-12-12"));
     expect(check.asked).toHaveLength(1);
     expect(check.asked[0]?.items).toEqual([
@@ -86,7 +85,7 @@ describe("GetPlannerHandler", () => {
   });
 
   it("efface un brouillon d'un jour passé, garde une issue passée", async () => {
-    const { handler } = await scene([
+    const { handler } = scene([
       column("old-draft", "2026-12-08"),
       column("old-placed", "2026-12-08", { status: "placed", orderId: "order_1" }),
     ]);
@@ -95,17 +94,19 @@ describe("GetPlannerHandler", () => {
     expect(view.shownDays).toEqual(["2026-12-10"]);
   });
 
-  it("ne lit que les colonnes de la société de l'espace", async () => {
-    const { handler } = await scene([
+  it("ne lit que les colonnes et les favoris de la société de l'espace", async () => {
+    const { handler, favorites } = scene([
       column("theirs", "2026-12-12", {}),
       { ...column("other", "2026-12-12"), companyId: "autre" },
     ]);
     const view = await handler.execute(new GetPlannerQuery("user_1", "chalet", "2026-12-12"));
     expect(view.days.flatMap((day) => day.columns.map((c) => c.id))).toEqual(["theirs"]);
+    expect(favorites.asked).toEqual(["chalet"]);
+    expect(view.favorites).toEqual(["BAG-01"]);
   });
 
   it("refuse l'espace personnel (403)", async () => {
-    const { handler } = await scene([]);
+    const { handler } = scene([]);
     await expect(
       handler.execute(new GetPlannerQuery("user_1", null, "2026-12-12")),
     ).rejects.toThrow(PlannerProOnlyError);

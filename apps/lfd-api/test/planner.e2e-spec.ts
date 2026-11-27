@@ -8,7 +8,7 @@
  * - une colonne par jour ET par créneau, tenue par l'unicité partielle ;
  * - la version : un second onglet ne s'écrase pas, un rejeu ne monte rien ;
  * - le retrait garde la ligne en base et libère le créneau ;
- * - la liste d'envies, une par personne et par société ;
+ * - les favoris de la société (ceux de la boutique, par espace) en colonne de gauche ;
  * - la vérification de la passation servie avec la grille (§ 4 bis).
  */
 import {
@@ -94,7 +94,6 @@ describe("planner — le mur", () => {
     const day = serviceDay(2);
     await as(PERSON).get(`/planner?from=${day}`).expect(403);
     await as(PERSON).post("/planner/columns").send({ day, routing: MORNING }).expect(403);
-    await as(PERSON).put("/planner/wishlist/SKU-A").expect(403);
   });
 
   it("une société ne lit, n'écrit ni ne retire la colonne d'une autre", async () => {
@@ -193,29 +192,31 @@ describe("planner — les colonnes", () => {
   });
 });
 
-describe("planner — la liste d'envies et la vérification", () => {
-  it("une liste par personne et par société ; deux ajouts font un article", async () => {
-    await as(PRO_A).put("/planner/wishlist/SKU-A").expect(204);
-    await as(PRO_A).put("/planner/wishlist/SKU-A").expect(204);
-    await as(PRO_B).put("/planner/wishlist/SKU-B").expect(204);
+describe("planner — les favoris et la vérification", () => {
+  it("la colonne de gauche est les favoris de l'espace de la société, et d'elle seule", async () => {
+    await as(PRO_A).put("/me/favorites/SKU-A").expect(204);
+    await as(PRO_B).put("/me/favorites/SKU-B").expect(204);
 
     const day = serviceDay(2);
-    expect((await plannerOf(PRO_A, day)).wishlist.map((item) => item.sku)).toEqual(["SKU-A"]);
-    expect((await plannerOf(PRO_B, day)).wishlist.map((item) => item.sku)).toEqual(["SKU-B"]);
+    expect((await plannerOf(PRO_A, day)).favorites).toEqual(["SKU-A"]);
+    expect((await plannerOf(PRO_B, day)).favorites).toEqual(["SKU-B"]);
 
-    await as(PRO_A).delete("/planner/wishlist/SKU-A").expect(204);
-    await as(PRO_A).delete("/planner/wishlist/SKU-A").expect(204);
-    expect((await plannerOf(PRO_A, day)).wishlist).toEqual([]);
+    await as(PRO_A).delete("/me/favorites/SKU-A").expect(204);
+    expect((await plannerOf(PRO_A, day)).favorites).toEqual([]);
   });
 
-  it("sert ce que dirait la passation : par colonne pour les lignes, par jour pour la liste", async () => {
+  it("n'a plus de route de liste d'envies (404)", async () => {
+    await as(PRO_A).put("/planner/wishlist/SKU-A").expect(404);
+  });
+
+  it("sert ce que dirait la passation : par colonne pour les lignes, par jour pour les favoris", async () => {
     const day = serviceDay(3);
     const { id } = await openColumn(PRO_A, day);
     await as(PRO_A)
       .put(`/planner/columns/${id}`)
       .send({ version: 1, routing: MORNING, lines: lines(2) })
       .expect(200);
-    await as(PRO_A).put("/planner/wishlist/SKU-ENVIE").expect(204);
+    await as(PRO_A).put("/me/favorites/SKU-ENVIE").expect(204);
 
     const view = await plannerOf(PRO_A, day);
     expect(view.shownDays).toEqual([day]);

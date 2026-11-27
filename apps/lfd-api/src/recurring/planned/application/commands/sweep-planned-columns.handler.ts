@@ -27,7 +27,9 @@ type Tally = { -readonly [K in keyof PlannerSweepReport]: PlannerSweepReport[K] 
 /**
  * **Le balayage du planificateur** (cron des cinq minutes du Worker ; plan du
  * planificateur, § 4) : les colonnes en brouillon des deux prochains jours,
- * lues par l'index partiel `planned_columns_draft_idx`.
+ * et celles dont l'instant de conversion rangé est atteint, quel que soit
+ * leur jour — un article qui ferme plus de deux jours avant le jour servi
+ * échapperait sinon à la fenêtre. Même borne par passage.
  *
  * Pour chacune : une colonne vide est laissée (elle reste brouillon, rien
  * n'est alerté) ; une colonne dont la fermeture rangée est passée sans
@@ -58,8 +60,8 @@ export class SweepPlannedColumnsHandler implements ICommandHandler<
   async execute(): Promise<PlannerSweepReport> {
     const now = this.clock.now();
     const today = parisDay(now);
-    const drafts = await this.columns.draftsThrough(
-      today.plusDays(PLANNER_SWEEP_DAYS),
+    const drafts = await this.columns.draftsToSweep(
+      { lastDay: today.plusDays(PLANNER_SWEEP_DAYS), now },
       PLANNER_BATCH,
     );
     const live = drafts.filter((column) => column.hasLines);

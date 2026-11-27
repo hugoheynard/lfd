@@ -5,9 +5,9 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { parisDay } from "../../../basket/application/services/paris-day.js";
 import { IsoDate } from "../../../basket/domain/value-objects/iso-date.js";
 import { PlannedBasketCheck } from "../../../channels/commerce/planned-basket-check.js";
+import { PlannerFavoriteSkus } from "../../../channels/commerce/planner-favorite-skus.js";
 import { lastPlannableDay } from "../../domain/entities/planned-column.js";
 import { PlannedColumnsReader } from "../../domain/ports/planned-columns.reader.js";
-import { WishlistReader } from "../../domain/ports/wishlist.reader.js";
 import {
   checkView,
   gridItems,
@@ -20,7 +20,7 @@ import { GetPlannerQuery } from "./get-planner.query.js";
 
 /**
  * **Le planificateur** : les colonnes de la société (le site), groupées par jour, de la date de départ jusqu'à
- * l'horizon, la liste d'envies de la personne, et ce que la passation dirait
+ * l'horizon, les favoris de la société (§ 6.2), et ce que la passation dirait
  * de chaque article de la grille (§ 4 bis) — une seule question au commerce
  * pour toute la grille.
  */
@@ -29,7 +29,7 @@ export class GetPlannerHandler implements IQueryHandler<GetPlannerQuery, Planner
   constructor(
     private readonly wall: PlannerWall,
     private readonly days: PlannedColumnsReader,
-    private readonly wishlist: WishlistReader,
+    private readonly favorites: PlannerFavoriteSkus,
     private readonly check: PlannedBasketCheck,
     private readonly clock: Clock,
   ) {}
@@ -44,13 +44,13 @@ export class GetPlannerHandler implements IQueryHandler<GetPlannerQuery, Planner
     const from = IsoDate.fromString(query.from);
     const today = parisDay(this.clock.now());
     const last = lastPlannableDay(today);
-    const [stored, wishlist] = await Promise.all([
+    const [stored, favorites] = await Promise.all([
       this.days.window({ companyId, from, to: last }),
-      this.wishlist.itemsOf(query.actorUserId, companyId),
+      this.favorites.skusOf(companyId),
     ]);
     const columns = visibleColumns(stored, today);
     const shown = shownDays({ from, today, last, columns });
-    const items = gridItems(shown, columns, wishlist);
+    const items = gridItems(shown, columns, favorites);
     const checks =
       items.length === 0
         ? []
@@ -60,7 +60,7 @@ export class GetPlannerHandler implements IQueryHandler<GetPlannerQuery, Planner
       lastPlannableDay: last.value,
       shownDays: shown,
       days: groupByDay(columns),
-      wishlist,
+      favorites,
       checks: checks.map(checkView),
     };
   }

@@ -11,7 +11,7 @@ import type { RecurringOccurrenceCause } from "./subscription.js";
 
 /**
  * **Le planificateur de commandes des pros** — un jour, une colonne, un
- * brouillon de commande ; et la liste d'envies d'où viennent les articles
+ * brouillon de commande ; et les favoris de la société d'où viennent les articles
  * (`documentation/commandes/planificateur/plan-planificateur-de-commandes.md`).
  *
  * Ces schémas ne valident que la FORME : le jour passé, l'horizon, le gel et
@@ -26,7 +26,7 @@ export const PLANNER_MAX_LINES = 200;
 /** `AAAA-MM-JJ` — le jour d'une colonne, dans l'adresse ou la requête. */
 export const plannerDaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date AAAA-MM-JJ");
 
-/** Le SKU d'un article de la liste d'envies, tel qu'il arrive dans l'adresse. */
+/** Le SKU d'une ligne de colonne. */
 export const plannerSkuSchema = z.string().trim().min(1).max(PLANNER_SKU_MAX_LENGTH);
 
 /**
@@ -114,12 +114,6 @@ export interface PlannedColumnView {
   readonly refusal: { readonly cause: string; readonly reason: string } | null;
 }
 
-/** Un article de la liste d'envies. */
-export interface WishlistItemView {
-  readonly sku: string;
-  readonly addedAt: string;
-}
-
 /** Les colonnes d'un jour, par créneau. */
 export interface PlannedDayView {
   readonly day: string;
@@ -128,8 +122,8 @@ export interface PlannedDayView {
 
 /**
  * **Ce que dirait la passation** d'un article un jour donné (§ 4 bis) —
- * pour une ligne de colonne (`columnId`), ou pour un article de la liste
- * d'envies ce jour-là (`columnId` à `null`) :
+ * pour une ligne de colonne (`columnId`), ou pour un favori de la société
+ * ce jour-là (`columnId` à `null`) :
  * l'heure où il ferme, et ce qui le bloquerait, dans les mots du refus réel.
  * `quantityIndependent` : vrai quand le blocage tient à l'article et au jour
  * seuls — l'écran grise alors la colonne pendant un glisser.
@@ -146,7 +140,7 @@ export interface PlannedLineCheckView {
   readonly quantityIndependent: boolean;
 }
 
-/** `GET /planner` : les colonnes de la fenêtre, la liste d'envies et leur vérification. */
+/** `GET /planner` : les colonnes de la fenêtre, les favoris de la société et leur vérification. */
 export interface PlannerView {
   readonly from: string;
   /** Le dernier jour qu'on peut préparer (aujourd'hui + l'horizon). */
@@ -154,6 +148,7 @@ export interface PlannerView {
   /** Les jours affichés : le jour de départ, puis ceux qui ont une colonne en brouillon. */
   readonly shownDays: readonly string[];
   readonly days: readonly PlannedDayView[];
-  readonly wishlist: readonly WishlistItemView[];
+  /** Les favoris de la société (la colonne de gauche, § 6.2), du plus récent au plus ancien. */
+  readonly favorites: readonly string[];
   readonly checks: readonly PlannedLineCheckView[];
 }

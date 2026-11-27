@@ -24,6 +24,7 @@ export {
   type PlannedLineBlocking,
   type PlannedLineCheck,
 } from "./planned-basket-check.js";
+export { PlannerFavoriteSkus } from "./planner-favorite-skus.js";
 export {
   PlannedColumnPlacement,
   type PlannedColumnPlacementOutcome,

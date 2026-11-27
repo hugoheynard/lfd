@@ -162,10 +162,24 @@ describe("SweepPlannedColumnsHandler", () => {
     expect(columns.rows.get("empty")?.snapshot().status).toBe("draft");
   });
 
-  it("ne lit pas au-delà d'après-demain", async () => {
+  it("ne lit pas au-delà d'après-demain une colonne dont l'instant n'est pas atteint", async () => {
     const { columns, handler } = scene();
     await seed(columns, "far", ["SEIGLE"], { inDays: 3 });
     expect(await handler.execute()).toMatchObject({ due: 0 });
+  });
+
+  /**
+   * Régression : la fenêtre « servi au plus tard après-demain » laissait
+   * passer un article qui ferme plus de deux jours avant le jour servi.
+   */
+  it("lit au-delà d'après-demain une colonne dont l'instant rangé est atteint, et la convertit", async () => {
+    const { columns, handler, placement } = scene();
+    await seed(columns, "far", ["SEIGLE"], {
+      inDays: 5,
+      convertsAt: new Date("2026-12-01T07:55:00.000Z"),
+    });
+    expect(await handler.execute()).toMatchObject({ due: 1, placed: 1 });
+    expect(placement.asked[0]).toMatchObject({ columnId: "far" });
   });
 
   it("une erreur technique est comptée, la colonne reste brouillon pour le passage suivant", async () => {

@@ -86,13 +86,13 @@ const routing = (start = "07:00", end = "08:00"): PlannedRoutingPayload => ({
 });
 
 /** Ouvre une colonne et, si des SKU sont donnés, y pose six de chacun. */
-async function column(skus: readonly string[], window = routing()): Promise<string> {
+async function column(skus: readonly string[], window = routing(), day = DAY): Promise<string> {
   const opened = await ctx
     .asSub(BUYER)
     .post("/planner/columns")
     .set(WORKSPACE_HEADER, companyId)
     .set(INTENT_KEY, freshIntent())
-    .send({ day: DAY, routing: window })
+    .send({ day, routing: window })
     .expect(200);
   const { id, version } = jsonBody<PlannedColumnOpened>(opened);
   if (skus.length > 0) {
@@ -173,6 +173,32 @@ describe("planner — la conversion", () => {
 
     clock.set(beforeDay(2, "11:50"));
     expect(await sweep()).toMatchObject({ placed: 1 });
+    expect(await ctx.prisma.order.count({ where: { fromPlannedColumnId: id } })).toBe(1);
+  });
+
+  /**
+   * Régression : le balayage ne lisait que les jours servis au plus tard
+   * après-demain, et laissait passer un article qui ferme plus tôt.
+   */
+  it("un article qui ferme J-4 sur une colonne à J+5 est converti à temps", async () => {
+    await ctx.prisma.catalogItem.update({
+      where: { sku: "PAI-001-1" },
+      data: {
+        orderLimitDaysBefore: 4,
+        orderLimitTime: "12:00",
+        orderLimitGraceMinutes: 0,
+        orderLimitStaffMayExceed: false,
+      },
+    });
+    // Servie deux jours après DAY : sa fermeture, quatre jours avant, tombe deux jours avant DAY.
+    const id = await column(["PAI-001-1"], routing(), serviceDay(5));
+    expect((await stored(id)).convertsAt).toEqual(
+      new Date(beforeDay(2, "12:00").getTime() - 15 * 60_000),
+    );
+
+    // Trois jours avant le jour servi : hors de la fenêtre des deux prochains jours.
+    clock.set(beforeDay(2, "11:50"));
+    expect(await sweep()).toMatchObject({ due: 1, placed: 1, missed: 0 });
     expect(await ctx.prisma.order.count({ where: { fromPlannedColumnId: id } })).toBe(1);
   });
 

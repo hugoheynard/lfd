@@ -1,11 +1,11 @@
-import type { PlannedColumnView, WishlistItemView } from "@lfd/contracts";
+import type { PlannedColumnView } from "@lfd/contracts";
 
 import {
   PlannedBasketCheck,
   type PlannedBasketCheckRequest,
   type PlannedLineCheck,
 } from "../../../channels/commerce/planned-basket-check.js";
-import type { IsoDate } from "../../../basket/domain/value-objects/iso-date.js";
+import { PlannerFavoriteSkus } from "../../../channels/commerce/planner-favorite-skus.js";
 import { PlannedColumn } from "../../domain/entities/planned-column.js";
 import {
   PlannedColumnVersionConflictError,
@@ -14,13 +14,12 @@ import {
 import {
   PlannedColumnRepository,
   type PlannedColumnSlot,
+  type PlannedColumnSweep,
 } from "../../domain/ports/planned-column.repository.js";
 import {
   PlannedColumnsReader,
   type PlannedColumnsWindow,
 } from "../../domain/ports/planned-columns.reader.js";
-import { WishlistReader } from "../../domain/ports/wishlist.reader.js";
-import { WishlistWriter } from "../../domain/ports/wishlist.writer.js";
 
 /** Les colonnes en mémoire, avec le mur, la version et l'unicité du créneau de l'adaptateur. */
 export class InMemoryPlannedColumns extends PlannedColumnRepository {
@@ -37,10 +36,13 @@ export class InMemoryPlannedColumns extends PlannedColumnRepository {
     return Promise.resolve(this.live().find((day) => sameSlot(day, slot)) ?? null);
   }
 
-  draftsThrough(lastDay: IsoDate, limit: number): Promise<PlannedColumn[]> {
+  draftsToSweep(sweep: PlannedColumnSweep, limit: number): Promise<PlannedColumn[]> {
+    const due = (day: PlannedColumn): boolean =>
+      !day.serviceDay.isAfter(sweep.lastDay) ||
+      (day.convertsAt !== null && day.convertsAt.getTime() <= sweep.now.getTime());
     return Promise.resolve(
       [...this.rows.values()]
-        .filter((day) => day.isDraft && !day.serviceDay.isAfter(lastDay))
+        .filter((day) => day.isDraft && due(day))
         .sort((a, b) => a.serviceDay.value.localeCompare(b.serviceDay.value))
         .slice(0, limit),
     );
@@ -113,44 +115,17 @@ export class FixedPlannedColumnsReader extends PlannedColumnsReader {
   }
 }
 
-interface WishlistRow {
-  readonly userId: string;
-  readonly companyId: string;
-  readonly sku: string;
-  readonly at: Date;
-}
+/** Les favoris de chaque société, posés à la main ; garde les sociétés demandées. */
+export class FixedFavoriteSkus extends PlannerFavoriteSkus {
+  readonly asked: string[] = [];
 
-/** La liste d'envies en mémoire, idempotente comme l'adaptateur. */
-export class InMemoryWishlist implements WishlistReader, WishlistWriter {
-  readonly rows: WishlistRow[] = [];
-
-  itemsOf(userId: string, companyId: string): Promise<readonly WishlistItemView[]> {
-    return Promise.resolve(
-      this.rows
-        .filter((row) => row.userId === userId && row.companyId === companyId)
-        .map((row) => ({ sku: row.sku, addedAt: row.at.toISOString() })),
-    );
+  constructor(private readonly byCompany: Readonly<Record<string, readonly string[]>> = {}) {
+    super();
   }
 
-  add(userId: string, companyId: string, sku: string, at: Date): Promise<void> {
-    if (this.indexOf(userId, companyId, sku) < 0) {
-      this.rows.push({ userId, companyId, sku, at });
-    }
-    return Promise.resolve();
-  }
-
-  remove(userId: string, companyId: string, sku: string): Promise<void> {
-    const index = this.indexOf(userId, companyId, sku);
-    if (index >= 0) {
-      this.rows.splice(index, 1);
-    }
-    return Promise.resolve();
-  }
-
-  private indexOf(userId: string, companyId: string, sku: string): number {
-    return this.rows.findIndex(
-      (row) => row.userId === userId && row.companyId === companyId && row.sku === sku,
-    );
+  skusOf(companyId: string): Promise<readonly string[]> {
+    this.asked.push(companyId);
+    return Promise.resolve(this.byCompany[companyId] ?? []);
   }
 }
 
