@@ -4,9 +4,12 @@ import {
 } from "../../src/payment/card/domain/errors/card-payment-errors.js";
 import type { CardProviderEvent } from "../../src/payment/card/domain/ports/card-provider-event.js";
 import type {
+  CreateCustomerParams,
   CreateIntentParams,
   CreatedIntent,
   IntentCancellation,
+  IntentDescribing,
+  IntentDescription,
   RefundIssuance,
   RefundLookup,
   RetrievedIntent,
@@ -40,6 +43,16 @@ class FakeCardProvider extends CardProvider {
         token: `${providerRef}_secret`,
       },
     });
+  }
+
+  /** Un client inventé, stable pour une même clé : le seed ne parle à personne. */
+  createCustomer(params: CreateCustomerParams): Promise<string> {
+    return Promise.resolve(`cus_seed_${params.idempotencyKey}`);
+  }
+
+  /** Aucune intention réelle : son libellé est toujours posé. */
+  describeIntent(_providerRef: string, _label: IntentDescription): Promise<IntentDescribing> {
+    return Promise.resolve({ kind: "described" });
   }
 
   /** L'intention telle que créée : personne ne l'a réglée, et le double n'invente pas d'encaissement. */
