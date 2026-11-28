@@ -1,0 +1,19 @@
+/// **Le plafond des comptes ouverts au comptoir** (`counterAccountCeilingCents`,
+/// `documentation/comptes-client/plan-comptes-du-comptoir.md`, § 3.3). Une
+/// ligne au plus, clé `orders` ; **ligne absente = aucun plafond**, comme
+/// `ceiling_cents` à `NULL`. En centimes TTC, ≥ 0 (CHECK). Lu par la passation
+/// et l'estimation de la saisie de l'équipe.
+model CounterAccountSettings {
+  /// Toujours `orders` : il n'y a qu'un réglage.
+  key          String @id
+  /// Le plafond de l'encours plus la commande ; `NULL` = aucun.
+  ceilingCents Int?   @map("ceiling_cents")
+
+  /// Instant du dernier geste ; NULL tant que personne n'a rien réglé.
+  updatedAt        DateTime? @map("updated_at")
+  /// Qui l'a posé, figé au geste ; NULL tant que personne n'a rien réglé.
+  updatedByStaffId String?   @map("updated_by_staff_id")
+
+  @@map("counter_account_settings")
+  @@schema("public")
+}

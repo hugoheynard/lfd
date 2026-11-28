@@ -19,6 +19,7 @@ const STATUS_TONE: Readonly<Record<CompanyStatus, CompanyBadgeTone>> = {
   pending: 'warning',
   suspended: 'alert',
   terminated: 'neutral',
+  counter_opened: 'warning',
 };
 
 /**

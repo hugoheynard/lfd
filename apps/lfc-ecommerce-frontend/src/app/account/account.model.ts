@@ -156,6 +156,7 @@ const STATUS_LABELS: Readonly<Record<CompanyStatus, string>> = {
   active: 'Active',
   suspended: 'Suspendue',
   terminated: 'Clôturée',
+  counter_opened: 'Ouverte au comptoir',
 };
 
 export function companyStatusLabel(status: CompanyStatus): string {

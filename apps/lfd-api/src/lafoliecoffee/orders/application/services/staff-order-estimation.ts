@@ -17,6 +17,10 @@ import type { DraftedOrder, DraftPolicy, OrderDrafting } from "./order-drafting.
 import type { ShelfCircuit } from "./shelf-circuit.service.js";
 import { prepareStaffOrder } from "./staff-order-preparation.js";
 import { staffSettlementRefusal } from "./staff-settlement-refusal.js";
+import {
+  NO_COUNTER_CEILING_CHECK,
+  type CounterAccountCeilingCheck,
+} from "./counter-account-ceiling-check.js";
 
 /** Ce que l'estimation lit, et rien d'autre. */
 export interface StaffOrderEstimationPorts {
@@ -24,6 +28,8 @@ export interface StaffOrderEstimationPorts {
   readonly drafting: OrderDrafting;
   readonly shelf: ShelfCircuit;
   readonly cutoffNotice: OrderCutoffNotice;
+  /** Le plafond d'un compte du comptoir (§ 3.3) ; absent, aucun plafond n'est jugé. */
+  readonly ceiling?: Pick<CounterAccountCeilingCheck, "refusalFor">;
 }
 
 /**
@@ -54,6 +60,7 @@ export class StaffOrderEstimation {
     payload: AdminOrderEstimatePayload,
     exceedItemLimits: boolean,
     policy: DraftPolicy,
+    chargesCounterAccounts = false,
   ): Promise<AdminOrderEstimateView> {
     return withCatalogueSnapshot(async () => {
       const drafted = await this.draftOrRefusal(staffUserId, payload, exceedItemLimits, policy);
@@ -65,7 +72,7 @@ export class StaffOrderEstimation {
         amounts: amountsViewOf(drafted.order.amounts(), drafted.order.offer),
         cutoff,
         refusal: null,
-        warnings: await this.warningsOf(drafted.order, payload),
+        warnings: await this.warningsOf(drafted.order, payload, chargesCounterAccounts),
       };
     });
   }
@@ -98,6 +105,7 @@ export class StaffOrderEstimation {
   private async warningsOf(
     order: Order,
     payload: AdminOrderEstimatePayload,
+    chargesCounterAccounts: boolean,
   ): Promise<readonly AdminOrderEstimateNotice[]> {
     const short = await this.ports.shelf.stockShortfallOf(order);
     const credit = await staffSettlementRefusal(
@@ -106,8 +114,18 @@ export class StaffOrderEstimation {
       payload.settlement,
       payload.companyId,
       isCounterEntry(payload.entryOrigin, payload.entryShortcut),
+      chargesCounterAccounts,
     );
-    return [short, credit].flatMap((warning) =>
+    // Le plafond ne se juge que sur un règlement admis : un refus de crédit le précède.
+    const ceiling =
+      credit === null
+        ? await (this.ports.ceiling ?? NO_COUNTER_CEILING_CHECK).refusalFor({
+            companyId: payload.companyId,
+            settlement: payload.settlement,
+            totalCents: order.totalCents,
+          })
+        : null;
+    return [short, credit, ceiling].flatMap((warning) =>
       warning === null ? [] : [{ code: warning.code, message: warning.message }],
     );
   }

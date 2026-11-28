@@ -9,7 +9,11 @@ import {
   type IssuedPasswordLink,
 } from "../../../../platform/identity/password-link.js";
 import { PendingAccessReader } from "../../domain/ports/pending-access.reader.js";
-import { PendingAccessNotFoundError } from "../../domain/errors/account-errors.js";
+import {
+  CompanyNotFoundError,
+  PendingAccessNotFoundError,
+} from "../../domain/errors/account-errors.js";
+import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import {
   PasswordLinkAlreadyIssuedError,
   PendingInvitationNotFoundError,
@@ -87,6 +91,7 @@ export class IssuePasswordLinkHandler implements ICommandHandler<
     private readonly renewal: InvitationRenewal,
     private readonly uow: UnitOfWork,
     private readonly intents: OncePerIntent,
+    private readonly companies: CompanyRepository,
   ) {}
 
   /**
@@ -113,6 +118,11 @@ export class IssuePasswordLinkHandler implements ICommandHandler<
     if (subject === null) {
       throw new PendingAccessNotFoundError(command.userId);
     }
+    // La société nommée est jugée avant tout appel au fournisseur : un compte
+    // ouvert au comptoir ne fait fabriquer aucun lien.
+    if (command.companyId !== null) {
+      await this.ensureAdmitsMembers(command.companyId);
+    }
     const url = await this.identity.issuePasswordLink(subject);
     return await this.uow.run(async () => {
       const renewed = await this.renewal.renew(command.userId, command.companyId, this.clock.now());
@@ -121,6 +131,9 @@ export class IssuePasswordLinkHandler implements ICommandHandler<
         // mènerait qu'à un refus.
         throw new PendingInvitationNotFoundError(command.userId, command.companyId);
       }
+      // Un compte ouvert au comptoir n'a pas d'espace client avant conversion :
+      // le refus annule le renouvellement, et le lien fabriqué n'est pas rendu.
+      await this.ensureAdmitsMembers(renewed);
       await this.events.publishTraced(
         new PasswordLinkIssuedEvent(command.userId, await this.names.person(command.userId)),
       );
@@ -130,5 +143,14 @@ export class IssuePasswordLinkHandler implements ICommandHandler<
       await seal(link);
       return link;
     });
+  }
+
+  /** @throws {CounterAccountHasNoMembersError} le compte est ouvert au comptoir. */
+  private async ensureAdmitsMembers(companyId: string): Promise<void> {
+    const company = await this.companies.load(companyId);
+    if (company === null) {
+      throw new CompanyNotFoundError(companyId);
+    }
+    company.ensureAdmitsMembers();
   }
 }

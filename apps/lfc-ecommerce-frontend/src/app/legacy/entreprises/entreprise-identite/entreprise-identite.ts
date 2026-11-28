@@ -25,6 +25,7 @@ const STATUS_TONE: Readonly<Record<CompanyStatus, CompanyBadgeTone>> = {
   suspended: 'alert',
   // Une société clôturée : le statut existait côté API, la carte l'ignorait.
   terminated: 'neutral',
+  counter_opened: 'warning',
 };
 
 /** Zone de dépôt KBIS vide, formulée pour le **client** (« votre compte »). */

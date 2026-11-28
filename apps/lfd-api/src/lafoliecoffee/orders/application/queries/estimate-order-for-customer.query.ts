@@ -18,5 +18,11 @@ export class EstimateOrderForCustomerQuery {
      * passation le ferait pour lui.
      */
     readonly exceedItemLimits: boolean,
+    /**
+     * Le droit `b2b_counter_accounts:write` de celui qui saisit, lu en base
+     * par la porte staff : au comptoir, il règle au compte d'un compte ouvert
+     * au comptoir (`plan-comptes-du-comptoir.md`, § 3.2). Sans lui, refusé.
+     */
+    readonly chargesCounterAccounts: boolean = false,
   ) {}
 }

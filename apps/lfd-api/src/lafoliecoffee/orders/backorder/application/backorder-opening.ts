@@ -2,6 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Journal } from "../../../../platform/journal/journal.js";
+import { CompanyStatusReader } from "../../domain/ports/company-status.reader.js";
+import { isCounterAccount } from "../../domain/services/counter-account-service.js";
 import { Backorder } from "../domain/entities/backorder.js";
 import { BackorderOriginReader } from "../domain/ports/backorder-origin.reader.js";
 import { BackorderRepository } from "../domain/ports/backorder.repository.js";
@@ -28,7 +30,8 @@ export interface BackorderBirth {
  *
  * Rien ne naît quand tout est parti. Une commande de particulier (sans
  * société) a son reliquat comme celle d'un pro (décision 13) : l'équipe le
- * transforme en commande réglée en boutique ou offerte, ou l'abandonne.
+ * transforme en commande réglée en boutique ou offerte, ou l'abandonne. Un
+ * compte ouvert au comptoir n'en a pas (`plan-comptes-du-comptoir.md`, § 3.7).
  */
 @Injectable()
 export class BackorderOpening {
@@ -37,11 +40,17 @@ export class BackorderOpening {
     private readonly backorders: BackorderRepository,
     private readonly journal: Journal,
     private readonly ids: IdGenerator,
+    // Facultatif pour les doubles des suites ; Nest l'injecte toujours (§ 3.7).
+    private readonly statuses?: CompanyStatusReader,
   ) {}
 
   async openAfter(birth: BackorderBirth): Promise<void> {
     const origin = await this.origins.ofLocked(birth.originOrderId);
     if (origin === null) {
+      return;
+    }
+    // Un compte ouvert au comptoir n'a pas de reliquat : le reste est abandonné.
+    if (await this.hasNoBackorder(origin.companyId)) {
       return;
     }
     const lines = backorderRemainderOf(origin.lines, birth.departing);
@@ -58,5 +67,12 @@ export class BackorderOpening {
     });
     await this.backorders.save(backorder);
     await this.journal.append(BackorderJournalFacts.opened(backorder, birth.originReference));
+  }
+
+  private async hasNoBackorder(companyId: string | null): Promise<boolean> {
+    if (companyId === null || this.statuses === undefined) {
+      return false;
+    }
+    return isCounterAccount(await this.statuses.companyStatusOf(companyId));
   }
 }

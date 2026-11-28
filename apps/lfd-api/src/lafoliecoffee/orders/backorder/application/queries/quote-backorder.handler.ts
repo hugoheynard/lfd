@@ -5,6 +5,7 @@ import { OrderCutoffNotice } from "../../../application/services/order-cutoff-no
 import { OrderDrafting } from "../../../application/services/order-drafting.service.js";
 import { ShelfCircuit } from "../../../application/services/shelf-circuit.service.js";
 import { StaffOrderEstimation } from "../../../application/services/staff-order-estimation.js";
+import { ensureNotCounterAccountBackorder } from "../../../application/services/counter-account-service-guard.js";
 import { OrderGuardReader } from "../../../domain/ports/order-guard.reader.js";
 import { BackorderRepository } from "../../domain/ports/backorder.repository.js";
 import { BackorderReplayReader } from "../../domain/ports/backorder-replay.reader.js";
@@ -25,7 +26,7 @@ export class QuoteBackorderHandler implements IQueryHandler<
   private readonly estimation: StaffOrderEstimation;
 
   constructor(
-    guard: OrderGuardReader,
+    private readonly guard: OrderGuardReader,
     drafting: OrderDrafting,
     shelf: ShelfCircuit,
     cutoffNotice: OrderCutoffNotice,
@@ -39,9 +40,11 @@ export class QuoteBackorderHandler implements IQueryHandler<
    * @throws {BackorderNotFoundError} reliquat inconnu.
    * @throws {ParticularBackorderNotConvertibleError} reliquat de particulier : son estimation prend le corps du particulier.
    * @throws {BackorderClosedError} déjà transformé ou abandonné.
+   * @throws {CounterAccountBackorderRefusedError} reliquat d'un compte ouvert au comptoir.
    */
   async execute(query: QuoteBackorderQuery): Promise<AdminOrderEstimateView> {
     const { backorder, companyId } = await loadBackorder(this.backorders, query.backorderId);
+    await ensureNotCounterAccountBackorder(this.guard, companyId);
     const { origin, policy } = await backorderPricingOf(this.replays, backorder);
     return this.estimation.estimate(
       query.staffUserId,

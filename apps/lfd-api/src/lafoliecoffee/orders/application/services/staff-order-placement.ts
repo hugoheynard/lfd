@@ -36,6 +36,10 @@ import { publishOrderOffered } from "./order-offering.js";
 import type { ShelfCircuit } from "./shelf-circuit.service.js";
 import { prepareStaffOrder } from "./staff-order-preparation.js";
 import { staffSettlementRefusal } from "./staff-settlement-refusal.js";
+import {
+  NO_COUNTER_CEILING_CHECK,
+  type CounterAccountCeilingCheck,
+} from "./counter-account-ceiling-check.js";
 import type { AdminPlaceOrderPayload } from "@lfd/contracts";
 
 /** Ce que la passation de l'équipe lit et écrit. */
@@ -56,6 +60,8 @@ export interface StaffOrderPlacementPorts {
   readonly ids: IdGenerator;
   /** Le client de la commande, nommé chez le prestataire (le-pointage-stripe.md, § 7). */
   readonly recipients: OrderRecipientReader;
+  /** Le plafond d'un compte du comptoir (§ 3.3) ; absent, aucun plafond n'est jugé. */
+  readonly ceiling?: Pick<CounterAccountCeilingCheck, "refusalFor">;
 }
 
 /** Une saisie de l'équipe : qui saisit, ce qu'il saisit, et son droit de passer une limite. */
@@ -63,6 +69,8 @@ export interface StaffPlacementRequest {
   readonly staffUserId: string;
   readonly payload: AdminPlaceOrderPayload;
   readonly exceedItemLimits: boolean;
+  /** Son droit `b2b_counter_accounts:write` : régler au compte d'un compte du comptoir. */
+  readonly chargesCounterAccounts?: boolean;
 }
 
 /**
@@ -134,7 +142,7 @@ export class StaffOrderPlacement {
     // Le total que l'estimation a montré, avant le règlement (T2) : un refus ici
     // précède celui du compte sans crédit et ne crée aucun lien.
     ensureTotalSeen(order.totalCents, payload.expectedTotalCents);
-    const intent = await this.settle(order, payload);
+    const intent = await this.settle(order, payload, request.chargesCounterAccounts ?? false);
     const { placed, result } = await this.persist(
       order,
       request,
@@ -271,6 +279,7 @@ export class StaffOrderPlacement {
   private async settle(
     order: Order,
     payload: AdminPlaceOrderPayload,
+    chargesCounterAccounts: boolean,
   ): Promise<PreparedCardPayment | null> {
     const { settlement, companyId } = payload;
     // Le prédicat que l'estimation partage (lot P2) : ici, il refuse.
@@ -280,9 +289,18 @@ export class StaffOrderPlacement {
       settlement,
       companyId,
       isCounterEntry(payload.entryOrigin, payload.entryShortcut),
+      chargesCounterAccounts,
     );
     if (refusal !== null) {
       throw refusal;
+    }
+    const overCeiling = await (this.ports.ceiling ?? NO_COUNTER_CEILING_CHECK).refusalFor({
+      companyId,
+      settlement,
+      totalCents: order.totalCents,
+    });
+    if (overCeiling !== null) {
+      throw overCeiling;
     }
     if (settlement === "account" || order.totalCents <= 0) {
       // Au compte, ou rien à encaisser : un lien de règlement à 0 € enverrait

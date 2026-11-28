@@ -11,6 +11,7 @@ import {
   type OrderCompanyStatus,
   type OrderRole,
 } from "../domain/ports/order-guard.reader.js";
+import { counterOpeningBuyerRole } from "./counter-opening-buyer-role.js";
 
 /** Adaptateur Prisma des garde-fous : rôle du membre + statut de l'entreprise. */
 @Injectable()
@@ -32,10 +33,12 @@ export class PrismaOrderGuardReader extends OrderGuardReader {
     );
   }
 
+  /** Un rattachement, sinon l'acheteur d'un compte ouvert au comptoir (§ 3.1). */
   async staffEntryRoleOf(userId: string, companyId: string): Promise<OrderRole | null> {
-    return standingRole(
+    const role = standingRole(
       await readCompanyStanding(this.prisma, this.clock.now(), userId, companyId, "staff_entry"),
     );
+    return role ?? counterOpeningBuyerRole(this.prisma, userId, companyId);
   }
 
   async companyStatusOf(companyId: string): Promise<OrderCompanyStatus | null> {

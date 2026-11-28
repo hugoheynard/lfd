@@ -103,6 +103,20 @@ vérifier »).
 - **Audience** : pro (`audienceOf` rend `b2b`), comme un pending.
 - **Aucun membre** tant que `counter_opened` : l'invitation d'un membre est
   refusée par l'agrégat (le client n'a pas d'espace avant conversion).
+- **L'acheteur sans accès** (Hugo, 2026-11-28) : « aucun membre » veut dire
+  « personne ne se connecte ». **Décision (b), bâtie en K5** : à l'ouverture,
+  le contact devient une **fiche invité** (`users`, `auth0_sub` NULL, comme
+  l'invité de la boutique — la plus ancienne fiche invité de l'adresse est
+  reprise) **sans aucune ligne `memberships`**, et la trace d'ouverture la
+  nomme (`counter_opening_attestations.buyer_user_id`, colonne additive
+  posée à l'insertion). La passation de l'équipe l'admet comme porteur
+  (`staffEntryRoleOf` → rôle `orders`) pour CE compte et tant qu'il est
+  `counter_opened` seulement ; le comptoir la propose dans `buyers`. Sans
+  rattachement, rien n'ouvre l'espace : une connexion qui prouve l'adresse
+  peut reprendre la fiche (`GuestAccountClaim` y pose le `sub`), elle ne
+  voit ni la société ni ses commandes (e2e `counter-accounts-page`). Après
+  conversion, la fiche n'est plus admise : le commerce rattache un détenteur
+  par le parcours normal.
 - **Ce que « refusé partout » demande** : le statut est recopié dans des
   types fermés qui ne dérivent pas de l'enum — `account/domain/value-objects/company-status.ts`,
   `orders/domain/ports/company-status.reader.ts`,
@@ -145,6 +159,16 @@ K4 la crée : les commandes au compte non encore facturées (propriétaire :
 `orders`) + les factures non réglées (propriétaire : `accounting`), deux
 lectures nommées par lot, composées par la page et par la garde.
 
+**Bâti (K4)** : la garde ne lit que la première — un compte du comptoir n'est
+jamais facturé avant sa conversion, donc ses commandes au compte non annulées
+sont tout son dû, et après conversion le statut n'est plus `counter_opened` et
+la garde ne s'applique plus. Le réglage vit dans `counter_account_settings`
+(une ligne `orders`, absente = aucun plafond) ; il s'écrit par
+`PUT /admin/counter-account-ceiling` (K5, sous `lfc_order_settings`, auteur
+gardé) — l'écran reste à bâtir. Le refus vaut à la passation (409
+`orders.counter.ceiling_exceeded`) et à l'estimation (avertissement de même
+code), seulement sur un règlement au compte.
+
 ### 3.4 Le droit (D6)
 
 Une valeur `StaffResource` **`b2b_counter_accounts`** (préfixe `b2b_`
@@ -170,6 +194,27 @@ et la trace est append-only — ni décochée, ni réattribuée après coup.
 Rien de la pièce elle-même — ni type, ni numéro, ni image. La page du § 4
 montre « pièce vue par <agent> » ou « pièce non vue ».
 
+**L'écran** (K2, front) : le bouton « Ouvrir un compte pro » de la page
+« Nouvelle commande pro » du comptoir, sous `b2b_counter_accounts:write`,
+ouvre un panneau (enseigne, prénom, nom, fonction facultative, e-mail,
+téléphone, la case et son texte). **Après le `201`, l'écran ouvre la saisie
+de la commande pro pour ce compte** (`/nouvelle-commande/<id>`), pas la
+fiche client : le client est en face, c'est pour commander qu'on ouvre son
+compte, et l'agent du comptoir n'a pas le droit de la fiche
+(`b2b_companies`). Un refus affiche le message du serveur tel quel.
+
+### 3.7 Ce que sert un compte du comptoir (Hugo, 2026-11-28)
+
+- **Le retrait seul** : `fulfillmentMethod = "pickup"` — le retrait en
+  boutique, et le « Retrait immédiat » (`entryShortcut = "immediate_pickup"`,
+  qui est un `pickup` sur la vitrine). Toute livraison (`"delivery"`) est
+  refusée à la passation et à l'estimation de la saisie de l'équipe
+  (`orders.counter.account_pickup_only`) : « un compte ouvert au comptoir se
+  retire en boutique ; convertir le compte pour livrer ».
+- **Pas de reliquat** : un départ incomplet d'une de ses commandes n'ouvre
+  aucun reliquat (`BackorderOpening`), et transformer ou estimer un reliquat
+  lui est refusé (`orders.counter.account_no_backorder`).
+
 ## 4. La page « Comptes du comptoir » (D4)
 
 Dans l'espace commerce du back-office : une table, une ligne par société
@@ -186,6 +231,27 @@ Dans l'espace commerce du back-office : une table, une ligne par société
 
 Le dû vient d'une lecture nommée de `accounting`, par lot (une requête pour
 la page, pas une par ligne). Total du dû en pied de table.
+
+**Bâti (K5, back)** : `GET /admin/counter-opened-accounts` et `POST
+/admin/counter-opened-accounts/:id/convert`, sous `b2b_companies`. Le dû et
+le nombre de commandes viennent des deux lectures par lot des commandes (K4 :
+un compte du comptoir n'est jamais facturé avant conversion, ses commandes au
+compte sont tout son dû). « Ce qui manque » est le verdict d'activation de la
+fiche, lu fiche par fiche (il croise plusieurs tables). Convertir active
+directement par le cas d'usage de l'activation quand le verdict est vert,
+sinon `convertFromCounter` → `pending`. L'écran reste à bâtir.
+
+### 3.6 🔴 La fin de période ne se touche pas (Hugo, 2026-11-28)
+
+« Ça ne doit pas rentrer dans le calcul de fin de période — protège ce qui
+marche bien. » Un compte `counter_opened` n'entre dans **aucun** calcul de
+période (payeurs comptés, rythmes, devis de période, clôture, émission). Le
+seul point de contact admis est **l'exclusion par statut** dans la lecture
+des commandes à facturer (`prisma-monthly-invoicing.reader.ts`, K1). Les
+calculs, gardes et ouvreurs existants de `accounting/` ne sont pas modifiés ;
+l'ouverture d'un payeur du comptoir passe par un module neuf. Toute suite
+existante de `accounting/` passe **sans que sa spec ait été modifiée** — c'est
+la preuve que rien n'a bougé.
 
 ## 5. Lots
 

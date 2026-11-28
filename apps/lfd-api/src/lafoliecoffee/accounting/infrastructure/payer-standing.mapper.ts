@@ -59,6 +59,7 @@ export function payerStandingOf(row: PayerStandingRow): PayerStanding {
     name: companyDisplayName(row),
     active: row.status === ACTIVE_COMPANY,
     public: isPublicForm(row.formeJuridique),
+    counterOpened: row.status === "counter_opened",
     follows: row.follows.map((follow) => ({
       companyId: follow.companyId,
       payerId: follow.parentId,

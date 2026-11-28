@@ -11,6 +11,8 @@ describe("audienceOf", () => {
     ["active", "b2b"],
     ["suspended", "b2b"],
     ["pending", "b2b"],
+    // Le compte ouvert au comptoir est pro (`plan-comptes-du-comptoir.md` § 3.1).
+    ["counter_opened", "b2b"],
     ["terminated", "b2c"],
     [null, "b2c"],
   ] as const)("%s → %s", (status, audience) => {
@@ -23,6 +25,7 @@ describe("pickupAnnouncementOf", () => {
     ["active", "b2b"],
     ["suspended", "b2b"],
     ["pending", "b2bPending"],
+    ["counter_opened", "b2bPending"],
     ["terminated", "b2c"],
     [null, "b2c"],
   ] as const)("%s → %s", (status, key) => {

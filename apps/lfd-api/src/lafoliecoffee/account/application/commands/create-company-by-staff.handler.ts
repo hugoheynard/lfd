@@ -181,6 +181,9 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
       // tel.
       return withoutMail("deferred");
     }
+    // Refusé structurellement à un compte ouvert au comptoir : celui-ci naît
+    // `pending`, et l'agrégat le dirait si la fabrique changeait.
+    company.ensureAdmitsMembers();
     try {
       const access: AccessToGrant = {
         companyId,

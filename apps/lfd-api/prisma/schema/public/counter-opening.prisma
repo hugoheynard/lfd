@@ -1,0 +1,19 @@
+/// LA TRACE D'OUVERTURE d'un compte au comptoir (`plan-comptes-du-comptoir.md`,
+/// § 3.5) : l'agent a-t-il vu une pièce d'identité, qui l'atteste, et quand.
+/// Rien de la pièce. Une ligne par compte, APPEND-ONLY : cocher engage
+/// l'agent, la trace ne se décoche ni ne se réattribue. Déclencheur dans le
+/// `migration.sql` (`20261128004100_la_preuve_d_identite_vue_au_comptoir`).
+model CounterOpeningAttestation {
+  /// Opaque, comme `payer_collection_means.payer_company_id`.
+  companyId         String   @id @map("company_id")
+  identitySeen      Boolean  @map("identity_seen")
+  attestedByStaffId String   @map("attested_by_staff_id")
+  attestedAt        DateTime @map("attested_at") @db.Timestamptz(3)
+  /// La fiche invité (`users`, sans `auth0_sub`, sans rattachement) au nom de
+  /// qui l'équipe commande pour ce compte (§ 3.1). Opaque ; NULL sur une trace
+  /// d'avant l'acheteur.
+  buyerUserId       String?  @map("buyer_user_id")
+
+  @@map("counter_opening_attestations")
+  @@schema("public")
+}

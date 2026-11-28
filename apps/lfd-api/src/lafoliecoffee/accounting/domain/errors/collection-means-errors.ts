@@ -131,3 +131,19 @@ export class PublicPayerMeansCancelRefusedError extends BusinessError {
     );
   }
 }
+
+/**
+ * **Un compte ouvert au comptoir règle par virement** tant que le commerce ne
+ * l'a pas converti (`plan-comptes-du-comptoir.md`, § 3.2) : il n'a ni RIB ni
+ * mandat, et un prélèvement n'aurait rien sur quoi tirer.
+ */
+export class CounterPayerDirectDebitRefusedError extends BusinessError {
+  constructor(readonly payerName: string) {
+    super(
+      "accounting.collection_means.counter_payer_direct_debit",
+      `« ${payerName} » a été ouvert au comptoir : il règle par virement tant qu'il n'est pas ` +
+        `converti. Convertissez d'abord le compte depuis sa fiche, puis posez le prélèvement ` +
+        `une fois le mandat signé.`,
+    );
+  }
+}

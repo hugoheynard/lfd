@@ -16,7 +16,7 @@ import {
 import { PendingAccessReader } from "../../../domain/ports/pending-access.reader.js";
 import { IssuePasswordLinkCommand } from "../issue-password-link.command.js";
 import { IssuePasswordLinkHandler } from "../issue-password-link.handler.js";
-import { journalNames, RecordingRenewal } from "./member-acts-doubles.js";
+import { InMemoryCompanies, journalNames, RecordingRenewal } from "./member-acts-doubles.js";
 
 function reader(subject: string | null): PendingAccessReader {
   return {
@@ -85,6 +85,7 @@ describe("fabriquer un lien à remettre à la main", () => {
       new RecordingRenewal(),
       new DirectUnitOfWork(),
       inMemoryIntents(),
+      new InMemoryCompanies(),
     );
 
     const link = await handler.execute(
@@ -111,6 +112,7 @@ describe("fabriquer un lien à remettre à la main", () => {
       new RecordingRenewal(),
       new DirectUnitOfWork(),
       inMemoryIntents(),
+      new InMemoryCompanies(),
     );
 
     await expect(
@@ -133,6 +135,7 @@ describe("le lien remis renouvelle l'invitation d'UNE société (§8.1 bis, poin
       renewal,
       new DirectUnitOfWork(),
       inMemoryIntents(),
+      new InMemoryCompanies(),
     );
   }
 
@@ -181,6 +184,7 @@ describe("un lien par intention, jamais gardé", () => {
       new RecordingRenewal(),
       new DirectUnitOfWork(),
       inMemoryIntents(),
+      new InMemoryCompanies(),
     );
     const key = randomUUID();
 

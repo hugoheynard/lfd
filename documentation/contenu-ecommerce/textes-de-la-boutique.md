@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 2094 textes
+## Sommaire — 2095 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -43,7 +43,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Payer par lien — la page publique /payer](#espace-paylink) | `payLink` | 24 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
-| [Mon compte (factures comprises)](#espace-account) | `account` | 537 |
+| [Mon compte (factures comprises)](#espace-account) | `account` | 538 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
 | [Mes sites — la carte de chaque site, réglée par le compte principal](#espace-sitemenu) | `siteMenu` | 78 |
@@ -54,7 +54,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **2094** |
+| **Total** | | **2095** |
 
 ## Le parcours de commande
 
@@ -1528,7 +1528,7 @@ Source : `screens/loyalty.copy.ts` · 38 textes.
 
 ### Mon compte (factures comprises) — `account`
 
-Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 537 textes.
+Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 538 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1539,6 +1539,7 @@ Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 
 | `account.states.active` | Compte actif | Account active | Account attivo |  |
 | `account.states.suspended` | Compte suspendu | Account suspended | Account sospeso |  |
 | `account.states.terminated` | Compte clos | Account closed | Account chiuso |  |
+| `account.states.counter_opened` | Ouvert au comptoir | Opened at the counter | Aperto al banco |  |
 | `account.loadFailedTitle` | Votre compte n’a pas pu être lu | Your account could not be loaded | Non è stato possibile leggere il suo account |  |
 | `account.loadFailedBody` | Le service ne répond pas pour le moment. Réessayez dans un instant. | The service is not responding right now. Please try again in a moment. | Il servizio non risponde al momento. Riprovi tra un istante. |  |
 | `account.loadRetry` | Réessayer | Try again | Riprova |  |

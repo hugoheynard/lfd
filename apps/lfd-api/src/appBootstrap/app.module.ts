@@ -7,6 +7,8 @@ import { AccountModule } from "../lafoliecoffee/account/account.module.js";
 import { PricingFollowJournalModule } from "./pricing-follow-journal.module.js";
 import { SiteMandateRevocationModule } from "./site-mandate-revocation.module.js";
 import { PublicPayerOpeningModule } from "./public-payer-opening.module.js";
+import { CounterPayerOpeningModule } from "./counter-payer-opening.module.js";
+import { CounterAccountOrdersModule } from "./counter-account-orders.module.js";
 import { CommitmentTimingModule } from "./commitment-timing.module.js";
 import { NegotiatedScopeModule } from "./negotiated-scope.module.js";
 import { PeriodQuoteCommitmentModule } from "./period-quote-commitment.module.js";
@@ -326,6 +328,8 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     PricingFollowJournalModule,
     SiteMandateRevocationModule,
     PublicPayerOpeningModule,
+    CounterPayerOpeningModule,
+    CounterAccountOrdersModule,
     CommitmentTimingModule,
     NegotiatedScopeModule,
     QuoteMercurialeModule,

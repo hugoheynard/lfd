@@ -2,7 +2,8 @@ import { effectiveRole } from "./effective-role.js";
 import type { StandingRole } from "./standing-role.js";
 
 /** Miroir de l'enum Prisma `CompanyStatus` (cf. {@link StandingRole}). */
-export type StandingCompanyStatus = "pending" | "active" | "suspended" | "terminated";
+export type StandingCompanyStatus =
+  "pending" | "active" | "suspended" | "terminated" | "counter_opened";
 
 /** Le principal par lequel une personne atteint un site, figé à la lecture. */
 export interface StandingPrincipal {

@@ -25,6 +25,7 @@ import {
 } from "./place-order-for-customer.command.js";
 import { STAFF_PLACEMENT_REPLAY, staffPlacementIntent } from "./staff-placement-intent.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { CounterAccountCeilingCheck } from "../services/counter-account-ceiling-check.js";
 import { ItemLimitOverrideRecorder } from "../../domain/ports/item-limit-override.recorder.js";
 
 /**
@@ -74,6 +75,8 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     overrides: ItemLimitOverrideRecorder,
     ids: IdGenerator,
     recipients: OrderRecipientReader,
+    // Facultatif pour les doubles des suites ; Nest l'injecte toujours (§ 3.3).
+    ceiling?: CounterAccountCeilingCheck,
   ) {
     this.placement = new StaffOrderPlacement({
       guard,
@@ -91,6 +94,7 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
       overrides,
       ids,
       recipients,
+      ...(ceiling === undefined ? {} : { ceiling }),
     });
   }
 
@@ -118,6 +122,7 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
             staffUserId: command.staffUserId,
             payload: command.payload,
             exceedItemLimits: command.exceedItemLimits,
+            chargesCounterAccounts: command.chargesCounterAccounts,
           },
           PLACEMENT_POLICY,
           ORDINARY_STAFF_PLACEMENT,

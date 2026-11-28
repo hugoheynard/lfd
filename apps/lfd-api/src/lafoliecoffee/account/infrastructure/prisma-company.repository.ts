@@ -188,8 +188,12 @@ export class PrismaCompanyRepository extends CompanyRepository {
           // Un sous-compte naît rattaché (sous-comptes §4) ; le verrou de
           // la hiérarchie est pris par le handler.
           parentCompanyId: company.parentCompanyId,
-          // Déclarée, pas cliente : l'activation reste commerciale.
-          status: CompanyStatus.pending,
+          // Celui que l'agrégat a posé à la naissance : `pending` pour une
+          // déclaration, `counter_opened` pour un compte ouvert au comptoir.
+          // L'activation reste commerciale.
+          status: company.status,
+          // Vide à la déclaration ; le mensuel d'un compte ouvert au comptoir.
+          grantedTerms: [...company.grantedTerms],
         },
         select: { id: true },
       });

@@ -1,5 +1,6 @@
 /** Cycle de vie de l'entreprise (miroir de `CompanyStatus` Prisma). */
-export type OrderCompanyStatus = "pending" | "active" | "suspended" | "terminated";
+export type OrderCompanyStatus =
+  "pending" | "active" | "suspended" | "terminated" | "counter_opened";
 
 /**
  * Port **étroit** : le statut d'une société, et rien d'autre.

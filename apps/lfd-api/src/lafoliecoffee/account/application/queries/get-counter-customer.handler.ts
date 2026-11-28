@@ -55,9 +55,9 @@ export class GetCounterCustomerHandler implements IQueryHandler<
       this.customers.activeCard(query.companyId),
       this.companies.load(query.companyId),
     ]);
-    // Les deux lectures doivent dire « active » : une société passée entre-temps
+    // Les deux lectures doivent dire « servie » : une société passée entre-temps
     // en suspension ne s'ouvre pas au comptoir sur la foi de la première.
-    if (card === null || company?.status !== "active") {
+    if (card === null || company === null || !servedAtCounter(company.status)) {
       throw new CounterCustomerNotFoundError(query.companyId);
     }
     const [addresses, members, payer] = await Promise.all([
@@ -73,11 +73,15 @@ export class GetCounterCustomerHandler implements IQueryHandler<
       tradeName: card.tradeName,
       reference: card.reference,
       status: company.status,
-      settlesOnAccount: payer?.status === "active" && payer.settlesOnAccount(),
+      settlesOnAccount: payer !== null && servedAtCounter(payer.status) && payer.settlesOnAccount(),
       payerIsPublic: payer?.isPublic ?? false,
       payerIsInHouse,
       deliveryAddresses: [...addresses.deliveries],
-      buyers: members.filter((member) => member.status === "active").map(toBuyer),
+      buyers: [
+        ...members.filter((member) => member.status === "active").map(toBuyer),
+        // L'acheteur d'un compte ouvert au comptoir : sans rattachement (§ 3.1).
+        ...(card.openingBuyer === undefined ? [] : [card.openingBuyer]),
+      ],
     };
   }
 
@@ -89,6 +93,14 @@ export class GetCounterCustomerHandler implements IQueryHandler<
     const billing = await this.follows.followsAt(companyId, "billing", this.clock.now());
     return billing === null ? company : this.companies.load(billing.parentId);
   }
+}
+
+/**
+ * Le comptoir sert un compte actif, et un compte ouvert au comptoir — que sa
+ * passation au compte admet pour qui en a le droit (`plan-comptes-du-comptoir.md`, § 3.2).
+ */
+function servedAtCounter(status: Company["status"]): boolean {
+  return status === "active" || status === "counter_opened";
 }
 
 /** Un membre actif, sans téléphone ni date d'entrée : de quoi le choisir. */

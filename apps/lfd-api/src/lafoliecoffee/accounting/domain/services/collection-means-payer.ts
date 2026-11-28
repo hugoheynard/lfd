@@ -1,6 +1,7 @@
 import type { NamedPayer } from "../entities/payer-billing-mode-history.js";
 import { BillingPayerNotFoundError } from "../errors/billing-mode-errors.js";
 import {
+  CounterPayerDirectDebitRefusedError,
   NotACollectionMeansPayerError,
   PublicPayerDirectDebitRefusedError,
   PublicPayerMeansCancelRefusedError,
@@ -49,14 +50,19 @@ export function requireCollectionMeansPayer(
 }
 
 /**
- * Un organisme public règle par virement : le prélèvement lui est refusé à
- * l'écriture, quel que soit l'auteur du geste.
+ * Un organisme public règle par virement, et un compte ouvert au comptoir
+ * aussi tant qu'il n'est pas converti (`plan-comptes-du-comptoir.md`, § 3.2) :
+ * le prélèvement leur est refusé à l'écriture, quel que soit l'auteur du geste.
  *
  * @throws {PublicPayerDirectDebitRefusedError}
+ * @throws {CounterPayerDirectDebitRefusedError}
  */
 export function ensureMeansAllowedFor(standing: PayerStanding, means: CollectionMeans): void {
   if (standing.public && means === "sepa_debit") {
     throw new PublicPayerDirectDebitRefusedError(standing.name);
+  }
+  if (standing.counterOpened === true && means === "sepa_debit") {
+    throw new CounterPayerDirectDebitRefusedError(standing.name);
   }
 }
 

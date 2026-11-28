@@ -19,6 +19,7 @@ import { ShelfCircuit } from "../../../application/services/shelf-circuit.servic
 import { StaffOrderPlacement } from "../../../application/services/staff-order-placement.js";
 import { ItemLimitOverrideRecorder } from "../../../domain/ports/item-limit-override.recorder.js";
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
+import { ensureNotCounterAccountBackorder } from "../../../application/services/counter-account-service-guard.js";
 import { OrderGuardReader } from "../../../domain/ports/order-guard.reader.js";
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
 import { PayerCommitmentRequirements } from "../../../domain/ports/payer-commitment-requirements.js";
@@ -54,7 +55,7 @@ export class ConvertBackorderHandler implements ICommandHandler<
   private readonly placement: StaffOrderPlacement;
 
   constructor(
-    guard: OrderGuardReader,
+    private readonly guard: OrderGuardReader,
     drafting: OrderDrafting,
     orders: OrderRepository,
     payments: CardPayments,
@@ -100,10 +101,13 @@ export class ConvertBackorderHandler implements ICommandHandler<
    * @throws {BackorderClosedError} déjà transformé ou abandonné, sous une autre clé.
    * @throws {OfferNotPermittedError} une commande offerte sans le droit `b2b_offer_order`.
    * @throws {IntentKeyReusedError} la clé a déjà transformé une autre saisie.
+   * @throws {CounterAccountBackorderRefusedError} reliquat d'un compte ouvert au comptoir.
    */
   async execute(command: ConvertBackorderCommand): Promise<PlaceOrderForCustomerResult> {
     // Sans juger l'état : un double clic après le succès retrouve sa commande.
     const loaded = await loadBackorder(this.backorders, command.backorderId);
+    // Un compte ouvert au comptoir n'a pas de reliquat (§ 3.7).
+    await ensureNotCounterAccountBackorder(this.guard, loaded.companyId);
     // Un de nos restaurants : la commande sera interne quel que soit le choix
     // de l'écran, et personne ne l'offre — le droit d'offrir ne se juge pas.
     if (!(await this.inHouse.isInHousePayer(loaded.companyId))) {

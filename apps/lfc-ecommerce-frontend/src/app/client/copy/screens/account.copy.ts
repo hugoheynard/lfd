@@ -31,6 +31,8 @@ export interface AccountCopy {
     readonly active: string;
     readonly suspended: string;
     readonly terminated: string;
+    /** Ouvert au comptoir, pas encore converti : jamais servi en boutique, nommé pour être complet. */
+    readonly counter_opened: string;
   };
   /** La lecture de `/me` a échoué : ce n'est PAS un compte inconnu, et on le dit. */
   readonly loadFailedTitle: string;

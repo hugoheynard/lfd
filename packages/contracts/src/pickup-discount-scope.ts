@@ -101,7 +101,9 @@ export const NO_PICKUP_DISCOUNTS: AnnouncedPickupDiscounts = {
 export function pickupAnnouncementOf(
   actingCompanyStatus: CompanyStatus | null,
 ): PickupAnnouncementKey {
-  if (actingCompanyStatus === "pending") {
+  // Un compte ouvert au comptoir est jugé comme un pending par le ciblage
+  // (pro, pas « pro actif ») : il lit la même annonce.
+  if (actingCompanyStatus === "pending" || actingCompanyStatus === "counter_opened") {
     return "b2bPending";
   }
   return audienceOf(actingCompanyStatus);

@@ -82,6 +82,10 @@ enum StaffResource {
   /// Le COMPTOIR — la carte et le détail d'un client, taillés pour la prise de
   /// commande (2026-09-25, `architecture-commande-au-comptoir.md`).
   b2b_counter
+  /// LES COMPTES DU COMPTOIR — ouvrir un compte pro incomplet au comptoir et y
+  /// commander au compte (2026-11-28, `plan-comptes-du-comptoir.md` § 3.4).
+  /// Accordée à l'écran.
+  b2b_counter_accounts
   /// La SUPERVISION — la vue du jour, en lecture seule, de la passation au
   /// retrait (2026-09-25, `architecture-supervision-du-jour.md`).
   b2b_supervision

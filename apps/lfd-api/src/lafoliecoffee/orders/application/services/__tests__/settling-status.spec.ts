@@ -47,6 +47,13 @@ describe("accountStanding — le statut du payeur", () => {
     expect(await accountStanding(guard, { companyId: "co", payerId: "co" })).toBe("none");
   });
 
+  // La boutique ne dit jamais « au compte » à un compte ouvert au comptoir,
+  // même crédité (`plan-comptes-du-comptoir.md` § 3.2).
+  it("ferme le compte d'une société ouverte au comptoir, même créditée", async () => {
+    const guard = new StatusGuard({ co: "counter_opened" }, "granted");
+    expect(await accountStanding(guard, { companyId: "co", payerId: null })).toBe("none");
+  });
+
   it("ne relit pas le statut d'une société qui paie seule", async () => {
     const guard = new StatusGuard({ co: "active" });
     expect(await accountStanding(guard, { companyId: "co", payerId: "co" })).toBe("granted");
