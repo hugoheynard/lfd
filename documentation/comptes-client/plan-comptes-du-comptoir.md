@@ -187,6 +187,18 @@ Dans l'espace commerce du back-office : une table, une ligne par société
 Le dû vient d'une lecture nommée de `accounting`, par lot (une requête pour
 la page, pas une par ligne). Total du dû en pied de table.
 
+### 3.6 🔴 La fin de période ne se touche pas (Hugo, 2026-11-28)
+
+« Ça ne doit pas rentrer dans le calcul de fin de période — protège ce qui
+marche bien. » Un compte `counter_opened` n'entre dans **aucun** calcul de
+période (payeurs comptés, rythmes, devis de période, clôture, émission). Le
+seul point de contact admis est **l'exclusion par statut** dans la lecture
+des commandes à facturer (`prisma-monthly-invoicing.reader.ts`, K1). Les
+calculs, gardes et ouvreurs existants de `accounting/` ne sont pas modifiés ;
+l'ouverture d'un payeur du comptoir passe par un module neuf. Toute suite
+existante de `accounting/` passe **sans que sa spec ait été modifiée** — c'est
+la preuve que rien n'a bougé.
+
 ## 5. Lots
 
 | Lot | Contenu                                                                                                                                                                                    |
