@@ -80,6 +80,9 @@ vérifier »).
   Exige un nom d'usage et un contact joignable. **N'exige pas** SIRET,
   adresse de facturation, KBIS, RIB ni mandat (Q1, Hugo, 2026-11-28 :
   « plafond seul »).
+- **Les lignes au prix pro** (Hugo, 2026-11-28) : une commande d'un compte
+  du comptoir fige ses lignes avec la réduction de l'audience pro, comme
+  toute commande pro (snapshot inchangé à la conversion).
 - **Pas facturable avant conversion** : sans SIREN ni adresse, l'émission
   du mois le bloque (§ 2). L'encours s'accumule sans facture ni échéance ;
   **le plafond (§ 3.3) est le seul frein**, et il est vide par défaut — un
@@ -181,10 +184,12 @@ la page, pas une par ligne). Total du dû en pied de table.
 1. Tous les lecteurs de `CompanyStatus` (switchs exhaustifs, `audienceOf`,
    promotions lues sur le statut, mur de la boutique, `isOrderable`) : que
    rend chacun pour `counter_opened` ?
-2. ✅ Non émissible sans SIREN ni adresse, assumé (Q1). 🔴 **À vérifier en
-   K1, bloquant** : un payeur bloqué saute-t-il seul, ou bloque-t-il la
-   clôture du mois pour tous ? Dans le second cas, ces comptes doivent être
-   exclus des payeurs du mois tant qu'ils sont `counter_opened`.
+2. ✅ **Écartés de la facturation** (Hugo, 2026-11-28) : tant que le commerce
+   ne l'a pas vu — c'est-à-dire converti —, un compte `counter_opened` n'est
+   pas un payeur du mois. La sélection des payeurs l'exclut **par son
+   statut**, dans la requête ; il ne bloque donc jamais la clôture des
+   autres. K1 le tient par un e2e (une clôture avec un compte du comptoir
+   émet les factures des autres).
 3. ✅ Connu : `atCounter` dans `staff-settlement-refusal.ts` (§ 3.2).
 4. ✅ Tranché : la conversion exige SIRET et adresse, donc l'encours d'un
    compte converti puis refusé reste facturable et réglable par virement.
