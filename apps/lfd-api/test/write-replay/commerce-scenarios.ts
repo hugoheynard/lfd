@@ -1,4 +1,5 @@
 import { createUser } from "../factories.js";
+import { openFeature } from "../feature-access-scene.js";
 import { publishSalesTerms } from "../recurring-scene.js";
 import { serviceDay } from "../e2e-harness.js";
 import { routeKey, STAFF, type ScenarioSet } from "./scenario.js";
@@ -52,6 +53,8 @@ export const COMMERCE_SCENARIOS: ScenarioSet = {
   [routeKey("recurring/planned/http/planner.controller.ts", "open")]: async ({ ctx }) => {
     // Un pro rattaché à une seule société agit pour elle sans en-tête d'espace.
     await companyWithOwner(ctx, BUYER, true);
+    // La clé `orderPlanner` est fermée par défaut : sans elle, la route refuse (409).
+    await openFeature(ctx, "orderPlanner");
     return {
       sub: BUYER,
       path: "/planner/columns",
