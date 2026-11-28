@@ -27,7 +27,8 @@ import {
 import { NotifyService } from '../../notify.service';
 import { HandoverService } from '../../retrait/handover.service';
 import { outsideTheCounter } from '../handover-queue';
-import { readQrCode, scannerAvailable, tokenOf } from './qr-reader';
+import { cameraAvailable, frameDecoder, type FrameDecoder } from './frame-decoder';
+import { tokenOf } from './qr-reader';
 
 /**
  * Ce que la file demande au scanner.
@@ -126,7 +127,9 @@ type Stage = 'starting' | 'scanning' | 'unsupported' | 'denied' | 'found' | 'don
  *
  * ## Quand le navigateur ne sait pas lire
  *
- * `BarcodeDetector` n'existe pas partout. Le dialogue le DIT, et s'arrête là.
+ * `BarcodeDetector` n'existe pas partout : sans lui, jsQR décode
+ * ({@link frameDecoder}), ce qui couvre Safari sur iPhone. Seul un appareil
+ * sans caméra accessible voit « on ne peut pas lire », et le dialogue s'arrête là.
  * Une surface qui échouerait en silence enverrait quelqu'un chercher une caméra
  * cassée.
  *
@@ -220,10 +223,11 @@ export class ScanDialog implements FoldPanelContent<ScanDialogData> {
    * sait pas lire, plutôt que d'allumer une lumière qui ne servira à rien.
    */
   private async start(element: HTMLVideoElement): Promise<void> {
-    if (!scannerAvailable()) {
+    if (!cameraAvailable()) {
       this.stage.set('unsupported');
       return;
     }
+    const decode = await frameDecoder();
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' },
@@ -237,12 +241,12 @@ export class ScanDialog implements FoldPanelContent<ScanDialogData> {
     element.srcObject = this.stream;
     await element.play().catch(() => undefined);
     this.stage.set('scanning');
-    void this.readLoop(element);
+    void this.readLoop(element, decode);
   }
 
-  private async readLoop(element: HTMLVideoElement): Promise<void> {
+  private async readLoop(element: HTMLVideoElement, decode: FrameDecoder): Promise<void> {
     while (!this.stopped && this.stage() === 'scanning') {
-      const value = await readQrCode(element);
+      const value = await decode(element);
       if (value !== null) {
         this.release();
         await this.inspect(value);

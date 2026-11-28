@@ -13,19 +13,16 @@ import {
 import { FoldButtonComponent, FoldCalloutComponent, FoldLoadingStateComponent } from 'fold-ng';
 
 import { CameraLease } from '../camera-lease';
-import { readQrCode, scannerAvailable } from '../../handover-shop/scan-dialog/qr-reader';
+import { frameDecoder, type FrameDecoder } from '../../handover-shop/scan-dialog/frame-decoder';
 
 type Stage = 'off' | 'starting' | 'scanning' | 'denied';
 
 /** Un décodeur d'image : le contenu du premier QR visible, ou `null`. */
-type FrameDecoder = (video: HTMLVideoElement) => Promise<string | null>;
 
 /** Entre deux lectures : assez court pour être instantané, assez long pour ne pas chauffer. */
 const SCAN_INTERVAL_MS = 250;
 /** Un même code relu dans ce délai est le même bac tenu devant la caméra, pas un second scan. */
 const SAME_CODE_MS = 3000;
-/** Le décodeur JS lit une image réduite : un QR d'étiquette tient large dans 640 px. */
-const DECODE_WIDTH = 640;
 
 /**
  * **Lire le QR d'un bac, sur n'importe quel appareil** (L4-C10).
@@ -34,10 +31,7 @@ const DECODE_WIDTH = 640;
  * sinon **jsQR** (Apache-2.0), un décodeur en JavaScript pur — Safari et
  * Firefox n'ont pas l'API native, et au dépôt on ne choisit pas le téléphone.
  *
- * 🔴 jsQR est importé **dynamiquement, ici et seulement ici**, au premier
- * allumage de la caméra sur un navigateur sans API native : jamais dans un
- * service racine, donc jamais dans le paquet de démarrage. Un poste Chrome ne
- * le télécharge jamais.
+ * Le choix du décodeur vit dans `frameDecoder`, partagé avec le retrait.
  *
  * Le composant LIT et émet ce qu'il a lu, tel quel : c'est l'écran qui décide
  * si c'est un bac (`scannedBin`) et qui charge. La caméra ne s'allume que sur
@@ -151,27 +145,7 @@ export class BinScanner {
   }
 
   /** L'API native si elle existe ; sinon jsQR, chargé à cet instant. */
-  private async decoder(): Promise<FrameDecoder> {
-    if (scannerAvailable()) {
-      return readQrCode;
-    }
-    const { default: jsQR } = await import('jsqr');
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d', { willReadFrequently: true });
-    return (video) => {
-      const { videoWidth, videoHeight } = video;
-      if (context === null || videoWidth === 0 || videoHeight === 0) {
-        return Promise.resolve(null);
-      }
-      const scale = Math.min(1, DECODE_WIDTH / videoWidth);
-      canvas.width = Math.round(videoWidth * scale);
-      canvas.height = Math.round(videoHeight * scale);
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const image = context.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(image.data, image.width, image.height, {
-        inversionAttempts: 'dontInvert',
-      });
-      return Promise.resolve(code?.data ?? null);
-    };
+  private decoder(): Promise<FrameDecoder> {
+    return frameDecoder();
   }
 }
