@@ -155,6 +155,32 @@ accordée à l'écran. Elle couvre : ouvrir un compte au comptoir, et passer une
 commande au compte pour lui. La page de conversion (§ 4) demande le droit
 des comptes clients existant, pas celui-ci.
 
+### 3.5 La preuve d'identité (Hugo, 2026-11-28)
+
+À l'ouverture, l'agent **photographie une pièce** avec l'appareil photo de
+l'appareil : carte d'identité, permis, carte bancaire ou carte Vitale —
+n'importe laquelle. La photo est obligatoire pour ouvrir le compte, rangée au
+stockage (comme le KBIS), visible du commerce sur la page du § 4.
+
+🔴 **À trancher par Hugo avant K2 — deux des quatre pièces posent un problème
+légal :**
+
+- **Carte bancaire** : une photo porte le numéro complet, la date et le nom.
+  La garder fait entrer notre stockage dans le périmètre PCI DSS, que le
+  dépôt évite entièrement (Stripe tient les cartes). Proposition : la retirer
+  de la liste, ou exiger qu'on masque le numéro avant la prise (non
+  vérifiable par nous).
+- **Carte Vitale** : elle porte le NIR (numéro de sécurité sociale), dont le
+  traitement est encadré strictement (décret « cadre NIR ») et n'est pas
+  admis pour identifier un client commercial. Proposition : la retirer.
+- **Carte d'identité et permis** : admissibles, mais donnée personnelle à
+  déclarer : finalité (identifier qui ouvre un crédit), durée de
+  conservation (proposée : jusqu'à la conversion + 3 mois, puis purge),
+  accès restreint (droit du commerce seulement). Une ligne au registre RGPD.
+
+Mécanisme : le même que les photos des notes du commercial
+(`shared/photo-cards/`, stockage + vignette), à vérifier en K2.
+
 ## 4. La page « Comptes du comptoir » (D4)
 
 Dans l'espace commerce du back-office : une table, une ligne par société
@@ -174,13 +200,13 @@ la page, pas une par ligne). Total du dû en pied de table.
 
 ## 5. Lots
 
-| Lot | Contenu                                                                                                                      |
-| --- | ---------------------------------------------------------------------------------------------------------------------------- |
-| K1  | Statut `counter_opened`, factory, transitions, tests domaine ; revue de tous les lecteurs du statut                          |
-| K2  | Ressource `b2b_counter_accounts` ; route et écran « ouvrir un compte pro » au comptoir ; virement et `monthly` à l'ouverture |
-| K3  | Garde du crédit : `counter_opened` admis au comptoir seulement ; virement obligé ; e2e (boutique refusée, comptoir admis)    |
-| K4  | Réglage du plafond et refus ; lecture de l'encours                                                                           |
-| K5  | Page « Comptes du comptoir » et conversion                                                                                   |
+| Lot | Contenu                                                                                                                                                             |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| K1  | Statut `counter_opened`, factory, transitions, tests domaine ; revue de tous les lecteurs du statut                                                                 |
+| K2  | Photo de la pièce d'identité (§ 3.5) ; ressource `b2b_counter_accounts` ; route et écran « ouvrir un compte pro » au comptoir ; virement et `monthly` à l'ouverture |
+| K3  | Garde du crédit : `counter_opened` admis au comptoir seulement ; virement obligé ; e2e (boutique refusée, comptoir admis)                                           |
+| K4  | Réglage du plafond et refus ; lecture de l'encours                                                                                                                  |
+| K5  | Page « Comptes du comptoir » et conversion                                                                                                                          |
 
 ## 6. À vérifier (pour `vitruve`)
 
