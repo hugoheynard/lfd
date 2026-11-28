@@ -225,6 +225,7 @@ import { PrismaOrderPrintColors } from "./infrastructure/prisma-order-print-colo
 import { PackingOrderBagLabelReader } from "./infrastructure/packing-order-bag-label.reader.js";
 import { MailDeliveryEnRoute } from "./notices/application/handlers/mail-delivery-en-route.handler.js";
 import { OnProductionDayClosed } from "./application/handlers/on-production-day-closed.handler.js";
+import { OnProductionDayRetaken } from "./application/handlers/on-production-day-retaken.handler.js";
 import { OnProductionDayReopened } from "./application/handlers/on-production-day-reopened.handler.js";
 import { OrderPlanRelease } from "./domain/ports/order-plan-release.js";
 import { PrismaOrderPlanRelease } from "./infrastructure/prisma-order-plan-release.js";
@@ -593,6 +594,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     DueThresholds,
     { provide: DeadlineOrdersReader, useClass: PrismaDeadlineOrdersReader },
     OnProductionDayClosed,
+    OnProductionDayRetaken,
     // La réouverture d'une journée (2026-10-14) : son abonné, et le seul port
     // qu'il écrit.
     OnProductionDayReopened,

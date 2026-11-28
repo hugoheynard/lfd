@@ -165,5 +165,8 @@ describe("le papier par version (H2) et la version de chaque envoi (H2b)", () =>
       .get(ProductionDocumentStore)
       .readIfPresent(dayDossierPdfKey(SERVICE_DAY, closedAt, null, 2));
     expect(after?.equals(before ?? Buffer.alloc(0))).toBe(true);
+    // La commande intégrée au retirage a son BL-1 prévu (le commerce écoute le
+    // retirage) : le dossier de la version 3 est complet, donc rangé.
+    expect(await stored(dayDossierPdfKey(SERVICE_DAY, closedAt, null, 3))).toBe(true);
   });
 });

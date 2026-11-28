@@ -22,7 +22,8 @@ export interface DecidedRetake {
 /**
  * **Écrit et annonce un retirage** — la journée, puis un `production.packing_list_drawn` par commande ARRIVÉE (sans
  * quoi elles n'arriveraient jamais à la liste à coliser) et
- * `production.day_retaken`, que le dossier complété et la livraison écoutent.
+ * `production.day_retaken`, que le dossier complété, la livraison et le commerce
+ * écoutent ; il porte l'arrêt en vigueur, auquel le commerce confirme les absorbées.
  * Sorti de `RetakeProductionDayHandler` (audit du réassort, 2026-11-02) ; à
  * appeler dans son unité de travail, sous le verrou de la journée. Le journal
  * reste au handler. La journée est sauvée avec la version de son plan.
@@ -56,7 +57,13 @@ export class RetakeRecording {
     // Chaque arrivée est l'envoi `(commande, rang)` de sa ligne de plan.
     const shipments = arrivals.map((order) => ShipmentRef.of(order.orderId, order.rank));
     await this.durable.publish(
-      new ProductionDayRetakenEvent(day.value, at, retake.absorbed, shipments).durableFact(),
+      new ProductionDayRetakenEvent(
+        day.value,
+        at,
+        retake.absorbed,
+        shipments,
+        current.closedAt,
+      ).durableFact(),
     );
   }
 }

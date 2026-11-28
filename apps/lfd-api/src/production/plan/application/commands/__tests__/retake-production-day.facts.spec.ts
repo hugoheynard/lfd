@@ -1,5 +1,5 @@
 import { RetakeProductionDayCommand } from "../retake-production-day.command.js";
-import { closedDay, DAY, NOW, order, retakeScene } from "./retake-production-day.scene.js";
+import { closedDay, DAY, NOW, order, retakeScene, TIRAGE } from "./retake-production-day.scene.js";
 
 /** Les faits durables que le retirage publie, dans son unité de travail. */
 describe("la liste à coliser d'un retirage (colisage, K1, §11 B2)", () => {
@@ -34,7 +34,7 @@ describe("la liste à coliser d'un retirage (colisage, K1, §11 B2)", () => {
 });
 
 describe("le fait du retirage (dossier-prod-du-jour.md, E3)", () => {
-  it("publie `production.day_retaken` une fois, daté du retirage, avec le nombre et la liste absorbés", async () => {
+  it("publie `production.day_retaken` une fois, daté du retirage, avec le nombre et la liste absorbés et l'arrêt en vigueur", async () => {
     const { handler, durable } = retakeScene(closedDay(), [
       order("ord_1", 30),
       order("ord_2", 12),
@@ -51,6 +51,8 @@ describe("le fait du retirage (dossier-prod-du-jour.md, E3)", () => {
           serviceDay: DAY,
           retakenAt: NOW.toISOString(),
           absorbed: 2,
+          // L'arrêt en vigueur : le commerce confirme les absorbées à cet instant.
+          closedAt: TIRAGE.toISOString(),
           shipments: [
             { orderId: "ord_2", rank: 1 },
             { orderId: "ord_3", rank: 1 },

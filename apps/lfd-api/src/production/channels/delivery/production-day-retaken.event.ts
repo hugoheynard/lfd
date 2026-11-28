@@ -28,6 +28,12 @@ export const PRODUCTION_DAY_RETAKEN = "production.day_retaken";
  * sources de la liste des arrivées coexistent (`publishArrivals` pour le
  * colisage, ce fait pour la livraison) : assumé, chacune sert son canal (S4).
  *
+ * `closedAt` : l'arrêt en vigueur au retirage. Le commerce l'écoute aussi
+ * (canal `channels/commerce/`) et confirme les commandes absorbées à CET
+ * instant, celui que la remise d'une réouverture cherche
+ * (`releasableFromPlanWhere`). `null` sur un fait écrit avant le champ : le
+ * commerce n'en confirme rien.
+ *
  * Clé : `production.day_retaken:<serviceDay>:<retakenAt>` — un retirage, un
  * fait ; deux retirages ont deux instants. Le reliquat ne la change pas : il
  * est dans la charge.
@@ -42,6 +48,8 @@ export class ProductionDayRetakenEvent implements DurableEvent {
     readonly absorbed: number,
     /** Les envois absorbés ; `null` sur un fait écrit avant CA6b. */
     readonly shipments: readonly ShipmentRef[] | null,
+    /** L'arrêt en vigueur au retirage ; `null` sur un fait écrit avant le champ. */
+    readonly closedAt: Date | null = null,
   ) {}
 
   durableFact(): DurableFact {
@@ -52,6 +60,7 @@ export class ProductionDayRetakenEvent implements DurableEvent {
         serviceDay: this.serviceDay,
         retakenAt: this.retakenAt.toISOString(),
         absorbed: this.absorbed,
+        ...(this.closedAt === null ? {} : { closedAt: this.closedAt.toISOString() }),
         ...(this.shipments === null
           ? {}
           : { shipments: this.shipments.map((shipment) => shipment.toPayload()) }),
@@ -71,10 +80,17 @@ export class ProductionDayRetakenEvent implements DurableEvent {
     const retakenAt = instantOf(payload["retakenAt"]);
     const absorbed = piecesOf(payload["absorbed"]);
     const shipments = shipmentsOf(payload);
-    if (serviceDay === null || retakenAt === null || absorbed === null || shipments === false) {
+    const closedAt = payload["closedAt"] === undefined ? null : instantOf(payload["closedAt"]);
+    if (
+      serviceDay === null ||
+      retakenAt === null ||
+      absorbed === null ||
+      shipments === false ||
+      (payload["closedAt"] !== undefined && closedAt === null)
+    ) {
       throw new ProductionDayRetakenPayloadError();
     }
-    return new ProductionDayRetakenEvent(serviceDay, retakenAt, absorbed, shipments);
+    return new ProductionDayRetakenEvent(serviceDay, retakenAt, absorbed, shipments, closedAt);
   }
 }
 

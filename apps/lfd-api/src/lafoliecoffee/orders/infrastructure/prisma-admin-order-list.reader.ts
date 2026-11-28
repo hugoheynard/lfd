@@ -180,7 +180,8 @@ function toAdminRow(row: AdminRow): AdminOrderRow {
     placedAt: row.createdAt.toISOString(),
     status: row.status,
     // Hors plan tant qu'elle est `placed` au commerce. Un retirage qui
-    // l'inscrit ne change pas ce statut : le handler de la liste éteint le
+    // l'inscrit la confirme quand le commerce reçoit son fait
+    // (`OnProductionDayRetaken`) ; d'ici là, le handler de la liste éteint le
     // badge des commandes que le fournil a déjà inscrites (`InscribedOrdersReader`).
     offPlan: row.placedOffPlan && row.status === "placed",
     supply: row.supply,

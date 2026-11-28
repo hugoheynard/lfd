@@ -24,6 +24,28 @@ describe("ProductionDayRetakenEvent", () => {
     );
   });
 
+  it("porte l'arrêt en vigueur, que le commerce relit pour confirmer à cet instant", () => {
+    const closedAt = new Date(AT.getTime() - 3_600_000);
+    const event = new ProductionDayRetakenEvent("2026-09-13", AT, 1, firsts("o1"), closedAt);
+    const fact = event.durableFact();
+
+    expect(fact.payload["closedAt"]).toBe(closedAt.toISOString());
+    expect(ProductionDayRetakenEvent.fromPayload(fact.payload)).toEqual(event);
+  });
+
+  it("refuse un arrêt présent mais illisible", () => {
+    const payload = {
+      serviceDay: "2026-09-13",
+      retakenAt: AT.toISOString(),
+      absorbed: 1,
+      closedAt: "hier",
+    };
+
+    expect(() => ProductionDayRetakenEvent.fromPayload(payload)).toThrow(
+      ProductionDayRetakenPayloadError,
+    );
+  });
+
   /** Plan E7 reliquat, choix 12 : un fait écrit avant `shipments` n'est pas un message mort. */
   it("relit l'ancienne forme `orderIds` au rang 1", () => {
     const old = {

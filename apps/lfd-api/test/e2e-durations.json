@@ -577,6 +577,7 @@
   "test/production-quality-settings.e2e-spec.ts": 4365,
   "test/production-quality.e2e-spec.ts": 11376,
   "test/production-rearrest-before-release.e2e-spec.ts": 8000,
+  "test/production-retaken-order-confirmed.e2e-spec.ts": 8000,
   "test/production-settings.e2e-spec.ts": 4402,
   "test/production-shortcuts.e2e-spec.ts": 4446,
   "test/production-tracking-levels.e2e-spec.ts": 12000,

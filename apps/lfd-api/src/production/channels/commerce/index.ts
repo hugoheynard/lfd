@@ -41,6 +41,13 @@ export {
   ProductionDayClosedEvent,
   ProductionDayClosedPayloadError,
 } from "./production-day-closed.event.js";
+// Le retirage (2026-11-28) : déclaré dans le canal de la livraison, relu ici
+// par le commerce, qui confirme les commandes absorbées à l'arrêt en vigueur.
+export {
+  PRODUCTION_DAY_RETAKEN,
+  ProductionDayRetakenEvent,
+  ProductionDayRetakenPayloadError,
+} from "../delivery/production-day-retaken.event.js";
 export { PendingCommerceOrdersReader } from "./pending-orders.reader.js";
 export { PendingSettlementSweeper } from "./pending-settlement.sweeper.js";
 // Le bac fermé AU COLISAGE : déclaré dans le canal du colisage, relu ici par

@@ -25,8 +25,9 @@ import { RetakeProductionDayCommand } from "./retake-production-day.command.js";
  * écarte par `orderId` (vérifié le 2026-11-02). Deux filtres pour un fait
  * finiraient par diverger. Ce qu'il écrit et publie — journée, liste à coliser des arrivées, `production.day_retaken` — est dans
  * {@link RetakeRecording} ; il journalise `production_day.retaken` dans la
- * même transaction. Il ne publie rien AU COMMERCE : les commandes absorbées
- * sont des `placed` qu'une réannonce de l'arrêt lui apprend.
+ * même transaction. Le commerce apprend les commandes absorbées par
+ * `production.day_retaken`, qui porte l'arrêt en vigueur : il les confirme à
+ * cet instant.
  *
  * **Zéro absorbé** n'est pas une erreur — deux personnes qui pressent le même
  * bouton : rien n'est écrit, et l'accusé rend le tirage que la fiche montre
