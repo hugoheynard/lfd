@@ -39,6 +39,7 @@ export const ACCOUNT_EN: AccountCopy = {
     active: 'Account active',
     suspended: 'Account suspended',
     terminated: 'Account closed',
+    counter_opened: 'Opened at the counter',
   },
   loadFailedTitle: 'Your account could not be loaded',
   loadFailedBody: 'The service is not responding right now. Please try again in a moment.',

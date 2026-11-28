@@ -8458,6 +8458,13 @@
           "variables": []
         },
         {
+          "key": "account.states.counter_opened",
+          "fr": "Ouvert au comptoir",
+          "en": "Opened at the counter",
+          "it": "Aperto al banco",
+          "variables": []
+        },
+        {
           "key": "account.loadFailedTitle",
           "fr": "Votre compte n’a pas pu être lu",
           "en": "Your account could not be loaded",

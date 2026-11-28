@@ -39,6 +39,7 @@ export const ACCOUNT_FR: AccountCopy = {
     active: 'Compte actif',
     suspended: 'Compte suspendu',
     terminated: 'Compte clos',
+    counter_opened: 'Ouvert au comptoir',
   },
   loadFailedTitle: 'Votre compte n’a pas pu être lu',
   loadFailedBody: 'Le service ne répond pas pour le moment. Réessayez dans un instant.',
