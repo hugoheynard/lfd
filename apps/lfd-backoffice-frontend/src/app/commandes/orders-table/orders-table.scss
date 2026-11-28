@@ -61,3 +61,52 @@
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
 }
+
+/* La carte d'une commande sur un téléphone. */
+.oc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.oc-head,
+.oc-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.oc-who {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.oc-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.oc-ref {
+  font-variant-numeric: tabular-nums;
+}
+
+.oc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
+.oc-total {
+  font-size: var(--fold-text-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

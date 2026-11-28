@@ -68,3 +68,24 @@ fold-page-layout {
   flex-direction: column;
   gap: var(--fold-space-sm);
 }
+
+/* Au téléphone, « Modifier la commande » quitte la bande pour une barre en
+   bas de l'écran, sur toute la largeur : c'est là que le pouce se pose. La
+   barre garde le fond de la bande, dont elle reste l'enfant. */
+@media (max-width: 40rem) {
+  .cp-dock:not(:empty) {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    padding: var(--fold-space-sm) var(--fold-page-gutter);
+    padding-block-end: max(var(--fold-space-sm), env(safe-area-inset-bottom));
+    background: var(--fold-color-bg-rail-secondary);
+  }
+
+  .cp-body {
+    padding-block-end: calc(var(--fold-space-3xl) * 2);
+  }
+}

@@ -2,6 +2,7 @@
   hover
   clickable
   density="compact"
+  narrowLayout="cards"
   [caption]="caption()"
   [columns]="columns()"
   [rows]="rows()"
@@ -104,6 +105,48 @@
 
   <ng-template foldCell="totalCents" let-row>
     <span class="ot-total">{{ total(row) }}</span>
+  </ng-template>
+
+  <!-- Sur un téléphone, une carte par commande plutôt que huit colonnes à
+       balayer : QUI et OÙ ÇA EN EST en tête, puis la référence, le jour et le
+       mode sur une ligne, le montant en gros à droite. -->
+  <ng-template foldRowCard let-row>
+    <div class="oc" data-order-card>
+      <div class="oc-head">
+        <span class="oc-who" data-customer>{{ row.companyDisplayName ?? row.customerLabel }}</span>
+        @if (row.offPlan) {
+          <fold-badge variant="alert" content="Hors plan" />
+        } @else {
+          <fold-badge [variant]="statusTone(row)" [content]="status(row)" />
+        }
+      </div>
+      <div class="oc-meta">
+        <span class="oc-ref">{{ row.orderNumber }}</span>
+        @if (wide()) {
+          <span>· {{ day(row) ?? '—' }}</span>
+          @if (serviceTime(row); as time) {
+            <span class="ot-time">{{ time }}</span>
+          }
+        } @else {
+          <span>· {{ date(row) }}</span>
+        }
+      </div>
+      <div class="oc-foot">
+        <span class="oc-tags">
+          @if (wide()) {
+            <app-logistics-swatch [category]="mode(row)" />
+          }
+          <fold-badge [variant]="paymentTone(row)" [content]="payment(row)" />
+          @if (row.shortfallReportedAt !== null) {
+            <fold-badge variant="warning" content="Manque signalé" />
+          }
+          @if (pendingAlerts(row); as count) {
+            <fold-badge variant="alert" [content]="count" />
+          }
+        </span>
+        <span class="oc-total">{{ total(row) }}</span>
+      </div>
+    </div>
   </ng-template>
 
   <!-- Onglet « À vérifier » : les alertes de la commande, sous sa ligne (V4). -->

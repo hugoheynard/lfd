@@ -474,3 +474,30 @@ fold-aside-layout {
     gap: var(--fold-space-sm);
   }
 }
+
+/* Au téléphone, une ligne d'article tient en deux : le nom, puis le SKU, la
+   remise et « pourquoi ce prix ? » côte à côte. Empilés, ils faisaient d'une
+   commande de quarante articles une dizaine d'écrans. */
+@container (max-width: 26rem) {
+  .od-article {
+    flex-flow: row wrap;
+    align-items: baseline;
+    column-gap: var(--fold-space-sm);
+    row-gap: 0;
+  }
+
+  /* Le nom, puis le SKU et « pourquoi ce prix ? » sur une ligne, puis la
+     remise, entière : coupée au milieu (« –80 / % »), elle ne se lisait plus. */
+  .od-article-name,
+  .od-article-price {
+    flex-basis: 100%;
+  }
+
+  .od-article-price {
+    order: 1;
+  }
+
+  .od-step {
+    white-space: nowrap;
+  }
+}

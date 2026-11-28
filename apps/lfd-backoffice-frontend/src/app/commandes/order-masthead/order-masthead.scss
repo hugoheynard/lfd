@@ -76,3 +76,18 @@
   flex-wrap: wrap;
   gap: var(--fold-space-xs);
 }
+
+/* Au téléphone, trois niveaux qui se lisent de haut en bas : qui, où elle en
+   est, combien. Le montant s'aligne à gauche sous les pastilles, et « Modifier »
+   prend toute la largeur dessous, à portée du pouce. */
+@media (max-width: 40rem) {
+  .om-title {
+    font-size: var(--fold-text-lg);
+  }
+
+  .om-end {
+    flex-basis: 100%;
+    margin-inline-start: 0;
+    justify-content: space-between;
+  }
+}

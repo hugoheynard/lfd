@@ -54,3 +54,48 @@
 .olm-value--alert {
   color: var(--fold-color-alert-text);
 }
+
+/* Sur un téléphone, les compteurs tiennent en une ligne qui défile : quatre
+   tuiles empilées prenaient un tiers de l'écran, même à zéro. Le chiffre passe
+   à côté de son libellé, et un zéro s'estompe. */
+@media (max-width: 40rem) {
+  .olm {
+    gap: var(--fold-space-sm);
+    padding-block: var(--fold-space-md);
+  }
+
+  .olm-cards {
+    display: flex;
+    gap: var(--fold-space-sm);
+    margin-inline: calc(-1 * var(--fold-page-gutter));
+    padding-inline: var(--fold-page-gutter);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .olm-cards > li {
+    flex: none;
+  }
+
+  .olm-cards fold-card {
+    --fold-card-padding: var(--fold-space-sm);
+  }
+
+  .olm-label,
+  .olm-value {
+    display: inline;
+  }
+
+  .olm-label {
+    margin-inline-end: var(--fold-space-xs);
+    white-space: nowrap;
+  }
+
+  .olm-value {
+    font-size: var(--fold-text-md);
+  }
+
+  .olm-value--zero {
+    opacity: 0.5;
+  }
+}
