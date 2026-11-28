@@ -16,8 +16,8 @@ compte normal, depuis une page qui liste ces comptes et ce qu'ils doivent.
 flowchart LR
   A[Agent du comptoir] -->|ouvre| B[Compte ouvert au comptoir]
   B -->|commandes au compte, par le comptoir seulement| C[Encours dû]
-  C -->|facture du mois, virement obligé| D[Le client paie]
-  B -->|le commerce complète la fiche| E[Compte converti : pending puis active]
+  B -->|le commerce complète SIRET + adresse| E[Compte converti : pending ou active]
+  E -->|l'encours entre dans la facture du mois, virement| D[Le client paie]
 ```
 
 ### Décisions de Hugo du 2026-11-28
@@ -77,10 +77,18 @@ où on ne l'a pas admis — c'est le sens sûr (mémoire « interdire plutôt qu
 vérifier »).
 
 - **Factory** : `Company.openAtCounter({ enseigne, contact, … }, by, at)`.
-  Exige un nom d'usage, un contact joignable, **un SIRET et une adresse de
-  facturation** — sans quoi aucune facture ne s'émet (§ 2) et le virement
-  n'aurait rien à régler (⚠️ **à confirmer par Hugo**, Q1). **N'exige pas**
-  KBIS, RIB ni mandat, et le SIRET n'est pas vérifié à l'ouverture.
+  Exige un nom d'usage et un contact joignable. **N'exige pas** SIRET,
+  adresse de facturation, KBIS, RIB ni mandat (Q1, Hugo, 2026-11-28 :
+  « plafond seul »).
+- **Pas facturable avant conversion** : sans SIREN ni adresse, l'émission
+  du mois le bloque (§ 2). L'encours s'accumule sans facture ni échéance ;
+  **le plafond (§ 3.3) est le seul frein**, et il est vide par défaut — un
+  compte du comptoir est donc, par défaut, un crédit sans borne ni facture.
+  C'est assumé ; la page du § 4 est le seul endroit qui le montre.
+- **La conversion exige SIRET et adresse de facturation** : c'est ce qui rend
+  l'encours facturable. Les commandes déjà passées entrent dans la facture de
+  la période de leur clôture suivante (à vérifier en K5 : une commande d'une
+  période close reste-t-elle facturable plus tard ?).
 - **Transitions** : `counter_opened → pending` (le commerce complète la
   fiche ; le parcours d'activation normal reprend) ou `→ active` directement
   si le verdict d'activation existant (`plan-mon-compte-a-completer.md`) est
@@ -173,14 +181,15 @@ la page, pas une par ligne). Total du dû en pied de table.
 1. Tous les lecteurs de `CompanyStatus` (switchs exhaustifs, `audienceOf`,
    promotions lues sur le statut, mur de la boutique, `isOrderable`) : que
    rend chacun pour `counter_opened` ?
-2. ✅ Non émissible sans SIREN ni adresse : d'où Q1 (§ 3.1). Reste non vérifié :
-   si un payeur bloqué saute seul ou bloque la clôture entière.
+2. ✅ Non émissible sans SIREN ni adresse, assumé (Q1). 🔴 **À vérifier en
+   K1, bloquant** : un payeur bloqué saute-t-il seul, ou bloque-t-il la
+   clôture du mois pour tous ? Dans le second cas, ces comptes doivent être
+   exclus des payeurs du mois tant qu'ils sont `counter_opened`.
 3. ✅ Connu : `atCounter` dans `staff-settlement-refusal.ts` (§ 3.2).
-4. ✅ Tranché : un compte converti garde son SIRET et son adresse (Q1), son
-   encours reste donc facturable et réglable par virement même s'il est
-   ensuite refusé. Le recouvrement est celui d'une facture impayée.
-5. **Q1 (Hugo)** : exiger SIRET et adresse de facturation à l'ouverture ?
-   Sinon, ces comptes ne sont pas facturables avant conversion et le
-   plafond est le seul frein.
+4. ✅ Tranché : la conversion exige SIRET et adresse, donc l'encours d'un
+   compte converti puis refusé reste facturable et réglable par virement.
+   Le recouvrement est celui d'une facture impayée. Un compte jamais
+   converti n'a, lui, aucun recouvrement outillé : il reste sur la page.
+5. ✅ **Q1 (Hugo, 2026-11-28)** : rien n'est exigé à l'ouverture ; plafond seul.
 6. Le client peut-il se connecter à ce compte avant conversion (membre,
    invitation) ? ✅ Non (§ 3.1).
