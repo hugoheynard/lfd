@@ -227,7 +227,6 @@ export class ScanDialog implements FoldPanelContent<ScanDialogData> {
       this.stage.set('unsupported');
       return;
     }
-    const decode = await frameDecoder();
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' },
@@ -238,6 +237,9 @@ export class ScanDialog implements FoldPanelContent<ScanDialogData> {
       this.stage.set('denied');
       return;
     }
+    // La caméra AVANT le décodeur : Safari ne présente la demande d'accès
+    // qu'au plus près du geste, et charger jsQR d'abord l'en éloignait.
+    const decode = await frameDecoder();
     element.srcObject = this.stream;
     await element.play().catch(() => undefined);
     this.stage.set('scanning');
