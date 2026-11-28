@@ -8,7 +8,7 @@ import { CounterAccountOutstandingReader } from "../domain/ports/counter-account
  * Une commande au compte qui reste due : réglée hors ligne (`not_required`),
  * ni annulée, ni réglée en boutique.
  */
-const ON_ACCOUNT_ORDER = {
+export const ON_ACCOUNT_ORDER = {
   paymentStatus: "not_required",
   status: { not: "cancelled" },
   settlementVenue: null,

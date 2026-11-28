@@ -104,16 +104,19 @@ vérifier »).
 - **Aucun membre** tant que `counter_opened` : l'invitation d'un membre est
   refusée par l'agrégat (le client n'a pas d'espace avant conversion).
 - **L'acheteur sans accès** (Hugo, 2026-11-28) : « aucun membre » veut dire
-  « personne ne se connecte ». Le contact donné à l'ouverture est rattaché au
-  compte comme acheteur **sans accès** — aucune identité Auth0, aucune
-  invitation, aucun lien de mot de passe —, pour que la passation de l'équipe
-  (`ensureOrderMember`) ait au nom de qui commander. ⚠️ **Non bâti** : un
-  rattachement (`memberships`) ouvre la société tant que son invitation vit
-  (`openingMembership`, 7 jours depuis `invited_at`), et une fiche sans `sub`
-  est reprise par la première connexion qui prouve son adresse
-  (`GuestAccountClaim`). Rattacher le contact tel quel lui ouvrirait l'espace
-  sept jours s'il se connectait à la boutique. Le geste de fermeture reste à
-  trancher (relevé le 2026-11-28).
+  « personne ne se connecte ». **Décision (b), bâtie en K5** : à l'ouverture,
+  le contact devient une **fiche invité** (`users`, `auth0_sub` NULL, comme
+  l'invité de la boutique — la plus ancienne fiche invité de l'adresse est
+  reprise) **sans aucune ligne `memberships`**, et la trace d'ouverture la
+  nomme (`counter_opening_attestations.buyer_user_id`, colonne additive
+  posée à l'insertion). La passation de l'équipe l'admet comme porteur
+  (`staffEntryRoleOf` → rôle `orders`) pour CE compte et tant qu'il est
+  `counter_opened` seulement ; le comptoir la propose dans `buyers`. Sans
+  rattachement, rien n'ouvre l'espace : une connexion qui prouve l'adresse
+  peut reprendre la fiche (`GuestAccountClaim` y pose le `sub`), elle ne
+  voit ni la société ni ses commandes (e2e `counter-accounts-page`). Après
+  conversion, la fiche n'est plus admise : le commerce rattache un détenteur
+  par le parcours normal.
 - **Ce que « refusé partout » demande** : le statut est recopié dans des
   types fermés qui ne dérivent pas de l'enum — `account/domain/value-objects/company-status.ts`,
   `orders/domain/ports/company-status.reader.ts`,
@@ -160,8 +163,9 @@ lectures nommées par lot, composées par la page et par la garde.
 jamais facturé avant sa conversion, donc ses commandes au compte non annulées
 sont tout son dû, et après conversion le statut n'est plus `counter_opened` et
 la garde ne s'applique plus. Le réglage vit dans `counter_account_settings`
-(une ligne `orders`, absente = aucun plafond) ; **aucun écran ne l'écrit
-encore**. Le refus vaut à la passation (409
+(une ligne `orders`, absente = aucun plafond) ; il s'écrit par
+`PUT /admin/counter-account-ceiling` (K5, sous `lfc_order_settings`, auteur
+gardé) — l'écran reste à bâtir. Le refus vaut à la passation (409
 `orders.counter.ceiling_exceeded`) et à l'estimation (avertissement de même
 code), seulement sur un règlement au compte.
 
@@ -227,6 +231,15 @@ Dans l'espace commerce du back-office : une table, une ligne par société
 
 Le dû vient d'une lecture nommée de `accounting`, par lot (une requête pour
 la page, pas une par ligne). Total du dû en pied de table.
+
+**Bâti (K5, back)** : `GET /admin/counter-opened-accounts` et `POST
+/admin/counter-opened-accounts/:id/convert`, sous `b2b_companies`. Le dû et
+le nombre de commandes viennent des deux lectures par lot des commandes (K4 :
+un compte du comptoir n'est jamais facturé avant conversion, ses commandes au
+compte sont tout son dû). « Ce qui manque » est le verdict d'activation de la
+fiche, lu fiche par fiche (il croise plusieurs tables). Convertir active
+directement par le cas d'usage de l'activation quand le verdict est vert,
+sinon `convertFromCounter` → `pending`. L'écran reste à bâtir.
 
 ### 3.6 🔴 La fin de période ne se touche pas (Hugo, 2026-11-28)
 

@@ -12,7 +12,7 @@ import { CounterOpeningAttestations } from "../../domain/ports/counter-opening-a
 import { CounterPayerOpening } from "../../domain/ports/counter-payer-opening.js";
 import { StaffDirectory } from "../../domain/ports/staff-directory.js";
 import { CompanyOpening } from "../../domain/value-objects/company-opening.js";
-import { ContactDetails } from "../../domain/value-objects/contact-details.js";
+import { ContactDetails, contactSnapshotOf } from "../../domain/value-objects/contact-details.js";
 import { IdentityAttestation } from "../../domain/value-objects/identity-attestation.js";
 import { OpenCounterAccountCommand } from "./open-counter-account.command.js";
 
@@ -29,7 +29,9 @@ const NEW_COUNTER_ACCOUNT_TARGET = "new-counter-account";
  * de l'agent. Le compte s'ouvre entier, ou rien ne s'écrit.
  *
  * Aucun accès client n'est ouvert : le compte n'a pas de membre avant
- * conversion. Pas de contrôle de SIRET : il n'y en a pas.
+ * conversion. Le contact devient l'acheteur au nom de qui l'équipe commande —
+ * une fiche invité, sans identité de connexion ni rattachement (§ 3.1).
+ * Pas de contrôle de SIRET : il n'y en a pas.
  *
  * **Une fois par intention** : l'identifiant est scellé dans la transaction
  * qui l'écrit ; un rejeu de même clé rend le compte déjà ouvert.
@@ -83,7 +85,7 @@ export class OpenCounterAccountHandler implements ICommandHandler<
       (seal) =>
         this.uow.run(async () => {
           const id = await this.companies.declareUnowned(company);
-          await this.attestations.record(id, attestation);
+          await this.attestations.record(id, attestation, contactSnapshotOf(contact));
           await this.payers.open({ id, name: company.displayName() }, at, command.staffUserId);
           await seal(id);
           fresh.id = id;

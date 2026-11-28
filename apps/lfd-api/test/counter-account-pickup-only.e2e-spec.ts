@@ -5,16 +5,14 @@
  * la passation comme à l'estimation, et le « Retrait immédiat » admis, au
  * compte, par la vraie route.
  *
- * L'acheteur est rattaché par la fabrique : la vraie ouverture n'en crée pas.
+ * L'acheteur est celui de la vraie ouverture (§ 3.1) : une fiche invité sans rattachement.
  */
 import { instantToLocal, localToInstant, type AdminOrderEstimateView } from "@lfd/contracts";
 
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
-import { CustomerRole } from "../src/platform/database/client/client.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { attachTo, createUser } from "./factories.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const CROISSANT = "VIE-001-1";
@@ -89,9 +87,11 @@ async function openedCounterAccount(sub: string): Promise<{ id: string; buyer: s
       })
       .expect(201),
   );
-  const buyer = await createUser(ctx.prisma, { auth0Sub: sub, email: `${sub}@quai.test` });
-  await attachTo(ctx.prisma, buyer.id, id, CustomerRole.owner);
-  return { id, buyer: buyer.id };
+  // L'acheteur est celui de la vraie ouverture : une fiche invité, sans rattachement.
+  const opening = await ctx.prisma.counterOpeningAttestation.findUniqueOrThrow({
+    where: { companyId: id },
+  });
+  return { id, buyer: opening.buyerUserId ?? "" };
 }
 
 function deliveryBody(account: { readonly id: string; readonly buyer: string }) {

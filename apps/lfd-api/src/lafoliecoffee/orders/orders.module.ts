@@ -300,6 +300,15 @@ import { CounterAccountCeilingReader } from "./domain/ports/counter-account-ceil
 import { CounterAccountOutstandingReader } from "./domain/ports/counter-account-outstanding.reader.js";
 import { PrismaCounterAccountCeilingReader } from "./infrastructure/prisma-counter-account-ceiling.reader.js";
 import { PrismaCounterAccountOutstandingReader } from "./infrastructure/prisma-counter-account-outstanding.reader.js";
+import { AdminCounterAccountCeilingController } from "./http/admin-counter-account-ceiling.controller.js";
+import { SetCounterAccountCeilingHandler } from "./application/commands/set-counter-account-ceiling.handler.js";
+import { GetCounterAccountCeilingHandler } from "./application/queries/get-counter-account-ceiling.handler.js";
+import { CounterAccountCeilingSettingReader } from "./domain/ports/counter-account-ceiling-setting.reader.js";
+import { CounterAccountCeilingSettingRepository } from "./domain/ports/counter-account-ceiling-setting.repository.js";
+import {
+  PrismaCounterAccountCeilingSettingReader,
+  PrismaCounterAccountCeilingSettingRepository,
+} from "./infrastructure/prisma-counter-account-ceiling-setting.js";
 import { PrismaPreferredPickupReader } from "./infrastructure/prisma-preferred-pickup.reader.js";
 import { PrismaOrderPayerReader } from "./infrastructure/prisma-order-payer.reader.js";
 import { PrismaOrderDraftRepository } from "./infrastructure/prisma-order-draft.repository.js";
@@ -429,6 +438,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     AdminCounterNoShowController,
     AdminCounterOrderSheetController,
     AdminCounterLateToleranceController,
+    AdminCounterAccountCeilingController,
     AdminOrderSalesTermsController,
     AdminOrderMailsController,
     AdminProductionController,
@@ -759,6 +769,17 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     CounterAccountCeilingCheck,
     { provide: CounterAccountCeilingReader, useClass: PrismaCounterAccountCeilingReader },
     { provide: CounterAccountOutstandingReader, useClass: PrismaCounterAccountOutstandingReader },
+    // Le réglage du plafond, posé à l'écran (§ 3.3).
+    SetCounterAccountCeilingHandler,
+    GetCounterAccountCeilingHandler,
+    {
+      provide: CounterAccountCeilingSettingRepository,
+      useClass: PrismaCounterAccountCeilingSettingRepository,
+    },
+    {
+      provide: CounterAccountCeilingSettingReader,
+      useClass: PrismaCounterAccountCeilingSettingReader,
+    },
     // Le mur des gestes sur une commande EXISTANTE, héritage du principal
     // compris (lot C1 de `plan-commandes-des-sites.md`) ; distinct de
     // `roleOf`, qui garde la passation et le devis.

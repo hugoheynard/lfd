@@ -3773,3 +3773,11 @@ export {
 } from "./planner.js";
 export { openCounterAccountPayloadSchema } from "./counter-account.js";
 export type { OpenCounterAccountPayload } from "./counter-account.js";
+export { counterAccountCeilingPayloadSchema } from "./counter-accounts-page.js";
+export type {
+  CounterAccountCeilingPayload,
+  CounterAccountCeilingView,
+  CounterAccountConversionView,
+  CounterOpenedAccountRow,
+  CounterOpenedAccountsView,
+} from "./counter-accounts-page.js";

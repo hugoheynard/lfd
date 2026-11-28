@@ -64,18 +64,18 @@ describe("lire au comptoir un compte qui vient d'y être ouvert — GET /admin/c
  * **La commande au compte, passée au comptoir** (§ 3.2) : la vraie route
  * d'ouverture, puis la vraie passation de l'équipe, saisie au comptoir.
  *
- * Seule la personne au nom de qui commander est rattachée par la fabrique :
- * la passation de l'équipe exige un acheteur rattaché à la société, et un
- * compte du comptoir n'en a aucun (l'agrégat refuse l'invitation). Le plan ne
- * dit pas encore qui est cet acheteur.
+ * L'acheteur est celui de la vraie ouverture (§ 3.1) : une fiche invité que
+ * la passation de l'équipe admet sans rattachement.
  */
-async function openedCounterAccount(sub: string): Promise<{ id: string; buyer: string }> {
+async function openedCounterAccount(): Promise<{ id: string; buyer: string }> {
   const { id } = jsonBody<{ id: string }>(
     await staff().post(OPEN_ROUTE).set(INTENT_KEY, freshIntent()).send(OPEN_PAYLOAD).expect(201),
   );
-  const buyer = await createUser(ctx.prisma, { auth0Sub: sub, email: `${sub}@quai.test` });
-  await attachTo(ctx.prisma, buyer.id, id, CustomerRole.owner);
-  return { id, buyer: buyer.id };
+  // L'acheteur est celui de la vraie ouverture : une fiche invité, sans rattachement.
+  const opening = await ctx.prisma.counterOpeningAttestation.findUniqueOrThrow({
+    where: { companyId: id },
+  });
+  return { id, buyer: opening.buyerUserId ?? "" };
 }
 
 /** La saisie du comptoir, au compte, servie à `servedAt` et passée trois jours avant. */
@@ -122,7 +122,7 @@ describe("la commande au compte d'un compte ouvert au comptoir", () => {
   it("est acceptée au comptoir, au prix pro d'un compte actif", async () => {
     await setUpEntity(staff);
     const servedAt = new Date(closesAt.getTime() + 3 * DAY_MS);
-    const counter = await openedCounterAccount("counter-k3");
+    const counter = await openedCounterAccount();
     const active = await createCompany(ctx.prisma, { enseigne: "Café actif" });
     const activeBuyer = await createUser(ctx.prisma, { auth0Sub: "active-k3", email: "a@k3.test" });
     await attachTo(ctx.prisma, activeBuyer.id, active.id, CustomerRole.owner);
@@ -145,7 +145,10 @@ describe("la commande au compte d'un compte ouvert au comptoir", () => {
   });
 
   it("la même personne, depuis la boutique, est refusée au compte", async () => {
-    const counter = await openedCounterAccount("counter-k3-shop");
+    const counter = await openedCounterAccount();
+    // Rattachée ici : sans rattachement, la boutique la refuserait avant le
+    // crédit, et c'est le refus du crédit que ce cas éprouve.
+    await attachTo(ctx.prisma, counter.buyer, counter.id, CustomerRole.owner);
     const servedAt = new Date(closesAt.getTime() + 3 * DAY_MS);
 
     await expect(
@@ -157,7 +160,7 @@ describe("la commande au compte d'un compte ouvert au comptoir", () => {
   it("la clôture du mois n'émet rien pour lui, et émet pour les autres", async () => {
     const entityId = await setUpEntity(staff);
     const payer = await invoicedPayer(ctx, staff, entityId, closesAt);
-    const counter = await openedCounterAccount("counter-k3-close");
+    const counter = await openedCounterAccount();
     const servedAt = new Date(closesAt.getTime() - 2 * DAY_MS);
     const orderId = await placeAtCounter(counter, servedAt, 201);
     const placed = await ctx.prisma.order.findUniqueOrThrow({

@@ -77,7 +77,11 @@ export class GetCounterCustomerHandler implements IQueryHandler<
       payerIsPublic: payer?.isPublic ?? false,
       payerIsInHouse,
       deliveryAddresses: [...addresses.deliveries],
-      buyers: members.filter((member) => member.status === "active").map(toBuyer),
+      buyers: [
+        ...members.filter((member) => member.status === "active").map(toBuyer),
+        // L'acheteur d'un compte ouvert au comptoir : sans rattachement (§ 3.1).
+        ...(card.openingBuyer === undefined ? [] : [card.openingBuyer]),
+      ],
     };
   }
 

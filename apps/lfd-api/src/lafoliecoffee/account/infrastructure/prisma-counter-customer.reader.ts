@@ -5,7 +5,9 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
   CounterCustomerReader,
   type CounterCustomerCard,
+  type CounterCustomerDetailCard,
 } from "../domain/ports/counter-customer.reader.js";
+import { counterOpeningBuyerOf } from "./counter-opening-buyer.js";
 
 /** Les seules colonnes qu'une carte de comptoir a le droit de porter. */
 const CARD_COLUMNS = {
@@ -51,15 +53,22 @@ export class PrismaCounterCustomerReader extends CounterCustomerReader {
     return rows.map(toCard);
   }
 
-  async activeCard(companyId: string): Promise<CounterCustomerCard | null> {
+  async activeCard(companyId: string): Promise<CounterCustomerDetailCard | null> {
     const row = await this.prisma.company.findFirst({
       where: {
         id: companyId,
         status: { in: [CompanyStatus.active, CompanyStatus.counter_opened] },
         archivedAt: null,
       },
-      select: CARD_COLUMNS,
+      select: { ...CARD_COLUMNS, status: true },
     });
-    return row === null ? null : toCard(row);
+    if (row === null) {
+      return null;
+    }
+    const buyer =
+      row.status === CompanyStatus.counter_opened
+        ? await counterOpeningBuyerOf(this.prisma, companyId)
+        : null;
+    return buyer === null ? toCard(row) : { ...toCard(row), openingBuyer: buyer };
   }
 }

@@ -9,6 +9,10 @@ model CounterOpeningAttestation {
   identitySeen      Boolean  @map("identity_seen")
   attestedByStaffId String   @map("attested_by_staff_id")
   attestedAt        DateTime @map("attested_at") @db.Timestamptz(3)
+  /// La fiche invité (`users`, sans `auth0_sub`, sans rattachement) au nom de
+  /// qui l'équipe commande pour ce compte (§ 3.1). Opaque ; NULL sur une trace
+  /// d'avant l'acheteur.
+  buyerUserId       String?  @map("buyer_user_id")
 
   @@map("counter_opening_attestations")
   @@schema("public")

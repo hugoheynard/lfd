@@ -6,14 +6,14 @@
  * sommé par la vraie requête, et le refus porté à la passation comme à
  * l'estimation — rien quand le plafond est absent.
  *
- * Le plafond est posé par Prisma : aucun écran ne l'écrit encore. L'acheteur
- * est rattaché par la fabrique : la vraie ouverture n'en crée pas.
+ * Le plafond est posé par Prisma : sa route a sa propre suite
+ * (`counter-accounts-page.e2e-spec.ts`). L'acheteur
+ * est celui de la vraie ouverture (§ 3.1).
  */
 import { instantToLocal, type AdminOrderEstimateView } from "@lfd/contracts";
 
 import { jsonBody } from "./e2e-harness.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
-import { CustomerRole } from "../src/platform/database/client/client.js";
 import {
   clock,
   closesAt,
@@ -23,7 +23,6 @@ import {
   staff,
   useCollectionReturnScene,
 } from "./collection-returns-scene.js";
-import { attachTo, createUser } from "./factories.js";
 import { pickupSite } from "./order-factory.js";
 
 const OPEN_PAYLOAD = {
@@ -39,7 +38,7 @@ const OPEN_PAYLOAD = {
 
 useCollectionReturnScene();
 
-async function openedCounterAccount(sub: string): Promise<{ id: string; buyer: string }> {
+async function openedCounterAccount(): Promise<{ id: string; buyer: string }> {
   const { id } = jsonBody<{ id: string }>(
     await staff()
       .post("/admin/counter/accounts")
@@ -47,9 +46,11 @@ async function openedCounterAccount(sub: string): Promise<{ id: string; buyer: s
       .send(OPEN_PAYLOAD)
       .expect(201),
   );
-  const buyer = await createUser(ctx.prisma, { auth0Sub: sub, email: `${sub}@quai.test` });
-  await attachTo(ctx.prisma, buyer.id, id, CustomerRole.owner);
-  return { id, buyer: buyer.id };
+  // L'acheteur est celui de la vraie ouverture : une fiche invité, sans rattachement.
+  const opening = await ctx.prisma.counterOpeningAttestation.findUniqueOrThrow({
+    where: { companyId: id },
+  });
+  return { id, buyer: opening.buyerUserId ?? "" };
 }
 
 async function setCeiling(ceilingCents: number | null): Promise<void> {
@@ -91,7 +92,7 @@ describe("le plafond d'un compte ouvert au comptoir", () => {
   it("sans plafond, la commande au compte passe", async () => {
     await setUpEntity(staff);
     await setCeiling(null);
-    const account = await openedCounterAccount("ceiling-none");
+    const account = await openedCounterAccount();
     const body = await counterOrderBody(account);
 
     await atOrderTime(() =>
@@ -101,7 +102,7 @@ describe("le plafond d'un compte ouvert au comptoir", () => {
 
   it("un plafond dépassé par l'encours plus la commande refuse, et l'estimation le dit", async () => {
     await setUpEntity(staff);
-    const account = await openedCounterAccount("ceiling-set");
+    const account = await openedCounterAccount();
     const body = await counterOrderBody(account);
     await setCeiling(null);
     await atOrderTime(() =>

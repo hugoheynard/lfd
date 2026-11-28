@@ -1,6 +1,15 @@
-import type { CounterCustomerCard } from "@lfd/contracts";
+import type { CounterCustomerBuyer, CounterCustomerCard } from "@lfd/contracts";
 
 export type { CounterCustomerCard } from "@lfd/contracts";
+
+/**
+ * La carte servie au détail : celle d'un compte ouvert au comptoir porte
+ * aussi son acheteur d'ouverture (§ 3.1), une fiche invité sans
+ * rattachement — absent partout ailleurs.
+ */
+export type CounterCustomerDetailCard = CounterCustomerCard & {
+  readonly openingBuyer?: CounterCustomerBuyer;
+};
 
 /**
  * Port de **lecture** du Comptoir (ISP : distinct de `CompanyRepository`, qui
@@ -21,5 +30,5 @@ export abstract class CounterCustomerReader {
    * compte absent. Un compte ouvert au comptoir (`counter_opened`) se sert
    * aussi : le comptoir le saisit dès son ouverture (`plan-comptes-du-comptoir.md`).
    */
-  abstract activeCard(companyId: string): Promise<CounterCustomerCard | null>;
+  abstract activeCard(companyId: string): Promise<CounterCustomerDetailCard | null>;
 }
