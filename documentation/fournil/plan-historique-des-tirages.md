@@ -105,16 +105,27 @@ Le fournil ne connaît aucune de ces raisons : elles sont au commerce.
 `PrismaDayOrdersSource`) porte `offPlan: boolean | null` depuis H0, recopié
 de `placedOffPlan` (posé par `Order.receiveOffPlan`, staff seulement,
 définitif), et la journée le garde (`production_order.off_plan`, `NULL` pour
-les commandes figées avant). Une commande absorbée par un retirage reste
-`placed` au commerce : aucun abonné n'écoute le retirage de ce côté
-(vérifié le 2026-11-27 ; le commentaire de
-`prisma-admin-order-list.reader.ts` le dit désormais).
+les commandes figées avant).
 
-⚠️ **Conséquence à l'écran du staff, non corrigée** : la liste des commandes
-calcule `offPlan: placedOffPlan && status === "placed"`. Une commande hors
-plan intégrée par un retirage restant `placed`, elle reste affichée « hors
-plan » jusqu'à l'arrêt suivant, alors que le fournil la produit. À trancher
-hors de ce plan (lire l'inscription au plan, ou un fait du retirage).
+**Une commande absorbée par un retirage est confirmée à l'instant de l'arrêt
+en vigueur.** Le retirage publie `production.day_retaken` avec les envois
+absorbés et `closedAt`, l'arrêt en vigueur (`retake-recording.ts`). Le fait
+est déclaré dans `channels/delivery/` et réexporté par `channels/commerce/`.
+Le commerce l'écoute (`OnProductionDayRetaken`, abonné durable
+`lfc.orders.absorb-retaken-into-plan`) et fait ce que l'arrêt fait :
+`absorbIntoPlan`, puis `planConfirmed` (le BL-1 prévu), les deux à
+`closedAt`, jamais à l'heure du retirage. C'est l'instant que la remise d'une
+réouverture cherche (`releasableFromPlanWhere`) : la commande est rendue au
+client comme les autres, et l'arrêt suivant n'attend pas. L'abonné tient le
+plan (`CurrentArrestHold.holdIfCurrent(serviceDay, closedAt)`) : livré après
+une réouverture ou un réarrêt, il ne confirme rien, et le nouvel arrêt
+reprend la commande, encore `placed`. Un fait écrit sans `closedAt` ne
+confirme rien. Régression : `test/production-retaken-order-confirmed.e2e-spec.ts`.
+
+La liste des commandes du staff calcule `offPlan: placedOffPlan && status ===
+"placed"`, et éteint en plus le badge des commandes que le fournil a déjà
+inscrites (`InscribedOrdersReader`) : le badge est juste entre le retirage et
+la livraison de son fait au commerce.
 
 ## 1. Ce qu'on décide
 
@@ -521,11 +532,11 @@ et `PlanVersionComparison` (`day/domain/ports/`), lecture interne
 `planVersionEntriesOf` (`day/domain/services/plan-version-entries.ts`). Plan :
 `ListPlanVersionsQuery`, `ComparePlanVersionsQuery`,
 `ListDossierDispatchesQuery` (`plan/application/queries/`), formes dans
-`plan-version.views.ts`, `PlanVersionPaperShelf`, port
+`production-plan-versions.ts` (`@lfd/contracts`), `PlanVersionPaperShelf`, port
 `DossierDispatchesReader`, contrôleur `production-plan-versions.controller.ts`.
 Tests : `plan-version-entries.spec.ts`, `chain-plan-version-readings.spec.ts`,
 `plan-versions.queries.spec.ts`, `list-dossier-dispatches.handler.spec.ts`,
-`plan-version-range.query-schema.spec.ts`, la table des routes, et
+`production-plan-versions.spec.ts` (au paquet), la table des routes, et
 `apps/lfd-api/test/production-plan-versions-read.e2e-spec.ts`.
 
 Les routes (surface `production_plan`, lecture — celle du dossier) :
@@ -564,11 +575,8 @@ Décidé au bâti de H4 (2026-11-28), là où le plan ne tranchait pas :
   lectures nommées, une par question (ISP). `day/index.ts` passe de 79 à
   **81** (`$h4` de `production-subcontexts-debt.json`, **à relire**). Leurs
   types ne sont pas exportés : le plan les lit sur la signature des ports.
-- **Les types de réponse sont dans l'API** (`plan-version.views.ts`), pas dans
-  `@lfd/contracts` : le paquet était en travail dans une autre session, et un
-  fichier neuf n'y serait atteint qu'en modifiant `index.ts`. **À déplacer au
-  paquet avant H5**, avec le schéma `?from=&to=`
-  (`plan/http/plan-version-range.query-schema.ts`).
+- **Les types de réponse sont au paquet** (`@lfd/contracts`,
+  `production-plan-versions.ts`), avec le schéma `?from=&to=` : déplacés en H5.
 - **« Papier rangé » : le dossier ET le compte**, sous la clé de la version.
   Lu par `isArchived`, qui lit l'objet entier : quelques versions par
   journée, un dossier de l'ordre de 200 Ko (spécimen), lectures en
@@ -584,10 +592,36 @@ Décidé au bâti de H4 (2026-11-28), là où le plan ne tranchait pas :
   la mise en page change, les dossiers des versions déjà rangés se diront
   « non rangé » (même piège que la clé par tirage, H2).
 
-**H5 — l'écran.** Dans `prod-manager` : « Versions du plan » — liste (cause,
+~~**H5 — l'écran.** Dans `prod-manager` : « Versions du plan » — liste (cause,
 qui, quand, papier rangé ou non), comparer deux versions (par défaut la
 courante contre la précédente) : l'effet par produit en tête, les sorties
-inexpliquées en orange, puis les changements expliqués. fold-ng d'abord.
+inexpliquées en orange, puis les changements expliqués. fold-ng d'abord.~~
+— 2026-11-28, bâti, non commité. Types de réponse et schéma `?from=&to=`
+déplacés au paquet : `packages/contracts/src/production-plan-versions.ts`
+(l'API les importe et ne les déclare plus ; le test du schéma suit dans
+`packages/contracts/src/__tests__/production-plan-versions.spec.ts`). Écran :
+`PlanVersionsService` et les mots (`plan-version-wording.ts`) dans
+`apps/lfd-backoffice-frontend/src/app/production/plan-versions/`, composants
+`prod-manager/plan-versions-section/` et `prod-manager/plan-version-diff/`,
+posés dans le dossier du jour (sa journée choisie), sous le compte à rebours.
+
+Décidé au bâti de H5 (2026-11-28), là où le plan ne tranchait pas :
+
+- **Le panneau vit dans le dossier du jour** (onglet Prévisionnel), qui porte
+  la journée choisie ; le Prod manager n'en a pas d'autre.
+- **Le papier ne s'ouvre que pour la version courante.** La route du dossier
+  (`…/dossier.pdf`) sert le papier de la journée chargée, donc de la version
+  courante ; aucune route ne sert celui d'une version passée. La liste dit
+  « Papier rangé » / « non rangé » / « même papier que la version n » pour les
+  autres. **À trancher** : une route par version (`…/plan-versions/:n/dossier.pdf`)
+  si l'on veut rouvrir un papier ancien.
+- **L'ordre de la comparaison est celui du plan** : l'effet par produit, puis
+  « à vérifier » en orange, puis les changements expliqués.
+- **Les bornes se lisent dans l'ordre** : choisir « de 4 à 2 » compare 2 à 4.
+  Une seule version : rien à comparer.
+- **Un destinataire « pas à jour »** : version reçue antérieure à la courante,
+  envoi d'avant les versions, ou rien reçu. Un dernier envoi en échec est
+  signalé à part. La place du réenvoi (H6) est marquée dans le gabarit.
 
 **H6 — le réenvoi.** Sur l'écran des versions : la liste des destinataires
 avec la dernière version reçue, et le geste « renvoyer la version courante »

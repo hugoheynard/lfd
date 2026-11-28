@@ -66,6 +66,9 @@
 <!-- Le compte à rebours de la même journée (V0, lecture seule). -->
 <app-due-thresholds-section [date]="date()" />
 
+<!-- Les versions du plan de la même journée, leur papier et leurs destinataires (lot H5). -->
+<app-plan-versions-section [date]="date()" />
+
 @switch (state()) {
   @case ('loading') {
     <fold-loading message="Lecture du lot…" />

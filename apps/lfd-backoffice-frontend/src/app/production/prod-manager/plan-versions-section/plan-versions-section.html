@@ -1,0 +1,131 @@
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Versions du plan"
+    subtitle="Chaque changement du plan après son arrêt, son papier, et ce que chacun a reçu."
+  />
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture des versions du plan…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de lire les versions du plan">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (rows().length === 0) {
+        <fold-empty-state
+          title="Aucune version pour cette journée"
+          subtitle="Une version s’écrit à l’arrêt du plan, puis à chaque changement qui le suit."
+        >
+          <fold-icon empty-icon name="clock" />
+        </fold-empty-state>
+      } @else {
+        <div class="pvs-body">
+          <ul class="pvs-list" aria-label="Les versions, la plus récente d’abord">
+            @for (row of rows(); track row.version) {
+              <li class="pvs-row" data-version-row>
+                <strong>{{ row.title }}</strong>
+                <span>{{ row.cause }}</span>
+                <span class="pvs-quiet">{{ row.moment }} · {{ row.author }}</span>
+                @if (row.canOpenPaper) {
+                  <button
+                    foldButton
+                    emphasis="outline"
+                    intent="neutral"
+                    size="sm"
+                    icon="print"
+                    class="pvs-open-paper"
+                    (click)="openPaper()"
+                  >
+                    Ouvrir le papier
+                  </button>
+                } @else {
+                  <span class="pvs-quiet" data-paper>{{ row.paper }}</span>
+                }
+              </li>
+            }
+          </ul>
+
+          @if (paperFailed()) {
+            <fold-callout variant="alert">
+              Le papier n’a pas pu être ouvert — la journée est peut-être rouverte. Réessayez après
+              son nouvel arrêt.
+            </fold-callout>
+          }
+
+          <section class="pvs-block" aria-label="Comparer deux versions">
+            <fold-element-title variant="bar" title="Comparer deux versions" />
+            @if (options().length < 2) {
+              <p class="pvs-quiet">Une seule version : rien à comparer encore.</p>
+            } @else {
+              <div class="pvs-range">
+                <fold-listbox
+                  size="sm"
+                  label="De la version"
+                  [options]="options()"
+                  [value]="from()"
+                  (selectionChange)="from.set($event)"
+                />
+                <fold-listbox
+                  size="sm"
+                  label="À la version"
+                  [options]="options()"
+                  [value]="to()"
+                  (selectionChange)="to.set($event)"
+                />
+              </div>
+              @switch (diffState()) {
+                @case ('loading') {
+                  <fold-loading message="Comparaison des versions…" />
+                }
+                @case ('error') {
+                  <fold-empty-state tone="alert" title="Impossible de comparer ces versions">
+                    <button foldButton (click)="retryCompare()">Réessayer</button>
+                  </fold-empty-state>
+                }
+                @default {
+                  @if (diff(); as shown) {
+                    <app-plan-version-diff [diff]="shown" [versions]="versions()" />
+                  }
+                }
+              }
+            }
+          </section>
+
+          <section class="pvs-block" aria-label="Les destinataires du dossier">
+            <!-- H6 posera ici le réenvoi de la version courante (à un, ou à tous les dépassés). -->
+            <fold-element-title variant="bar" title="Destinataires du dossier" />
+            @if (dispatchesFailed()) {
+              <fold-callout variant="alert">
+                Les envois du dossier n’ont pas pu être lus — les versions, elles, sont à jour.
+              </fold-callout>
+            } @else if (dispatches(); as recipients) {
+              @if (recipients.length === 0) {
+                <p class="pvs-quiet">Aucun destinataire du dossier pour cette journée.</p>
+              } @else {
+                <ul class="pvs-list">
+                  @for (recipient of recipients; track recipient.recipientId) {
+                    <li class="pvs-row" data-dispatch-row>
+                      <strong>{{ recipient.name }}</strong>
+                      <span>{{ recipient.standing }}</span>
+                      @if (recipient.needsAttention) {
+                        <fold-badge variant="warning" content="Pas à jour" />
+                      }
+                      @if (recipient.lastFailed) {
+                        <fold-badge variant="alert" content="Dernier envoi en échec" />
+                      }
+                    </li>
+                  }
+                </ul>
+              }
+            }
+          </section>
+        </div>
+      }
+    }
+  }
+</fold-card>

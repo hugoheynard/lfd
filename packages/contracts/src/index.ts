@@ -1088,6 +1088,28 @@ export type {
   ProductionDayResupplyLine,
 } from "./production-day-resupplies.js";
 export { productionBatchQuerySchema } from "./production-sheet.js";
+export { planVersionRangeQuerySchema } from "./production-plan-versions.js";
+export type {
+  DossierDispatchMarkView,
+  DossierDispatchOutcome,
+  DossierDispatchView,
+  PlanEntry,
+  PlanVersionAuthorView,
+  PlanVersionCause,
+  PlanVersionDiffView,
+  PlanVersionEntryReason,
+  PlanVersionLineChange,
+  PlanVersionMarkView,
+  PlanVersionPaperView,
+  PlanVersionProductionEffect,
+  PlanVersionRangeQuery,
+  PlanVersionResupplyChangeView,
+  PlanVersionSaleUnit,
+  PlanVersionShipmentChangeView,
+  PlanVersionShipmentRef,
+  PlanVersionUnexplainedExitView,
+  PlanVersionView,
+} from "./production-plan-versions.js";
 export type {
   ProductionBatchQuery,
   ProductionBatchView,

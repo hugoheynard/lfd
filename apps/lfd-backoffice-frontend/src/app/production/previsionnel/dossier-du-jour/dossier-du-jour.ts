@@ -25,6 +25,7 @@ import type {
 
 import { FicheProduction } from '../../fiche-production/fiche-production';
 import { productionRecap, recapSkus, resupplyPieces, totalPieces } from '../../production-recap';
+import { PlanVersionsSection } from '../../prod-manager/plan-versions-section/plan-versions-section';
 import { WorkstationsService } from '../../workstations.service';
 import { ProductionService } from '../../production.service';
 import { DayTranchesSection } from '../day-tranches-section/day-tranches-section';
@@ -119,6 +120,7 @@ export function defaultDossierDate(): string {
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldViewToggleComponent,
+    PlanVersionsSection,
   ],
   templateUrl: './dossier-du-jour.html',
   styleUrl: './dossier-du-jour.scss',

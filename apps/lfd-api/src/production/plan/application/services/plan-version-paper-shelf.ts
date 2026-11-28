@@ -1,9 +1,9 @@
+import type { PlanVersionPaperView } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
 import { DocumentStorageUnavailableError } from "../../../../platform/shared/errors/storage-errors.js";
 import { ProductionPaperArchive, productionCountPdfKey } from "../../../shared/print/index.js";
 import { dayDossierPdfKey } from "../../domain/services/day-dossier-pdf.js";
-import type { PlanVersionPaperView } from "../queries/plan-version.views.js";
 
 /** Une version qui a un papier propre, et l'arrêt auquel elle appartient. */
 export interface PaperOwner {

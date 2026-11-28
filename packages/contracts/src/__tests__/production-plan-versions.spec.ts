@@ -1,4 +1,4 @@
-import { planVersionRangeQuerySchema } from "../plan-version-range.query-schema.js";
+import { planVersionRangeQuerySchema } from "../production-plan-versions.js";
 
 /** La forme de `?from=&to=` sur la comparaison des versions du plan. */
 describe("planVersionRangeQuerySchema", () => {

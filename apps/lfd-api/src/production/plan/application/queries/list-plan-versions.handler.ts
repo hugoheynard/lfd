@@ -1,10 +1,10 @@
+import type { PlanVersionAuthorView, PlanVersionView } from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { StaffContacts } from "../../../../staff/directory/domain/staff-contacts.js";
 import { PlanVersionListing, ServiceDay } from "../../../day/index.js";
 import { PlanVersionPaperShelf } from "../services/plan-version-paper-shelf.js";
 import { ListPlanVersionsQuery } from "./list-plan-versions.query.js";
-import type { PlanVersionAuthorView, PlanVersionView } from "./plan-version.views.js";
 
 type PlanVersionEntry = Awaited<ReturnType<PlanVersionListing["listOf"]>>[number];
 

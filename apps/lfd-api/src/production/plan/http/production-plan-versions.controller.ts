@@ -1,4 +1,11 @@
-import { productionBatchQuerySchema } from "@lfd/contracts";
+import {
+  type DossierDispatchView,
+  type PlanVersionDiffView,
+  type PlanVersionRangeQuery,
+  type PlanVersionView,
+  planVersionRangeQuerySchema,
+  productionBatchQuerySchema,
+} from "@lfd/contracts";
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 
@@ -7,15 +14,6 @@ import { ZodParam, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.
 import { ComparePlanVersionsQuery } from "../application/queries/compare-plan-versions.query.js";
 import { ListDossierDispatchesQuery } from "../application/queries/list-dossier-dispatches.query.js";
 import { ListPlanVersionsQuery } from "../application/queries/list-plan-versions.query.js";
-import type {
-  DossierDispatchView,
-  PlanVersionDiffView,
-  PlanVersionView,
-} from "../application/queries/plan-version.views.js";
-import {
-  type PlanVersionRangeQuery,
-  planVersionRangeQuerySchema,
-} from "./plan-version-range.query-schema.js";
 
 const DAY = new ZodParam(productionBatchQuerySchema.shape.date, "date");
 

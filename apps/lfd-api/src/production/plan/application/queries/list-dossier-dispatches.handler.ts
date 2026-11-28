@@ -1,3 +1,4 @@
+import type { DossierDispatchView } from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { StaffContacts } from "../../../../staff/directory/domain/staff-contacts.js";
@@ -8,7 +9,6 @@ import {
 import { DossierRecipientsReader } from "../../domain/ports/dossier-recipients.reader.js";
 import { dossierAddresseesOf } from "../../domain/services/dossier-addressees.js";
 import { ListDossierDispatchesQuery } from "./list-dossier-dispatches.query.js";
-import type { DossierDispatchView } from "./plan-version.views.js";
 
 /**
  * **À qui le dossier partirait aujourd'hui, et ce que chacun a reçu de la

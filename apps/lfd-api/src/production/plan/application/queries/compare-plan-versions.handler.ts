@@ -1,8 +1,8 @@
+import type { PlanVersionDiffView, PlanVersionMarkView } from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { PlanVersionComparison, ServiceDay } from "../../../day/index.js";
 import { ComparePlanVersionsQuery } from "./compare-plan-versions.query.js";
-import type { PlanVersionDiffView, PlanVersionMarkView } from "./plan-version.views.js";
 
 type PlanVersionMark = Awaited<ReturnType<PlanVersionComparison["compare"]>>["from"];
 

@@ -1,0 +1,70 @@
+@if (diff().baselineUnknown) {
+  <fold-callout variant="info" data-baseline-unknown>
+    Avant la version {{ diff().from.version }}, l’historique n’existe pas : on ne sait pas comment
+    ses commandes sont entrées au plan.
+  </fold-callout>
+}
+
+@if (unchanged()) {
+  <fold-empty-state title="Rien n’a changé" subtitle="Ces deux versions portent le même plan." />
+} @else {
+  <section class="pvd-block" aria-label="Effet sur la production">
+    <h4 class="pvd-heading">Effet sur la production</h4>
+    @if (effects().length === 0) {
+      <p class="pvd-quiet">Aucun article ne change de quantité.</p>
+    } @else {
+      <table class="pvd-effects">
+        <thead>
+          <tr>
+            <th scope="col">Produit</th>
+            <th scope="col" class="pvd-num">Avant</th>
+            <th scope="col" class="pvd-num">Après</th>
+            <th scope="col" class="pvd-num">Écart</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of effects(); track row.sku) {
+            <tr data-effect>
+              <th scope="row">{{ row.productName }}</th>
+              <td class="pvd-num">{{ row.before }}</td>
+              <td class="pvd-num">{{ row.after }}</td>
+              <td class="pvd-num pvd-delta">{{ row.delta }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+
+  <!-- Les sorties inexpliquées, en orange : avant les changements, pour qu'elles ne s'y perdent pas. -->
+  @if (toCheck().length > 0) {
+    <fold-callout variant="warning" data-to-check>
+      <div class="pvd-block">
+        <strong>À vérifier</strong>
+        <ul class="pvd-list">
+          @for (item of toCheck(); track item.key) {
+            <li class="pvd-item">
+              <fold-badge variant="warning" [content]="'v' + item.version" />
+              <span>{{ item.text }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+    </fold-callout>
+  }
+
+  @if (changes().length > 0) {
+    <section class="pvd-block" aria-label="Les changements expliqués">
+      <h4 class="pvd-heading">Les changements expliqués</h4>
+      <ul class="pvd-list">
+        @for (item of changes(); track item.key) {
+          <li class="pvd-item" data-change>
+            <fold-badge variant="neutral" [content]="'v' + item.version" />
+            <span>{{ item.text }}</span>
+            <span class="pvd-quiet">{{ item.cause }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+}

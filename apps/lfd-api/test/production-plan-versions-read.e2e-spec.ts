@@ -5,6 +5,8 @@
  * comparaison de la 1 à la 3, les envois du dossier, et le refus sans le
  * droit de lire le plan. Seul le mailer est doublé.
  */
+import type { DossierDispatchView, PlanVersionDiffView, PlanVersionView } from "@lfd/contracts";
+
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { DeferredTerm } from "../src/platform/database/client/client.js";
 import { SEND_DOSSIER_ON_DAY_CLOSED } from "../src/production/plan/application/handlers/send-dossier-on-day-closed.handler.js";
@@ -23,11 +25,6 @@ import {
   retake,
 } from "./production-day-fixture.js";
 import { placeLateByStaff } from "./staff-late-order.js";
-import type {
-  DossierDispatchView,
-  PlanVersionDiffView,
-  PlanVersionView,
-} from "../src/production/plan/application/queries/plan-version.views.js";
 
 const ACCOUNT_BUYER = "auth0|plan-versions-read-pro";
 const RECIPIENTS = "/admin/production/settings/dossier-recipients";
