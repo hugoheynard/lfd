@@ -21,7 +21,7 @@ import {
 
 /**
  * La comparaison de deux versions du plan
- * (`documentation/fournil/plan-historique-des-tirages.md`, § 1.16 à 1.21).
+ * (`documentation/fournil/les-versions-du-plan.md`).
  */
 
 function kinds(changes: readonly ShipmentChange[]): readonly string[] {

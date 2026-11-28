@@ -3,7 +3,7 @@ export type PlanVersionPaperKind = "dossier" | "count";
 
 /**
  * **Le papier RANGÉ d'une version du plan**
- * (`documentation/fournil/plan-historique-des-tirages.md`, lot H6) — jamais
+ * (`documentation/fournil/les-versions-du-plan.md`) — jamais
  * refabriqué.
  */
 export class GetPlanVersionPaperQuery {

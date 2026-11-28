@@ -494,7 +494,7 @@ export class RecordingRevisionDesk extends OrderRevisionDesk {
     lines: readonly RevisedOrderLine[];
     allowance: OrderRevisionAllowance;
   }[] = [];
-  /** L'auteur que le fournil reçoit, réduit (plan-historique-des-tirages, H1). */
+  /** L'auteur que le fournil reçoit, réduit (les-versions-du-plan). */
   readonly actors: DeskActor[] = [];
 
   constructor(

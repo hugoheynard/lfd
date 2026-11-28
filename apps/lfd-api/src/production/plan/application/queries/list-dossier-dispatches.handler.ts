@@ -13,8 +13,7 @@ import { ListDossierDispatchesQuery } from "./list-dossier-dispatches.query.js";
 
 /**
  * **À qui le dossier partirait aujourd'hui, et ce que chacun a reçu de la
- * journée** (`documentation/fournil/plan-historique-des-tirages.md`, § 7 Q2,
- * pour le réenvoi de H6). Les destinataires sont ceux qu'un envoi servirait
+ * journée** (`documentation/fournil/les-versions-du-plan.md`). Les destinataires sont ceux qu'un envoi servirait
  * maintenant (`dossierAddresseesOf` : fiche suspendue ou sans adresse
  * écartée) ; une ligne retirée de la liste n'y figure plus, même si elle a
  * reçu un dossier ce jour-là.

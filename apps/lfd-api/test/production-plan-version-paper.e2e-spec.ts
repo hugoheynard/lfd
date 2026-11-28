@@ -1,7 +1,6 @@
 /**
  * **Le papier par version, et la version de chaque envoi**
- * (`documentation/fournil/plan-historique-des-tirages.md`, § 1.10 à 1.15,
- * § 7 Q2, lots H2 et H2b) — sur le vrai Postgres et le vrai stockage :
+ * (`documentation/fournil/les-versions-du-plan.md`) — sur le vrai Postgres et le vrai stockage :
  * arrêt → papier rangé au geste sous la version 1 → révision → papier sous
  * la version 2, la version 1 restant rangée → retirage → envoi du dossier,
  * dont la trace porte la version. Seul le mailer est doublé.

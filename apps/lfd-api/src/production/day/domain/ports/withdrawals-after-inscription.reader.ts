@@ -9,7 +9,7 @@ export interface WithdrawalAfterInscription {
 /**
  * **Les retraits après inscription d'une journée** — ce que les versions du
  * plan gardent à part (« annulée après l'arrêt — toujours produite »,
- * `documentation/fournil/plan-historique-des-tirages.md`, § 1.9). Port à part
+ * `documentation/fournil/les-versions-du-plan.md`). Port à part
  * de `OrderWithdrawalsReader` (ISP) : l'arrêt et le retirage ne lisent
  * que les identifiants, la version lit aussi l'instant. Lu sous le verrou.
  */

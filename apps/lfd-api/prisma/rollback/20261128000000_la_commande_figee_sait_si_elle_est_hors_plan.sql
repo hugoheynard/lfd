@@ -1,5 +1,5 @@
 -- RETOUR ARRIÈRE de 20261128000000_la_commande_figee_sait_si_elle_est_hors_plan
--- (documentation/fournil/plan-historique-des-tirages.md, § 1.8, lot H0).
+-- (documentation/fournil/les-versions-du-plan.md).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
 -- « appliquée ».

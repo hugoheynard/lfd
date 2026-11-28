@@ -3,8 +3,7 @@ import type { ServiceDay } from "../value-objects/service-day.value-object.js";
 
 /**
  * **Ce que la journée sait répondre : ce qui a changé de la version `from`
- * à la version `to`** (`documentation/fournil/plan-historique-des-tirages.md`,
- * § 1.16 à 1.21, lot H4) — le diff du noyau, calculé sur ses versions. Un
+ * à la version `to`** (`documentation/fournil/les-versions-du-plan.md`) — le diff du noyau, calculé sur ses versions. Un
  * port à part de la liste (ISP) : l'écran et, demain, le réenvoi ne lisent
  * que l'un ou l'autre.
  */

@@ -5,8 +5,7 @@ import { ArchivedPlanVersionPaper } from "../production/plan/production-plan.mod
 import { ProductionModule } from "../production/production.module.js";
 
 /**
- * **Le papier d'une version, relié** (`documentation/fournil/plan-historique-des-tirages.md`,
- * § 1.11). Le noyau du fournil (`day/`) écrit la version et déclare
+ * **Le papier d'une version, relié** (`documentation/fournil/les-versions-du-plan.md`). Le noyau du fournil (`day/`) écrit la version et déclare
  * `PlanVersionPaper` ; le plan, qui tire le dossier et le compte,
  * l'implémente. Le noyau ne peut pas importer le plan : sans ce fil, le
  * module de la journée devrait importer celui du plan, qui l'importe déjà.

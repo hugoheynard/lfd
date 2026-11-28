@@ -228,7 +228,7 @@ export interface LinkPaymentReceivedCopy {
 
 /**
  * **Le dossier de production mis à jour** (lot H6 de
- * `plan-historique-des-tirages.md`) : la version courante renvoyée, et ce
+ * `les-versions-du-plan.md`) : la version courante renvoyée, et ce
  * qui a changé depuis celle que le destinataire avait reçue.
  */
 export interface ProductionDossierUpdatedCopy {

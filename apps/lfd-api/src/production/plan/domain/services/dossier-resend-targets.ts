@@ -42,8 +42,7 @@ function isCurrent(resend: DossierResend, current: number): boolean {
 }
 
 /**
- * **À qui renvoyer la version `current`** (`plan-historique-des-tirages.md`,
- * lot H6). « Pas à jour », comme l'écran le dit : une version reçue
+ * **À qui renvoyer la version `current`** (`les-versions-du-plan.md`). « Pas à jour », comme l'écran le dit : une version reçue
  * antérieure, un envoi d'avant les versions, ou rien reçu de la journée.
  *
  * - une ligne visée qui n'est plus dans la liste servie est refusée (404) ;

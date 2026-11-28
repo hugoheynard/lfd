@@ -154,7 +154,7 @@ export const PRODUCTION_SETTINGS_FACTS = {
   ),
   /**
    * Le staff a renvoyé le dossier de la version courante du plan
-   * (`plan-historique-des-tirages.md`) — à une personne, ou à tous ceux qui
+   * (`les-versions-du-plan.md`) — à une personne, ou à tous ceux qui
    * n'étaient pas à jour. Des comptes seulement : `requested` est le nombre de
    * demandes passées à la boîte d'envoi, aucune adresse ni aucun nom.
    */

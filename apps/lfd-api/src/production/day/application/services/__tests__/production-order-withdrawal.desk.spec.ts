@@ -179,7 +179,7 @@ describe("ProductionOrderWithdrawalDesk", () => {
     });
   });
 
-  describe("la version du plan (plan-historique-des-tirages, H1)", () => {
+  describe("la version du plan (les-versions-du-plan)", () => {
     it("retirée après l'inscription : la journée garde une version `order_withdrawn`, signée de la seule nature du client", async () => {
       const { desk, days, versions } = subject(new Map([["ord_1", DAY.value]]));
 

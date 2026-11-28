@@ -3,8 +3,7 @@ import type { SaleUnit } from "@lfd/money";
 import type { ProductionLineOption } from "../../../channels/commerce/day-orders.reader.js";
 
 /**
- * **Ce qu'une version du plan garde** (`documentation/fournil/plan-historique-des-tirages.md`,
- * § 1.7 à 1.9) — des types, et aucune règle. Une forme de document : les
+ * **Ce qu'une version du plan garde** (`documentation/fournil/les-versions-du-plan.md`) — des types, et aucune règle. Une forme de document : les
  * instants y sont des chaînes ISO, parce que le contenu s'écrit en `jsonb` et
  * se relit tel quel. `PLAN_VERSION_CONTENT_VERSION` numérote cette forme.
  *

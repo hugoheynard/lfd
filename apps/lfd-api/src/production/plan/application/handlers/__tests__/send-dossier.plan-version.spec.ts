@@ -14,8 +14,7 @@ import {
 } from "./send-dossier-scene.js";
 
 /**
- * **Chaque envoi du dossier note sa version** (`plan-historique-des-tirages.md`,
- * § 7 Q2, H2b) : le numéro de la journée que l'abonné a chargée, celui du
+ * **Chaque envoi du dossier note sa version** (`les-versions-du-plan.md`) : le numéro de la journée que l'abonné a chargée, celui du
  * papier joint — rangé sous la même version.
  */
 describe("la trace d'envoi porte la version du papier joint", () => {

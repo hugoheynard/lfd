@@ -8,8 +8,7 @@ type PlanVersionMark = Awaited<ReturnType<PlanVersionComparison["compare"]>>["fr
 
 /**
  * **Comparer deux versions du plan d'une journée**
- * (`documentation/fournil/plan-historique-des-tirages.md`, § 1.16 à 1.21,
- * lot H4) : le diff du noyau tel quel, ses instants en ISO. L'ordre inversé
+ * (`documentation/fournil/les-versions-du-plan.md`) : le diff du noyau tel quel, ses instants en ISO. L'ordre inversé
  * (400) et la version inconnue (404) sont jugés par le diff lui-même.
  */
 @QueryHandler(ComparePlanVersionsQuery)

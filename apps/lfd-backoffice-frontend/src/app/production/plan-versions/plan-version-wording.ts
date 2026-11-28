@@ -15,8 +15,7 @@ import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 
 /**
  * **Les mots des versions du plan** — la liste, le diff et les envois du
- * dossier mis en phrases (`documentation/fournil/plan-historique-des-tirages.md`,
- * § 1.16 à 1.21). Le serveur rend des structures ; l'écran seul les dit, et
+ * dossier mis en phrases (`documentation/fournil/les-versions-du-plan.md`). Le serveur rend des structures ; l'écran seul les dit, et
  * ces fonctions sont pures pour que chaque phrase s'éprouve sans rendu.
  */
 

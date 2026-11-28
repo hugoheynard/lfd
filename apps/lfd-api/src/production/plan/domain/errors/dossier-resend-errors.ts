@@ -6,7 +6,7 @@ import {
 
 /**
  * Les refus du **renvoi du dossier mis à jour**
- * (`documentation/fournil/plan-historique-des-tirages.md`, lot H6). Lus par
+ * (`documentation/fournil/les-versions-du-plan.md`). Lus par
  * le Prod manager dans le dossier du jour : chacun nomme le cas et le geste
  * de sortie.
  */

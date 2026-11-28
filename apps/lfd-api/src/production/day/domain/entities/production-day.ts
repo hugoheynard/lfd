@@ -256,7 +256,7 @@ export class ProductionDay extends ProductionDayState {
   /**
    * **Numérote la version du plan** que l'écrivain va garder : le `save`
    * qui suit écrit l'état et son numéro ensemble
-   * (`documentation/fournil/plan-historique-des-tirages.md`, § 1.3). Les
+   * (`documentation/fournil/les-versions-du-plan.md`). Les
    * numéros se suivent, réouverture comprise.
    *
    * @throws {PlanVersionOutOfSequenceError} le numéro ne suit pas le courant.

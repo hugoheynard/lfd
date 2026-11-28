@@ -97,7 +97,7 @@ export { ProductionReturnRequests } from "./domain/ports/production-return.reque
 /**
  * Ce que la journée sait garder : un geste qui change le plan figé sauve la
  * journée par cet écrivain, qui ajoute la version du plan quand il a changé
- * (`documentation/fournil/plan-historique-des-tirages.md`).
+ * (`documentation/fournil/les-versions-du-plan.md`).
  */
 export { PlanVersionRecorder } from "./domain/ports/plan-version.recorder.js";
 /** Et ce qu'elle demande, après la validation, au métier qui tire le papier de la version. */

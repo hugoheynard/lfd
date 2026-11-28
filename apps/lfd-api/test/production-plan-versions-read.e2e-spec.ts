@@ -1,6 +1,5 @@
 /**
- * **Lire les versions du plan** (`documentation/fournil/plan-historique-des-tirages.md`,
- * lot H4) — sur le vrai Postgres et le vrai stockage : arrêt → révision →
+ * **Lire les versions du plan** (`documentation/fournil/les-versions-du-plan.md`) — sur le vrai Postgres et le vrai stockage : arrêt → révision →
  * retirage, puis la liste (trois versions, leurs causes, leur papier), la
  * comparaison de la 1 à la 3, les envois du dossier, et le refus sans le
  * droit de lire le plan. Seul le mailer est doublé.

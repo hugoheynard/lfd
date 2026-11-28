@@ -33,8 +33,7 @@ export abstract class DossierDispatchLog {
    * et ne repart pas.
    *
    * @param planVersion la version du plan que le papier joint imprime, lue sur
-   *   la journée chargée par l'abonné (`plan-historique-des-tirages.md`,
-   *   § 7 Q2) ; absente ou `null` : journée sans version.
+   *   la journée chargée par l'abonné (`les-versions-du-plan.md`) ; absente ou `null` : journée sans version.
    */
   abstract claim(
     slot: DossierDispatchSlot,

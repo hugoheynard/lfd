@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **Les versions du plan d'une journée, telles que le back-office les lit**
- * (`documentation/fournil/plan-historique-des-tirages.md`) — la liste
+ * (`documentation/fournil/les-versions-du-plan.md`) — la liste
  * (`GET admin/production/batch/:date/plan-history`), la comparaison de deux
  * versions (`…/plan-history/compare?from=&to=`) et les envois du dossier
  * (`…/plan-history/dispatches`). Des structures, jamais du texte : l'écran

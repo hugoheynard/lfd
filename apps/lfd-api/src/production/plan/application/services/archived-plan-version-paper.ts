@@ -13,7 +13,7 @@ const DOSSIER_LABEL = "production.plan-version-paper.dossier";
 
 /**
  * **Le papier d'une version, rangé au geste**
- * (`documentation/fournil/plan-historique-des-tirages.md`, § 1.11) — tel que
+ * (`documentation/fournil/les-versions-du-plan.md`) — tel que
  * le plan l'implémente pour le noyau.
  *
  * Après le `COMMIT` (`AfterCommit`, hors transaction : le stockage est un

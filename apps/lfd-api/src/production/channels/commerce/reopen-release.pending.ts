@@ -3,7 +3,7 @@ import type { ServiceDay } from "../../day/domain/value-objects/service-day.valu
 /**
  * **« La remise de la réouverture est-elle faite ? »** — port de LECTURE que le
  * fournil déclare et que le commerce implémente
- * (`documentation/fournil/plan-historique-des-tirages.md`, § 5).
+ * (`documentation/fournil/les-versions-du-plan.md`).
  *
  * La réouverture défait l'arrêt ; le commerce remet ensuite en `placed`, par
  * un abonné durable, les commandes qu'il avait confirmées à l'instant de cet

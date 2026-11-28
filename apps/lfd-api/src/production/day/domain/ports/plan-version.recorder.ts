@@ -3,7 +3,7 @@ import type { ProductionDay } from "../entities/production-day.js";
 
 /**
  * **Sauver une journée en gardant la version de son plan**
- * (`documentation/fournil/plan-historique-des-tirages.md`, § 1.1 à 1.6) —
+ * (`documentation/fournil/les-versions-du-plan.md`) —
  * ce qu'un geste qui change le plan figé appelle à la place de
  * `ProductionDayRepository.save` : arrêt, retirage, réassort lancé,
  * révision et retrait après l'arrêt. La réouverture et la ré-annonce ne

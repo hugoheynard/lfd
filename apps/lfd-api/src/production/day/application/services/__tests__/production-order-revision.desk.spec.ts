@@ -229,7 +229,7 @@ describe("ProductionOrderRevisionDesk — plan A2, `staff_quantities`", () => {
     expect(days.saved).toBe(0);
   });
 
-  describe("la version du plan (plan-historique-des-tirages, H1)", () => {
+  describe("la version du plan (les-versions-du-plan)", () => {
     it("une hausse : la journée garde une version `order_revised`, signée du staff", async () => {
       const { desk, days, versions } = subject(INSCRIBED, closedPlan());
 

@@ -3,7 +3,7 @@ import { closedDay, DAY, order, retakeScene } from "./retake-production-day.scen
 
 /**
  * Le retirage garde la version de son plan
- * (`documentation/fournil/plan-historique-des-tirages.md`, § 1.6) ; un
+ * (`documentation/fournil/les-versions-du-plan.md`) ; un
  * retirage sans arrivée ne change rien et n'en garde pas.
  */
 describe("reprendre le tirage — la version du plan", () => {

@@ -32,8 +32,7 @@ import { DossierFunctionSheetsReading } from "../dossier-function-sheets-reading
 import { ProductionPaperRenderer } from "../production-paper.service.js";
 
 /**
- * **Le papier d'une version, rangé au geste** (`plan-historique-des-tirages.md`,
- * § 1.11, § 2 bis point 3) : rien avant la validation, le compte et le
+ * **Le papier d'une version, rangé au geste** (`les-versions-du-plan.md`) : rien avant la validation, le compte et le
  * dossier sous la version de la journée après, et un échec qui ne retient
  * rien. La journée est celle de la scène du dossier : son jour est dérivé de
  * maintenant, l'instant de l'arrêt n'est que recopié.

@@ -16,7 +16,7 @@ const ARREST_CAUSES = new Set(["closed", "auto_closed", "opened_by_resupply"]);
 
 /**
  * **Comparer deux versions du plan d'une journée**
- * (`documentation/fournil/plan-historique-des-tirages.md`, § 1.16 à 1.21) —
+ * (`documentation/fournil/les-versions-du-plan.md`) —
  * pure, elle ne reçoit que les versions.
  *
  * L'effet sur la production se lit sur le compte de `from` et de `to`, jamais

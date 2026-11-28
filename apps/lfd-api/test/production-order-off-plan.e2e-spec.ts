@@ -4,8 +4,7 @@ import { ServiceDay } from "../src/production/day/domain/value-objects/service-d
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
 
 /**
- * **« Hors plan », gardé sur la commande figée** (`documentation/fournil/plan-historique-des-tirages.md`,
- * § 1.8) : la journée écrit `off_plan` tel que le commerce l'a servi, et le
+ * **« Hors plan », gardé sur la commande figée** (`documentation/fournil/les-versions-du-plan.md`) : la journée écrit `off_plan` tel que le commerce l'a servi, et le
  * relit tel quel — `NULL` compris, qui reste « on ne sait pas » et ne devient
  * jamais `false`. Instants recopiés, jamais comparés à l'horloge.
  */

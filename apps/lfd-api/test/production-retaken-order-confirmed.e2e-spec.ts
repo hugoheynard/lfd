@@ -1,7 +1,7 @@
 /**
  * **La commande intégrée par un retirage est confirmée, à l'instant de
- * l'arrêt** (`documentation/fournil/plan-historique-des-tirages.md`, § 0,
- * « Ce que le fournil sait d'une commande ») — sur le vrai Postgres, le vrai
+ * l'arrêt** (`documentation/fournil/les-versions-du-plan.md`,
+ * « Le retirage côté commerce ») — sur le vrai Postgres, le vrai
  * relais et le vrai stockage : arrêt → commande hors plan saisie par
  * l'équipe → retirage → le commerce la confirme, son BL-1 naît et le
  * dossier se range ; puis réouverture → elle est rendue au client → un

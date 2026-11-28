@@ -1,6 +1,5 @@
 /**
- * E2E du **parcours normal du plan** (`documentation/fournil/plan-historique-des-tirages.md`,
- * § 2 bis) : arrêter, télécharger le dossier, l'envoyer, recevoir une commande
+ * E2E du **parcours normal du plan** (`documentation/fournil/les-versions-du-plan.md`) : arrêter, télécharger le dossier, l'envoyer, recevoir une commande
  * hors plan de l'équipe, retirer, retélécharger, renvoyer — sans réouverture.
  *
  * Il tient ce que les versions du plan ne doivent pas changer : le statut des

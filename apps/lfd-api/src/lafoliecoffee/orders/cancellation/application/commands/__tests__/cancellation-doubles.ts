@@ -159,7 +159,7 @@ export class ScriptedCancelGateway extends OrderCardCancellation {
 export class ScriptedDesk extends OrderWithdrawalDesk {
   /** L'autorisation reçue à chaque retrait (plan A1). */
   readonly allowances: OrderWithdrawalAllowance[] = [];
-  /** L'auteur que le fournil reçoit, réduit (plan-historique-des-tirages, H1). */
+  /** L'auteur que le fournil reçoit, réduit (les-versions-du-plan). */
   readonly actors: DeskActor[] = [];
 
   constructor(

@@ -1,6 +1,6 @@
 /**
  * **Le renvoi du dossier de la version courante, et le papier d'une version
- * passée** (`documentation/fournil/plan-historique-des-tirages.md`, lot H6) —
+ * passée** (`documentation/fournil/les-versions-du-plan.md`) —
  * sur le vrai Postgres, la vraie boîte d'envoi du bloc `mail` et le vrai
  * stockage : arrêt (envoi, version 1) → révision → renvoi ciblé (la trace
  * porte la version 2, le PDF joint est celui de la version 2) → rejeu de la

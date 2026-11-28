@@ -39,8 +39,7 @@ export interface PlanVersionRecord {
 }
 
 /**
- * **Une version du plan de production** (`documentation/fournil/plan-historique-des-tirages.md`,
- * § 1) : ce que contenait le plan figé d'une journée après un geste qui l'a
+ * **Une version du plan de production** (`documentation/fournil/les-versions-du-plan.md`) : ce que contenait le plan figé d'une journée après un geste qui l'a
  * changé, qui l'a fait, quand, et pourquoi chaque envoi y est.
  *
  * Elle ne se modifie pas : on en écrit une nouvelle, construite par

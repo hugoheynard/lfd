@@ -1,8 +1,7 @@
 import { DOSSIER_LAYOUT_VERSION, dayDossierPdfKey } from "../day-dossier-pdf.js";
 
 /**
- * La clé du dossier par version du plan (`plan-historique-des-tirages.md`,
- * § 1.10). Dates recopiées dans un nom, jamais comparées à l'horloge (§5).
+ * La clé du dossier par version du plan (`les-versions-du-plan.md`). Dates recopiées dans un nom, jamais comparées à l'horloge (§5).
  */
 const DAY = "2026-11-28";
 const CLOSED = new Date("2026-11-27T18:00:00.000Z");

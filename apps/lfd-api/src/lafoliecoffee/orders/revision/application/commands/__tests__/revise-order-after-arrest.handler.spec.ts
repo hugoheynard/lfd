@@ -32,7 +32,7 @@ describe("ReviseOrderHandler — après l'arrêt du plan (plan A2)", () => {
       allowance: "staff_quantities",
       lines: [{ sku: "VIE-001", quantity: 14 }],
     });
-    // L'auteur que la version du plan garde : la fiche staff (plan-historique-des-tirages, H1).
+    // L'auteur que la version du plan garde : la fiche staff (les-versions-du-plan).
     expect(desk.actors).toEqual([{ kind: "staff", staffId: "stf_1" }]);
     expect(packing.revised).toEqual([
       // Les options à jour suivent le dû : aucune ici (`plan-options-de-commande.md`, § 4).

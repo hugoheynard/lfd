@@ -71,7 +71,7 @@ export class ProductionPaperArchive {
 
   /**
    * **Ce papier est-il rangé ?** Lu au stockage, jamais en base
-   * (`plan-historique-des-tirages.md`, § 1.12) : la liste des versions
+   * (`les-versions-du-plan.md`) : la liste des versions
    * demande ainsi si la clé de chacune existe. Un stockage en panne lève
    * (`DocumentStorageUnavailableError`) plutôt que de répondre « non » :
    * « papier non rangé » est une affirmation, pas un repli.

@@ -28,8 +28,7 @@ export interface PlanVersionEntry {
 }
 
 /**
- * **La liste des versions d'une journée** (`documentation/fournil/plan-historique-des-tirages.md`,
- * § 1.12 et § 1.14) — pure : chaque version, et le papier qui la représente.
+ * **La liste des versions d'une journée** (`documentation/fournil/les-versions-du-plan.md`) — pure : chaque version, et le papier qui la représente.
  *
  * @param versions la chaîne de la journée, de la première à la dernière.
  */

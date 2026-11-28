@@ -252,8 +252,7 @@ export function drawRecapWithCalendars(
 }
 
 /**
- * La clé d'archive. **Une par version du plan** (`plan-historique-des-tirages.md`,
- * § 1.10) : `<jour>/dossier-du-jour-<mise en page>-version-<n>.pdf`, `n` lu sur
+ * La clé d'archive. **Une par version du plan** (`les-versions-du-plan.md`) : `<jour>/dossier-du-jour-<mise en page>-version-<n>.pdf`, `n` lu sur
  * la journée chargée — l'état et son numéro viennent de la même ligne, si bien
  * qu'un lecteur range toujours l'état `n` sous la clé `n`. Les dossiers sortis
  * restent rangés : ils sont la trace de ce que le fournil a reçu.

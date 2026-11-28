@@ -61,7 +61,7 @@ export interface DossierUpdatedResupply {
 
 /**
  * Les données du courriel **« Dossier de production mis à jour »** (doc
- * `documentation/fournil/plan-historique-des-tirages.md`, lot H6) : le
+ * `documentation/fournil/les-versions-du-plan.md`) : le
  * dossier de la version courante, renvoyé à un destinataire dont la version
  * reçue est dépassée, avec ce qui a changé depuis SA version.
  *

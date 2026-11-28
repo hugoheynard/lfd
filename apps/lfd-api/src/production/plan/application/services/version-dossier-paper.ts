@@ -7,7 +7,7 @@ import { ProductionPaperRenderer, dayDossierSlotOf } from "./production-paper.se
 
 /**
  * **Le dossier de la version courante, rangé** — l'exemplaire que l'e-mail
- * du renvoi joint par référence (`plan-historique-des-tirages.md`, lot H6 ;
+ * du renvoi joint par référence (`les-versions-du-plan.md` ;
  * porte `lint:mail-attachment-by-reference`). Déjà rangé, il sert tel quel ;
  * sinon il est fabriqué depuis la journée chargée (état `n`, clé `n`) et
  * rangé. Hors transaction : le stockage est un appel réseau.

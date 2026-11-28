@@ -44,7 +44,7 @@ const VERSION = new ZodParam(planVersionParamSchema, "version");
 /**
  * **Les versions du plan d'une journée** — la liste, la comparaison de deux
  * versions et les envois du dossier
- * (`documentation/fournil/plan-historique-des-tirages.md`, lot H4).
+ * (`documentation/fournil/les-versions-du-plan.md`).
  *
  * Même surface que le dossier du jour (`production_plan`, lecture) : qui
  * peut tirer le dossier peut lire son histoire, et rouvrir le papier rangé

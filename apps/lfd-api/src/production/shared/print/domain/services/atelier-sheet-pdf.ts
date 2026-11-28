@@ -174,7 +174,7 @@ function drawScan(doc: Doc, url: string, reference: string, y: number): void {
  * pas des lignes.
  *
  * `sheet.planVersion` : la version du plan que le compte imprime, dite en
- * en-tête (« Version 3 », `plan-historique-des-tirages.md`, § 1.15) ; absente
+ * en-tête (« Version 3 », `les-versions-du-plan.md`) ; absente
  * ou `null` (journée arrêtée avant les versions, spécimen) : le jour seul.
  */
 export function renderProductionCountPdf(
@@ -255,7 +255,7 @@ const PIE = 6 * MM;
 
 /**
  * La clé du compte à produire. **Une par version du plan**
- * (`plan-historique-des-tirages.md`, § 1.10), `n` lu sur la journée chargée.
+ * (`les-versions-du-plan.md`), `n` lu sur la journée chargée.
  * Une journée sans numéro (arrêtée avant les versions) garde la clé par
  * tirage — l'instant de l'arrêt, puis du dernier retirage — et la mise en page
  * {@link RUN_KEYED_COUNT_LAYOUT} : les comptes déjà rangés restent atteints.

@@ -2,7 +2,7 @@ import type { DossierResendTarget } from "../../domain/services/dossier-resend-t
 
 /**
  * **Renvoyer le dossier de la version courante du plan**
- * (`documentation/fournil/plan-historique-des-tirages.md`, lot H6) : à une
+ * (`documentation/fournil/les-versions-du-plan.md`) : à une
  * ligne de la liste, ou à tous ceux dont la version reçue est dépassée.
  */
 export class ResendPlanVersionDossierCommand {

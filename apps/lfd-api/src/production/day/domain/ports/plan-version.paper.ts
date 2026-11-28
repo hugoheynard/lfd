@@ -2,8 +2,7 @@ import type { ProductionDay } from "../entities/production-day.js";
 
 /**
  * **Le papier d'une version, demandé après la validation**
- * (`documentation/fournil/plan-historique-des-tirages.md`, § 1.11 et § 2 bis
- * point 3).
+ * (`documentation/fournil/les-versions-du-plan.md`).
  *
  * Le noyau écrit la version ; le papier (dossier, compte à produire) est au
  * plan, qui l'implémente. L'écrivain des versions l'appelle sous le verrou,

@@ -119,7 +119,7 @@ export {
   ProductionDayReopenedPayloadError,
 } from "./production-day-reopened.event.js";
 // Le nouvel arrêt attend que le commerce ait remis les commandes de l'arrêt
-// défait (`plan-historique-des-tirages.md`, § 5) : le fournil DÉCLARE, le
+// défait (`les-versions-du-plan.md`) : le fournil DÉCLARE, le
 // commerce IMPLÉMENTE, avec la condition de la remise.
 export { ReopenReleasePending } from "./reopen-release.pending.js";
 // Le commerce ne confirme les commandes d'un arrêt que s'il est toujours celui

@@ -43,7 +43,7 @@ interface DispatchRow {
 
 /**
  * **Les destinataires du dossier, et le renvoi de la version courante**
- * (`documentation/fournil/plan-historique-des-tirages.md`, H6) : à une
+ * (`documentation/fournil/les-versions-du-plan.md`) : à une
  * personne sur sa ligne, ou à tous ceux qui ne sont pas à jour.
  *
  * Le renvoi passe par la boîte d'envoi des e-mails : après le 204, le parent

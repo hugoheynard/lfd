@@ -1,6 +1,6 @@
 /**
  * **Réarrêter avant que le commerce ait remis les commandes de l'arrêt défait**
- * (`documentation/fournil/plan-historique-des-tirages.md`, § 5).
+ * (`documentation/fournil/les-versions-du-plan.md`).
  *
  * La réouverture défait l'arrêt ; le commerce remet ensuite en `placed`, par
  * un abonné durable, les commandes que cet arrêt avait confirmées. Le nouvel

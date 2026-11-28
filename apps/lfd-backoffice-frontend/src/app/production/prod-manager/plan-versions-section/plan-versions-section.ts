@@ -77,7 +77,7 @@ export function defaultRange(
 
 /**
  * **Les versions du plan d'une journée**, dans le Prod manager
- * (`documentation/fournil/plan-historique-des-tirages.md`, lot H5) : la liste
+ * (`documentation/fournil/les-versions-du-plan.md`) : la liste
  * (cause, qui, quand, papier rangé ou non), la comparaison de deux versions —
  * par défaut la courante contre la précédente — et ce que chaque destinataire
  * du dossier a reçu.

@@ -8,7 +8,7 @@ import { PAPER_LOGO } from "./paper-logo.fixture.js";
 
 /**
  * La clé du compte à produire par version du plan
- * (`plan-historique-des-tirages.md`, § 1.10). Dates recopiées dans un nom,
+ * (`les-versions-du-plan.md`). Dates recopiées dans un nom,
  * jamais comparées à l'horloge (§5).
  */
 const DAY = "2026-11-28";

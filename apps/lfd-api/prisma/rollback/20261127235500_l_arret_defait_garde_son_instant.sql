@@ -1,5 +1,5 @@
 -- RETOUR ARRIÈRE de 20261127235500_l_arret_defait_garde_son_instant
--- (documentation/fournil/plan-historique-des-tirages.md, § 5, lot H-1).
+-- (documentation/fournil/les-versions-du-plan.md).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
 -- « appliquée ».

@@ -8,7 +8,7 @@ import type {
 
 /**
  * **Ce que rend la comparaison de deux versions du plan**
- * (`documentation/fournil/plan-historique-des-tirages.md`, § 1.16 à 1.21) —
+ * (`documentation/fournil/les-versions-du-plan.md`) —
  * une structure, jamais du texte : l'écran des versions et l'e-mail du
  * réenvoi la mettent en mots chacun de son côté, sur les mêmes faits.
  */

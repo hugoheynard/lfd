@@ -32,7 +32,7 @@ interface Sentence {
 
 /**
  * **La comparaison de deux versions du plan**
- * (`documentation/fournil/plan-historique-des-tirages.md`, § 1.16 à 1.21) :
+ * (`documentation/fournil/les-versions-du-plan.md`) :
  * l'effet sur la production par produit, les sorties dont la raison est au
  * commerce (« à vérifier », en orange), puis chaque changement expliqué, avec
  * la version qui l'a fait et son auteur. Le diff ne nomme pas les auteurs par

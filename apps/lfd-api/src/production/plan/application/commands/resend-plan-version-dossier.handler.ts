@@ -51,7 +51,7 @@ interface ResendBatch {
 
 /**
  * **Renvoyer le dossier de la version courante**
- * (`documentation/fournil/plan-historique-des-tirages.md`, lot H6) — à une
+ * (`documentation/fournil/les-versions-du-plan.md`) — à une
  * ligne de la liste, ou à tous ceux qui ne sont pas à jour.
  *
  * Hors transaction : la journée, les destinataires et ce que chacun a reçu,

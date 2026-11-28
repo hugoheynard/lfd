@@ -7,7 +7,7 @@ import {
 import { planVersionEntriesOf } from "../plan-version-entries.js";
 
 /**
- * La liste des versions (`plan-historique-des-tirages.md`, § 1.12 et § 1.14) :
+ * La liste des versions (`les-versions-du-plan.md`) :
  * chaque version, son tirage, ses envois, et le papier qui la représente.
  */
 describe("planVersionEntriesOf", () => {

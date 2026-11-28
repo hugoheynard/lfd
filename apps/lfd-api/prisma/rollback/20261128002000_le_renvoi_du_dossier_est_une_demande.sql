@@ -1,5 +1,5 @@
 -- RETOUR ARRIÈRE de 20261128002000_le_renvoi_du_dossier_est_une_demande
--- (documentation/fournil/plan-historique-des-tirages.md, lot H6).
+-- (documentation/fournil/les-versions-du-plan.md).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
 -- « appliquée ».

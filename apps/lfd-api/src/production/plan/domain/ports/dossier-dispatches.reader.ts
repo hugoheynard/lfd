@@ -18,7 +18,7 @@ export interface DossierDispatchTrace {
  * **Les envois du dossier d'une journée** — port de LECTURE, distinct de la
  * trace qui les écrit (ISP) : l'écran des versions y lit, pour chaque
  * destinataire, la dernière version reçue
- * (`documentation/fournil/plan-historique-des-tirages.md`, § 7 Q2).
+ * (`documentation/fournil/les-versions-du-plan.md`).
  */
 export abstract class DossierDispatchesReader {
   /** Tous les envois de la journée, du plus ancien au plus récent. */

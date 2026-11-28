@@ -279,7 +279,7 @@ describe("GetDayDossierPdfHandler", () => {
 
 /**
  * Le dossier d'une journée versionnée se range sous la version qu'elle porte
- * (`plan-historique-des-tirages.md`, § 1.10) : l'état et son numéro viennent
+ * (`les-versions-du-plan.md`) : l'état et son numéro viennent
  * de la même journée chargée.
  */
 describe("GetDayDossierPdfHandler — par version du plan", () => {

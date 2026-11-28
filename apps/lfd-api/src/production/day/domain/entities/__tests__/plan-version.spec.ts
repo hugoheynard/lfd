@@ -15,8 +15,7 @@ import { ProductionDay } from "../production-day.js";
 import type { ProductionDaySnapshot } from "../production-day.snapshot.js";
 
 /**
- * La version du plan (`documentation/fournil/plan-historique-des-tirages.md`,
- * § 1.6 à 1.9) : comment chaque envoi est entré, ce qu'on garde, et quand il
+ * La version du plan (`documentation/fournil/les-versions-du-plan.md`) : comment chaque envoi est entré, ce qu'on garde, et quand il
  * n'y a rien à garder. Dates recopiées et comparées entre elles seulement —
  * exception étroite du §5.
  */

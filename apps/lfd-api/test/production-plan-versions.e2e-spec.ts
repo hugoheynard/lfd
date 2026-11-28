@@ -1,6 +1,5 @@
 /**
- * **Les versions du plan de production** (`documentation/fournil/plan-historique-des-tirages.md`,
- * § 1 et § 2, lot H1) — sur le vrai Postgres, de la route au registre :
+ * **Les versions du plan de production** (`documentation/fournil/les-versions-du-plan.md`) — sur le vrai Postgres, de la route au registre :
  * arrêt → révision → annulation après l'arrêt → retirage → réouverture →
  * arrêt. Chaque geste qui change le plan figé garde une version, dans sa
  * transaction ; la réouverture n'en garde pas ; `production_day.plan_version`

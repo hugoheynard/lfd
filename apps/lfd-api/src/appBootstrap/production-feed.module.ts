@@ -143,7 +143,7 @@ import {
     // fournil à lui (ISP), même requête que celui de la livraison.
     { provide: CommerceDayVersionReader, useClass: ProductionCommerceDayVersionReader },
     // Après une réouverture, l'arrêt attend que le commerce ait remis les
-    // commandes de l'arrêt défait (`plan-historique-des-tirages.md`, § 5) :
+    // commandes de l'arrêt défait (`les-versions-du-plan.md`) :
     // même condition que la remise.
     { provide: ReopenReleasePending, useClass: PrismaReopenReleasePending },
   ],

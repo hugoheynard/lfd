@@ -19,8 +19,7 @@ import type {
 
 /**
  * **Construire le contenu d'une version** — règles pures de
- * `PlanVersion.next` (`documentation/fournil/plan-historique-des-tirages.md`,
- * § 1.6 à 1.9). Tout est rangé dans un ordre stable (envois par commande puis
+ * `PlanVersion.next` (`documentation/fournil/les-versions-du-plan.md`). Tout est rangé dans un ordre stable (envois par commande puis
  * rang, compte par SKU, réassorts par identifiant) : deux versions du même
  * plan ont le même contenu, quel que soit l'ordre où la journée a été relue.
  */

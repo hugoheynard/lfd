@@ -3,7 +3,7 @@ import type { ServiceDay } from "../value-objects/service-day.value-object.js";
 
 /**
  * **Ce que la journée sait répondre : la liste des versions de son plan**
- * (`documentation/fournil/plan-historique-des-tirages.md`, lot H4). Publiée
+ * (`documentation/fournil/les-versions-du-plan.md`). Publiée
  * par le noyau, qui possède les versions, et lue par le plan, qui y ajoute
  * le papier rangé ou non (le stockage est à lui).
  */

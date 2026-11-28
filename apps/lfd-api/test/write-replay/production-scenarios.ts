@@ -110,7 +110,7 @@ const PLAN_VERSIONS = "production/plan/http/production-plan-versions.controller.
 const PLAN_HISTORY = `/admin/production/batch/${SERVICE_DAY}/plan-history`;
 
 /**
- * Le renvoi du dossier (`fournil/plan-historique-des-tirages.md`, H6) : un
+ * Le renvoi du dossier (`fournil/les-versions-du-plan.md`) : un
  * destinataire ajouté APRÈS l'arrêt n'a reçu aucune version, il est à servir.
  */
 const PLAN_VERSION_SCENARIOS: ScenarioSet = {

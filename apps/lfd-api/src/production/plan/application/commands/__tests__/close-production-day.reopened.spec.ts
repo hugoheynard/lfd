@@ -13,8 +13,7 @@ import {
 
 /**
  * L'arrêt qui suit une réouverture attend que le commerce ait remis en
- * `placed` les commandes de l'arrêt défait (`plan-historique-des-tirages.md`,
- * § 5) : passé avant, il les laisserait hors de tout plan.
+ * `placed` les commandes de l'arrêt défait (`les-versions-du-plan.md`) : passé avant, il les laisserait hors de tout plan.
  */
 describe("arrêter une journée rouverte", () => {
   it("refuse tant que la remise de l'arrêt défait est en attente, sans rien sauver", async () => {

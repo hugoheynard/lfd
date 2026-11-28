@@ -2,7 +2,7 @@
  * **Le fait d'arrêt livré au commerce APRÈS la réouverture** — les vrais
  * abonnés du commerce, rejoués dans l'ordre que la boîte d'envoi ne garantit
  * pas : la remise de la réouverture d'abord, la confirmation de l'arrêt
- * ensuite (`documentation/fournil/plan-historique-des-tirages.md`, § 5).
+ * ensuite (`documentation/fournil/les-versions-du-plan.md`).
  */
 import type { DurableSubscriber } from "../src/platform/outbox/durable-handler.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";

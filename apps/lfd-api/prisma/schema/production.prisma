@@ -148,7 +148,7 @@ model ProductionOrder {
   /// (`Order.receiveOffPlan`), recopié du commerce à l'arrêt ou au retirage.
   /// `null` = commande figée avant la colonne : on ne savait pas, on n'écrit
   /// pas `false`. Lu par les versions du plan
-  /// (`documentation/fournil/plan-historique-des-tirages.md`, § 1.8).
+  /// (`documentation/fournil/les-versions-du-plan.md`).
   offPlan Boolean? @map("off_plan")
 
   /// **Le reste du bon, figé à l'arrêt** (plan `production/plan-envoi-du-
@@ -674,7 +674,7 @@ model ProductionDossierDispatch {
   claimedAt     DateTime  @map("claimed_at") @db.Timestamptz(6)
   settledAt     DateTime? @map("settled_at") @db.Timestamptz(6)
   /// La version du plan que le papier joint imprime, lue sur la journée que
-  /// l'abonné a chargée (`plan-historique-des-tirages.md`, § 7 Q2) ; `null`
+  /// l'abonné a chargée (`les-versions-du-plan.md`) ; `null`
   /// pour un envoi d'avant les versions, ou d'une journée sans version.
   planVersion   Int?      @map("plan_version")
 
@@ -1107,7 +1107,7 @@ model ProductionProvisionalPrint {
   @@schema("production")
 }
 
-/// **Une version du plan de production** (`documentation/fournil/plan-historique-des-tirages.md`) :
+/// **Une version du plan de production** (`documentation/fournil/les-versions-du-plan.md`) :
 /// ce que le plan figé d'une journée contenait après un geste qui l'a changé
 /// — arrêt, retirage, révision, retrait après l'arrêt, réassort lancé.
 ///

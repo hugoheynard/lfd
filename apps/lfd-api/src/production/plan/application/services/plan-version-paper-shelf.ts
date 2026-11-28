@@ -20,7 +20,7 @@ const UNKNOWN = null;
 
 /**
  * **Le papier de chaque version, lu au stockage**
- * (`documentation/fournil/plan-historique-des-tirages.md`, § 1.12) — jamais
+ * (`documentation/fournil/les-versions-du-plan.md`) — jamais
  * en base, et rien n'est écrit. Le dossier et le compte à produire, sous la
  * clé de leur version (`dayDossierPdfKey`, `productionCountPdfKey`).
  *

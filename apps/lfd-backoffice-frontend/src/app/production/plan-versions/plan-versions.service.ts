@@ -21,7 +21,7 @@ const PAPER_FILES: Readonly<Record<PlanVersionPaperKind, string>> = {
 };
 
 /**
- * **Les versions du plan d'une journée** (`documentation/fournil/plan-historique-des-tirages.md`) :
+ * **Les versions du plan d'une journée** (`documentation/fournil/les-versions-du-plan.md`) :
  * la liste, la comparaison de deux versions et ce que chaque destinataire du
  * dossier a reçu ; le papier rangé de chaque version ; et le renvoi de la
  * version courante.

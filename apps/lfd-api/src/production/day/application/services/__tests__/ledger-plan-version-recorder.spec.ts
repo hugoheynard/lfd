@@ -13,8 +13,7 @@ import {
 } from "./plan-version-doubles.js";
 
 /**
- * L'écrivain des versions (`documentation/fournil/plan-historique-des-tirages.md`,
- * § 1.3 à 1.6, § 2 bis) : la journée prend son numéro avant le `save`, la
+ * L'écrivain des versions (`documentation/fournil/les-versions-du-plan.md`) : la journée prend son numéro avant le `save`, la
  * version s'ajoute après, et rien ne s'écrit quand le plan n'a pas changé.
  * Dates recopiées et comparées entre elles seulement — exception du §5.
  */

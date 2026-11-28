@@ -3,7 +3,7 @@ import { closeScene, closedDay, DAY, openDay, order } from "./close-production-d
 
 /**
  * L'arrêt garde la version de son plan
- * (`documentation/fournil/plan-historique-des-tirages.md`, § 0 et § 1.6) :
+ * (`documentation/fournil/les-versions-du-plan.md`) :
  * l'arrêt manuel signé du staff, l'automatique du système ; la réannonce
  * n'en garde pas — le plan ne change pas.
  */

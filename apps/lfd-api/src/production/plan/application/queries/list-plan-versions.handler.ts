@@ -10,7 +10,7 @@ type PlanVersionEntry = Awaited<ReturnType<PlanVersionListing["listOf"]>>[number
 
 /**
  * **La liste des versions du plan d'une journée**
- * (`documentation/fournil/plan-historique-des-tirages.md`, lot H4) : les
+ * (`documentation/fournil/les-versions-du-plan.md`) : les
  * versions que le noyau garde, l'auteur nommé, et « papier rangé ou non »
  * lu au stockage (§ 1.12). Une journée jamais versionnée rend une liste vide.
  *

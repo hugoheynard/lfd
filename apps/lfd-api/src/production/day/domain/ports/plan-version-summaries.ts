@@ -3,8 +3,7 @@ import type { ServiceDay } from "../value-objects/service-day.value-object.js";
 
 /**
  * **Ce que la journée sait répondre : le résumé de ce qui a changé depuis
- * la version `n`** (`documentation/fournil/plan-historique-des-tirages.md`,
- * lot H6) — celui que porte l'e-mail « dossier mis à jour ». Calculé par le
+ * la version `n`** (`documentation/fournil/les-versions-du-plan.md`) — celui que porte l'e-mail « dossier mis à jour ». Calculé par le
  * même diff que l'écran, puis plafonné : l'écran et l'e-mail ne disent pas
  * deux choses différentes. Un port à part de la comparaison (ISP) : le
  * réenvoi ne lit que lui.

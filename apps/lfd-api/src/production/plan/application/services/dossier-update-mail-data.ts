@@ -82,8 +82,7 @@ function changeOf(change: Change): DossierUpdatedChange {
 }
 
 /**
- * **Le résumé mis en données d'e-mail** (`plan-historique-des-tirages.md`,
- * lot H6) : les quantités dites dans l'unité de l'article, les heures à
+ * **Le résumé mis en données d'e-mail** (`les-versions-du-plan.md`) : les quantités dites dans l'unité de l'article, les heures à
  * Paris, et aucune date — la demande traverse la boîte d'envoi. Les phrases
  * sont au dictionnaire des e-mails, dans l'ordre de l'écran.
  */

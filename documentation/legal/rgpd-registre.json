@@ -723,7 +723,7 @@
       "colonne": "production.plan_versions.recorded_by_id",
       "personne": "staff",
       "categorie": "auteur-geste",
-      "finalite": "Tracer quel membre du staff a fait le geste qui a changé le plan de production (`recorded_by_id` sur `plan_versions`, documentation/fournil/plan-historique-des-tirages.md). Nul pour un client, un invité ou l'arrêt automatique : aucun identifiant de client n'y entre. Conservation non bornée, décision du 2026-11-27, à revoir (§ 7, Q1).",
+      "finalite": "Tracer quel membre du staff a fait le geste qui a changé le plan de production (`recorded_by_id` sur `plan_versions`, documentation/fournil/les-versions-du-plan.md). Nul pour un client, un invité ou l'arrêt automatique : aucun identifiant de client n'y entre. Conservation non bornée, décision du 2026-11-27, à revoir (§ 7, Q1).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -732,7 +732,7 @@
       "colonne": "production.plan_versions.recorded_by_name",
       "personne": "staff",
       "categorie": "identite",
-      "finalite": "Nom figé du membre du staff auteur d'une version du plan de production (`plan_versions`), lisible même si la fiche staff change. Nul hors staff. Conservation non bornée, décision du 2026-11-27, à revoir (documentation/fournil/plan-historique-des-tirages.md, § 7, Q1).",
+      "finalite": "Nom figé du membre du staff auteur d'une version du plan de production (`plan_versions`), lisible même si la fiche staff change. Nul hors staff. Conservation non bornée, décision du 2026-11-27, à revoir (documentation/fournil/les-versions-du-plan.md).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false

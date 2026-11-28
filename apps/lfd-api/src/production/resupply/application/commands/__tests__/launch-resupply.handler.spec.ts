@@ -262,7 +262,7 @@ describe("LaunchResupplyHandler — journée jamais arrêtée (Q5)", () => {
   });
 });
 
-describe("LaunchResupplyHandler — la version du plan (plan-historique-des-tirages, H1)", () => {
+describe("LaunchResupplyHandler — la version du plan (les-versions-du-plan)", () => {
   it("un lancement sur une journée arrêtée garde une version `resupply_launched`, signée de qui lance", async () => {
     const { handler, versions } = subject(closedDay());
 

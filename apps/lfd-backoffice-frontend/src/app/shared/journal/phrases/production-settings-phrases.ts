@@ -90,7 +90,7 @@ const closedDay =
 
 /**
  * « a renvoyé le dossier du mardi 24 décembre (version 3) à 2 destinataires »
- * (`plan-historique-des-tirages.md`). Des comptes seulement, comme l'envoi.
+ * (`les-versions-du-plan.md`). Des comptes seulement, comme l'envoi.
  */
 const dossierResent: Phrase = (fact) => {
   const day = inUnit('day', fact.payload['serviceDay']).text;

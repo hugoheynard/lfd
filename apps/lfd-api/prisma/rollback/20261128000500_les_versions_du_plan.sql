@@ -1,5 +1,5 @@
 -- RETOUR ARRIÈRE de 20261128000500_les_versions_du_plan
--- (documentation/fournil/plan-historique-des-tirages.md, § 2, lot H1).
+-- (documentation/fournil/les-versions-du-plan.md).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
 -- « appliquée ».
