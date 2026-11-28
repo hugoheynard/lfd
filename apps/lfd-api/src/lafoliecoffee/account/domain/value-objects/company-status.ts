@@ -12,4 +12,4 @@
  * dépend d'aucune infrastructure. La parité avec l'enum Postgres est vérifiée à
  * la compilation dans `infrastructure/company-enum-parity.ts`.
  */
-export type CompanyStatus = "pending" | "active" | "suspended" | "terminated";
+export type CompanyStatus = "pending" | "active" | "suspended" | "terminated" | "counter_opened";

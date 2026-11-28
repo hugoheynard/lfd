@@ -27,6 +27,8 @@ export type CompanyService = "pro" | "public" | "closed";
  * - `suspended` → pro, son tarif à elle : une suspension ne touche plus qu'au
  *   crédit (Hugo, 2026-11-03, `plan-suspendue-au-prix-pro.md` § 5 — révise
  *   Q9 du P0, qui disait public ; P1 abandonné pour la suspension).
+ * - `counter_opened` → pro : le compte ouvert au comptoir se sert au prix pro,
+ *   de manière optimiste (`plan-comptes-du-comptoir.md` § 3.1).
  * - `terminated` → fermée (« Ce compte est clos. »).
  * - société inconnue (`null`) → public : rien de négocié sans société lue.
  */
@@ -35,6 +37,7 @@ export function companyServiceOf(status: StandingCompanyStatus | null): CompanyS
     case "active":
     case "pending":
     case "suspended":
+    case "counter_opened":
       return "pro";
     case "terminated":
       return "closed";

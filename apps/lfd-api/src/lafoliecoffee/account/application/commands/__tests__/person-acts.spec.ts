@@ -27,6 +27,7 @@ import {
 import { AccountAccessOpener, type AccessOpening } from "../../services/account-access-opener.js";
 import { AttachAccountHolderCommand } from "../attach-account-holder.command.js";
 import { AttachAccountHolderHandler } from "../attach-account-holder.handler.js";
+import { CounterAccountHasNoMembersError } from "../../../domain/errors/counter-account-errors.js";
 import { InviteCompanyMemberCommand } from "../invite-company-member.command.js";
 import { InviteCompanyMemberHandler } from "../invite-company-member.handler.js";
 import { IssuePasswordLinkCommand } from "../issue-password-link.command.js";
@@ -164,6 +165,38 @@ class CompaniesWithoutHolder extends InMemoryCompanies {
   });
   override load(): Promise<Company | null> {
     return Promise.resolve(this.bare);
+  }
+}
+
+/** Un compte ouvert au comptoir : aucun accès client avant conversion. */
+class CounterOpenedCompanies extends InMemoryCompanies {
+  private readonly opened = Company.reconstitute({
+    id: "c1",
+    raisonSociale: "",
+    enseigne: "Café des Halles",
+    formeJuridique: "",
+    siret: "",
+    vatNumber: "",
+    contact: null,
+    grantedTerms: [],
+    requestedTerm: null,
+    status: "counter_opened",
+    activatedAt: null,
+    activatedBy: null,
+    suspensionCause: null,
+    nafCode: "",
+  });
+  override load(): Promise<Company | null> {
+    return Promise.resolve(this.opened);
+  }
+}
+
+/** Compte les ouvertures d'accès demandées au fournisseur. */
+class CountingAccess extends AccountAccessGranter {
+  grants = 0;
+  grant(): Promise<AccessGranted> {
+    this.grants += 1;
+    return Promise.resolve(OPENED);
   }
 }
 
@@ -311,6 +344,35 @@ describe("l'accès à une société", () => {
         ),
       ),
     ).rejects.toThrow(/indisponible/u);
+    expect(events.traced).toHaveLength(0);
+  });
+
+  it("refuse d'inviter un membre sur un compte ouvert au comptoir, sans rien ouvrir", async () => {
+    const events = new RecordingPublisher();
+    const access = new CountingAccess();
+    const handler = new InviteCompanyMemberHandler(
+      new CounterOpenedCompanies(),
+      new OneMember(),
+      access,
+      events,
+      inMemoryIntents(),
+    );
+
+    await expect(
+      handler.execute(
+        new InviteCompanyMemberCommand(
+          "c1",
+          EMAIL,
+          "Karim",
+          "Benali",
+          PHONE,
+          "orders",
+          "fiche-1",
+          "0b7f6f0e-8a52-4c1e-9d43-0d8e5f0a1b2c",
+        ),
+      ),
+    ).rejects.toBeInstanceOf(CounterAccountHasNoMembersError);
+    expect(access.grants).toBe(0);
     expect(events.traced).toHaveLength(0);
   });
 

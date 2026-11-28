@@ -16,6 +16,11 @@ import { NO_FULFILLMENT_PREFERENCE, toLegalForm } from "@lfd/contracts";
 import type { DeferredTerm, FulfillmentPreferenceView } from "@lfd/contracts";
 import type { CompanyDeclarationChannel } from "../value-objects/company-declaration-channel.js";
 import { InvalidFollowerError, SiteHasNoFollowerError } from "../errors/follower-errors.js";
+import {
+  CounterAccountConversionBlockedError,
+  CounterAccountHasNoMembersError,
+  CounterAccountUnreachableError,
+} from "../errors/counter-account-errors.js";
 import { CompanyOpening } from "../value-objects/company-opening.js";
 import type { CompanyStatus } from "../value-objects/company-status.js";
 import type { StaffTrace } from "../value-objects/staff-trace.js";
@@ -59,6 +64,13 @@ import {
 } from "../errors/public-payer-errors.js";
 
 const TEXT_MAX_LENGTH = 160;
+
+/** D'où une résiliation peut partir : un compte qui a servi, ou ouvert au comptoir. */
+const TERMINABLE: ReadonlySet<CompanyStatus> = new Set<CompanyStatus>([
+  "active",
+  "suspended",
+  "counter_opened",
+]);
 
 /** Le crédit qu'un organisme public reçoit à l'activation : il règle au mois, par virement. */
 const PUBLIC_PAYER_TERM: DeferredTerm = "monthly";
@@ -383,6 +395,41 @@ export class Company {
     );
   }
 
+  /**
+   * **Ouvre un compte au comptoir** (`plan-comptes-du-comptoir.md`, § 3.1) :
+   * un agent ouvre un compte pro incomplet pour y commander au compte tout de
+   * suite. Il n'exige qu'un nom d'usage et un contact joignable — ni SIRET,
+   * ni adresse, ni KBIS, ni mandat : le commerce le convertit ensuite
+   * ({@link convertFromCounter}, {@link activate}).
+   *
+   * Le statut `counter_opened` n'est admis que là où il a été décidé : la
+   * boutique ne le dit pas au compte, la facture du mois ne le prend pas, et
+   * aucun membre n'y entre avant conversion.
+   *
+   * @throws {InvalidOpeningAuthorError} l'ouverture n'a pas d'auteur.
+   * @throws {CounterAccountUnreachableError} le contact n'a pas de téléphone.
+   */
+  static openAtCounter(
+    enseigne: string,
+    contact: CompanyContact,
+    opening: CompanyOpening,
+  ): Company {
+    if (opening.author === null) {
+      throw new InvalidOpeningAuthorError();
+    }
+    if (contact.phone.isEmpty) {
+      throw new CounterAccountUnreachableError();
+    }
+    const company = Company.declare(
+      { raisonSociale: "", enseigne, formeJuridique: "", siret: "", siren: "", vatNumber: "" },
+      contact,
+      "staff",
+      opening,
+    );
+    company.statusValue = "counter_opened";
+    return company;
+  }
+
   /** Reconstitue une société depuis la base (déjà valide — ses VOs revalident). */
   static reconstitute(input: ReconstituteCompanyInput): Company {
     return new Company(
@@ -643,6 +690,7 @@ export class Company {
    * @throws {CompanyAlreadyHasOwnerError} un détenteur est déjà rattaché.
    */
   attachHolder(contact: CompanyContact): void {
+    this.ensureAdmitsMembers();
     if (this.contactValue !== null) {
       throw new CompanyAlreadyHasOwnerError(this.identityId ?? "");
     }
@@ -998,11 +1046,13 @@ export class Company {
           : "Ce sous-compte est facturé au nom de son compte principal, qui n'est pas actif : activez d'abord le compte principal, ou renseignez son propre SIRET.",
       );
     }
-    if (this.statusValue !== "pending") {
+    // Un compte ouvert au comptoir s'active directement quand le verdict
+    // d'activation est vert (`plan-comptes-du-comptoir.md`, § 3.1).
+    if (this.statusValue !== "pending" && this.statusValue !== "counter_opened") {
       throw new CompanyActivationBlockedError(
         this.identityId ?? "",
         [],
-        "Seul un compte en attente peut être activé.",
+        "Seul un compte en attente ou ouvert au comptoir peut être activé.",
       );
     }
     this.statusValue = "active";
@@ -1142,10 +1192,55 @@ export class Company {
    * compte, pas ressusciter celui-là.
    */
   terminate(): void {
-    if (this.statusValue !== "active" && this.statusValue !== "suspended") {
-      throw new CompanyStatusTransitionError(this.identityId ?? "", this.statusValue, "terminated");
+    if (!TERMINABLE.has(this.statusValue)) {
+      throw new CompanyStatusTransitionError(
+        this.identityId ?? "",
+        this.statusValue,
+        "Seul un compte actif, suspendu ou ouvert au comptoir peut être résilié.",
+      );
     }
     this.statusValue = "terminated";
+  }
+
+  /**
+   * **Convertit** un compte ouvert au comptoir en compte en attente : le
+   * commerce a complété la fiche, le parcours d'activation normal reprend.
+   * Il exige ce qui rend l'encours facturable — l'identité légale (SIRET
+   * compris) et l'adresse de facturation, que le handler lit à côté.
+   *
+   * Pour activer directement, c'est {@link activate} qu'on appelle.
+   *
+   * @throws {CompanyStatusTransitionError} le compte n'est pas ouvert au comptoir.
+   * @throws {CounterAccountConversionBlockedError} une pièce manque.
+   */
+  convertFromCounter(hasBillingAddress: boolean): void {
+    if (this.statusValue !== "counter_opened") {
+      throw new CompanyStatusTransitionError(
+        this.identityId ?? "",
+        this.statusValue,
+        "Seul un compte ouvert au comptoir se convertit.",
+      );
+    }
+    const missing = [
+      ...(this.hasLegalIdentity ? [] : ["identite_legale"]),
+      ...(hasBillingAddress ? [] : ["adresse_facturation"]),
+    ];
+    if (missing.length > 0) {
+      throw new CounterAccountConversionBlockedError(this.identityId ?? "", missing);
+    }
+    this.statusValue = "pending";
+  }
+
+  /**
+   * Refuse un accès client sur un compte ouvert au comptoir : il n'a pas
+   * d'espace avant conversion.
+   *
+   * @throws {CounterAccountHasNoMembersError}
+   */
+  ensureAdmitsMembers(): void {
+    if (this.statusValue === "counter_opened") {
+      throw new CounterAccountHasNoMembersError(this.identityId ?? "");
+    }
   }
 
   /** La suppression en cours, ou `null` : le compte est dans les listes. */

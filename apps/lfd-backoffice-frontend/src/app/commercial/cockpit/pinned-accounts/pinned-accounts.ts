@@ -28,6 +28,7 @@ const STATUS_VARIANT: Record<CompanyStatus, BadgeVariant> = {
   active: 'success',
   suspended: 'alert',
   terminated: 'neutral',
+  counter_opened: 'warning',
 };
 
 /** Un indicateur prêt à l'affichage. */

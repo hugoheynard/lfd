@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import type { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { COMMERCIAL_INVOICE } from "../domain/entities/invoice.types.js";
 import { MonthlyInvoicingReader } from "../domain/ports/monthly-invoicing.reader.js";
@@ -11,6 +12,16 @@ import { billableOrderWhere, unsettledWhere } from "./billable-order-criterion.j
 import { INVOICEABLE_ORDER_SELECT, toInvoiceableOrder } from "./invoiceable-order.mapper.js";
 import { ISSUED_OUTCOME, mandateIdOfColumn } from "./prisma-monthly-invoice-outcomes.js";
 import { AWAITING_QUOTE_STATE } from "./prisma-period-quote.repository.js";
+
+/**
+ * Un compte ouvert au comptoir n'est pas un payeur du mois tant que le
+ * commerce ne l'a pas converti (`plan-comptes-du-comptoir.md`, § 6.2) : sans
+ * SIREN ni adresse, il bloquerait la clôture des autres. Écarté ici, par son
+ * statut, dans la requête.
+ */
+const MONTHLY_PAYER_COMPANY = {
+  status: { not: "counter_opened" },
+} as const satisfies Prisma.CompanyWhereInput;
 
 /**
  * Ce que lit la facture du mois (E4). L'assiette est `billableOrderWhere`,
@@ -33,7 +44,10 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
     const orders = await this.prisma.order.findMany({
       // Les bons remis mais pas soldés sont lus AUSSI, marqués : le bloqueur
       // d'émission les nomme au lieu de les taire (plan E6c2, § 1).
-      where: { OR: [billableOrderWhere(from, to), unsettledWhere(from, to)] },
+      where: {
+        OR: [billableOrderWhere(from, to), unsettledWhere(from, to)],
+        company: MONTHLY_PAYER_COMPANY,
+      },
       orderBy: [{ createdAt: "asc" }, { orderNumber: "asc" }],
       select: INVOICEABLE_ORDER_SELECT,
     });

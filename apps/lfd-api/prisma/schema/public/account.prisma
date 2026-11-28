@@ -34,6 +34,9 @@ enum CompanyStatus {
   active
   suspended
   terminated
+  /// Ouvert par un agent du comptoir, pas encore converti par le commerce :
+  /// ni au compte côté boutique, ni payeur du mois, sans membre.
+  counter_opened
 
   @@schema("public")
 }

@@ -88,6 +88,8 @@ export class InviteCompanyMemberHandler implements ICommandHandler<
     if (company === null) {
       throw new CompanyNotFoundError(command.companyId);
     }
+    // Avant le fournisseur d'identité : un refus ne laisse aucun accès derrière lui.
+    company.ensureAdmitsMembers();
 
     const granted = await this.access.grant({
       companyId: command.companyId,

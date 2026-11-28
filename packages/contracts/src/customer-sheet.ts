@@ -18,7 +18,13 @@ import type { SubAccountParentView } from "./sub-accounts.js";
  * enfin traverser la frontière — jusque-là il ne vivait qu'en base et dans un
  * type recopié côté admin.
  */
-export const companyStatusSchema = z.enum(["pending", "active", "suspended", "terminated"]);
+export const companyStatusSchema = z.enum([
+  "pending",
+  "active",
+  "suspended",
+  "terminated",
+  "counter_opened",
+]);
 export type CompanyStatus = z.infer<typeof companyStatusSchema>;
 
 /** Une commande, réduite à ce qui se lit en ligne dans une file. */

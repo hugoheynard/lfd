@@ -22,6 +22,10 @@ describe("companyServiceOf — la décision « pro ou pas » (plan pros en cours
     expect(companyServiceOf("terminated")).toBe("closed");
   });
 
+  it("sert un compte ouvert au comptoir en pro, de manière optimiste", () => {
+    expect(companyServiceOf("counter_opened")).toBe("pro");
+  });
+
   it("sert une société inconnue au public", () => {
     expect(companyServiceOf(null)).toBe("public");
   });

@@ -42,6 +42,10 @@ describe("audienceAdmits — les publics de clientèle contre le statut relu en 
     ["pros_active", "active", "registered", true],
     ["pros_active", "suspended", "registered", true],
     ["pros_active", "pending", "registered", false],
+    // Un compte ouvert au comptoir est pro, pas « pro actif » ni « en attente ».
+    ["pros", "counter_opened", "registered", true],
+    ["pros_active", "counter_opened", "registered", false],
+    ["pros_pending", "counter_opened", "registered", false],
     ["pros_pending", "pending", "registered", true],
     ["pros_pending", "active", "registered", false],
     ["individuals", null, "guest", true],
