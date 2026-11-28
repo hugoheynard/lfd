@@ -1,5 +1,6 @@
 import type { ExecutionContext } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
+import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-host.js";
 
 import {
   InMemoryResupplySwitch,
@@ -19,12 +20,9 @@ class Routes {
   finishes(): void {}
 }
 
-/** Un contexte Nest réduit à son verbe et à sa route. */
+/** Le vrai contexte de Nest, sur une requête réduite à son verbe. */
 function contextWith(method: string, handler: keyof Routes = "plain"): ExecutionContext {
-  return {
-    switchToHttp: () => ({ getRequest: () => ({ method }) }),
-    getHandler: () => Routes.prototype[handler],
-  } as ExecutionContext;
+  return new ExecutionContextHost([{ method }], Routes, Routes.prototype[handler]);
 }
 
 function guardWith(enabled: boolean | null): ResupplyEnabledGuard {
