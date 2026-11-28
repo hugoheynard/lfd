@@ -26,6 +26,7 @@ import { PrismaPlannedQuantitiesReader } from "./planned/infrastructure/prisma-p
 import { OpenPlannedColumnHandler } from "./planned/application/commands/open-planned-column.handler.js";
 import { PutPlannedColumnHandler } from "./planned/application/commands/put-planned-column.handler.js";
 import { WithdrawPlannedColumnHandler } from "./planned/application/commands/withdraw-planned-column.handler.js";
+import { GetPlannerAccessHandler } from "./planned/application/queries/get-planner-access.handler.js";
 import { GetPlannerHandler } from "./planned/application/queries/get-planner.handler.js";
 import { ConversionSchedule } from "./planned/application/services/conversion-schedule.js";
 import { SweepPlannedColumnsHandler } from "./planned/application/commands/sweep-planned-columns.handler.js";
@@ -102,6 +103,7 @@ import {
     RingOnPlannedColumnRefused,
     RingOnPlannedColumnMissed,
     GetPlannerHandler,
+    GetPlannerAccessHandler,
     OpenPlannedColumnHandler,
     PutPlannedColumnHandler,
     WithdrawPlannedColumnHandler,

@@ -43,9 +43,12 @@ export class PrismaFeatureAccessBoardReader extends FeatureAccessBoardReader {
   }
 
   async read(): Promise<StoredFeatureAccess> {
-    const [overrides, exemptions] = await Promise.all([
+    const [overrides, exemptions, companyExemptions] = await Promise.all([
       this.prisma.featureAccessOverride.findMany({ orderBy: { key: "asc" } }),
       this.prisma.featureAccessExemption.findMany({ orderBy: [{ key: "asc" }, { email: "asc" }] }),
+      this.prisma.featureAccessCompanyExemption.findMany({
+        orderBy: [{ key: "asc" }, { companyName: "asc" }],
+      }),
     ]);
     const accounts = await this.accountsFor(exemptions.map((exemption) => exemption.email));
     return {
@@ -70,6 +73,17 @@ export class PrismaFeatureAccessBoardReader extends FeatureAccessBoardReader {
           role: row.createdByRole,
         },
         accountState: accountStateOf(row.email, accounts),
+      })),
+      companyExemptions: companyExemptions.map((row) => ({
+        key: row.key,
+        companyId: row.companyId,
+        companyName: row.companyName,
+        createdAt: row.createdAt,
+        createdBy: {
+          staffUserId: row.createdByStaffId,
+          name: row.createdByName,
+          role: row.createdByRole,
+        },
       })),
     };
   }

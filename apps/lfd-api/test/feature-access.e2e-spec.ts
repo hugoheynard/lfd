@@ -7,7 +7,10 @@
  * - une ligne de production d'une clé retirée (2026-10-09) est signalée et
  *   jamais appliquée ;
  * - le mur staff : `commercial` lit, n'écrit pas ;
- * - la route publique ne dit rien des adresses exemptées.
+ * - la route publique ne dit rien des adresses exemptées ;
+ * - une société s'exempte (non archivée, une fois), se liste nom figé et se
+ *   retire, chaque geste au journal ; `/me` sert le planificateur au niveau
+ *   GLOBAL, même pour un membre d'une société exemptée.
  *
  * Une frontière doublée : la signature du jeton staff. Le reste est réel.
  */
@@ -21,7 +24,8 @@ import {
   jsonBody,
   type E2eContext,
 } from "./e2e-harness.js";
-import { createUser } from "./factories.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
+import { CustomerRole } from "../src/platform/database/client/client.js";
 
 const COMMERCIAL_SUB = "staff-commercial";
 const TESTER_EMAIL = "testeur@exemple.fr";
@@ -89,25 +93,25 @@ describe("la dérogation — posée, puis retirée", () => {
       expect.objectContaining({
         key: KEY,
         effectiveLevel: "closed",
-        exemptible: false,
+        exemptBy: null,
         override: null,
       }),
       expect.objectContaining({
         key: "facebookLogin",
         effectiveLevel: "hidden",
-        exemptible: false,
+        exemptBy: null,
         override: null,
       }),
       expect.objectContaining({
         key: "proSignupCallback",
         effectiveLevel: "hidden",
-        exemptible: false,
+        exemptBy: null,
         override: null,
       }),
       expect.objectContaining({
         key: "orderPlanner",
         effectiveLevel: "closed",
-        exemptible: true,
+        exemptBy: "company",
         override: null,
       }),
     ]);
@@ -208,10 +212,17 @@ describe("la dérogation — posée, puis retirée", () => {
         ...removed.map((key) => ({
           table: "override",
           key,
+          id: null,
           detail: "closed",
           reason: "unknown_key",
         })),
-        { table: "exemption", key: "shop", detail: TESTER_EMAIL, reason: "unknown_key" },
+        {
+          table: "exemption",
+          key: "shop",
+          id: "ex_retiree",
+          detail: TESTER_EMAIL,
+          reason: "unknown_key",
+        },
       ]),
     );
     expect(view.ignored).toHaveLength(removed.length + 1);
@@ -235,6 +246,109 @@ describe("la liste d'exemption", () => {
   });
 });
 
+describe("les sociétés exemptées", () => {
+  const PLANNER = "orderPlanner";
+
+  it("ajoute une société active, la liste nom figé, puis la retire — chaque geste au journal", async () => {
+    const company = await createCompany(ctx.prisma, { enseigne: "Chalet Alpin" });
+
+    await admin()
+      .post(`/admin/feature-access/${PLANNER}/company-exemptions`)
+      .send({ companyId: company.id })
+      .expect(204);
+    await ctx.prisma.company.update({
+      where: { id: company.id },
+      data: { enseigne: "Chalet renommé" },
+    });
+
+    const listed = (await board()).features.find((feature) => feature.key === PLANNER);
+    expect(listed?.companyExemptions).toEqual([
+      expect.objectContaining({ companyId: company.id, companyName: "Chalet Alpin" }),
+    ]);
+
+    await admin()
+      .delete(`/admin/feature-access/${PLANNER}/company-exemptions/${company.id}`)
+      .expect(204);
+    expect(await ctx.prisma.featureAccessCompanyExemption.count()).toBe(0);
+    await admin()
+      .delete(`/admin/feature-access/${PLANNER}/company-exemptions/${company.id}`)
+      .expect(404);
+
+    const facts = await ctx.prisma.activityEvent.findMany({
+      where: { type: { startsWith: "feature_access.company_exemption" } },
+      orderBy: { occurredAt: "asc" },
+      select: { type: true, payload: true },
+    });
+    const named = { company: { id: company.id, name: "Chalet Alpin" } };
+    expect(facts.map((fact) => fact.type)).toEqual([
+      "feature_access.company_exemption_added",
+      "feature_access.company_exemption_removed",
+    ]);
+    for (const fact of facts) {
+      expect(fact.payload).toMatchObject(named);
+    }
+  });
+
+  it("refuse une société déjà exemptée (409), inconnue (404), archivée (409), et une clé qui ne s'exempte pas par société (409)", async () => {
+    const company = await createCompany(ctx.prisma);
+    const archived = await createCompany(ctx.prisma);
+    await ctx.prisma.company.update({
+      where: { id: archived.id },
+      data: { archivedAt: new Date(), archiveReason: "compte fermé" },
+    });
+    const add = (key: string, companyId: string) =>
+      admin().post(`/admin/feature-access/${key}/company-exemptions`).send({ companyId });
+
+    await add(PLANNER, company.id).expect(204);
+    await add(PLANNER, company.id).expect(409);
+    await add(PLANNER, "societe-inconnue").expect(404);
+    await add(PLANNER, archived.id).expect(409);
+    await add(KEY, company.id).expect(409);
+
+    expect(await ctx.prisma.featureAccessCompanyExemption.count()).toBe(1);
+  });
+
+  it("propose au sélecteur les seules sociétés non archivées, triées par nom", async () => {
+    const zeta = await createCompany(ctx.prisma, { enseigne: "Zeta" });
+    const alpha = await createCompany(ctx.prisma, { enseigne: "Alpha" });
+    const archived = await createCompany(ctx.prisma, { enseigne: "Archivée" });
+    await ctx.prisma.company.update({
+      where: { id: archived.id },
+      data: { archivedAt: new Date(), archiveReason: "compte fermé" },
+    });
+
+    const response = await admin().get("/admin/feature-access/exemptible-companies").expect(200);
+
+    expect(jsonBody<unknown>(response)).toEqual([
+      { id: alpha.id, name: "Alpha" },
+      { id: zeta.id, name: "Zeta" },
+    ]);
+  });
+
+  /** Le planificateur ne s'exempte plus par adresse : ses lignes sont signalées. */
+  it("refuse d'exempter une adresse sur le planificateur (409)", async () => {
+    await admin()
+      .post(`/admin/feature-access/${PLANNER}/exemptions`)
+      .send({ email: TESTER_EMAIL })
+      .expect(409);
+  });
+
+  /** `/me` est lu sans espace : il ne peut rien dire d'une société exemptée. */
+  it("/me sert le planificateur au niveau GLOBAL, même au membre d'une société exemptée", async () => {
+    const user = await createUser(ctx.prisma, { auth0Sub: CLIENT, emailVerified: true });
+    const company = await createCompany(ctx.prisma);
+    await attachTo(ctx.prisma, user.id, company.id, CustomerRole.owner);
+    await admin()
+      .post(`/admin/feature-access/${PLANNER}/company-exemptions`)
+      .send({ companyId: company.id })
+      .expect(204);
+
+    const me = await ctx.asSub(CLIENT).get("/me").expect(200);
+
+    expect(jsonBody<AccountView>(me).featureLevels.orderPlanner).toBe("closed");
+  });
+});
+
 describe("le mur staff", () => {
   it("laisse le commercial LIRE, et lui refuse chaque écriture", async () => {
     const commercial = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(COMMERCIAL_SUB);
@@ -247,6 +361,13 @@ describe("le mur staff", () => {
       .send({ email: TESTER_EMAIL })
       .expect(403);
     await commercial().delete(`/admin/feature-access/${KEY}/exemptions/inexistant`).expect(403);
+    await commercial()
+      .post("/admin/feature-access/orderPlanner/company-exemptions")
+      .send({ companyId: "societe" })
+      .expect(403);
+    await commercial()
+      .delete("/admin/feature-access/orderPlanner/company-exemptions/societe")
+      .expect(403);
 
     expect(await ctx.prisma.featureAccessOverride.count()).toBe(0);
     expect(await ctx.prisma.featureAccessExemption.count()).toBe(0);

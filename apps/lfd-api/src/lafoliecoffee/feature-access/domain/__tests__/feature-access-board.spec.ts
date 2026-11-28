@@ -1,5 +1,6 @@
 import { composeFeatureAccessBoard } from "../feature-access-board.js";
 import type {
+  StoredCompanyExemptionRow,
   StoredExemptionRow,
   StoredOverrideRow,
 } from "../ports/feature-access-board.reader.js";
@@ -15,12 +16,23 @@ function exemption(key: string, email: string): StoredExemptionRow {
   return { id: `ex_${email}`, key, email, createdAt: AT, createdBy: AUTHOR, accountState: "none" };
 }
 
+function companyExemption(key: string, companyId: string, name: string): StoredCompanyExemptionRow {
+  return { key, companyId, companyName: name, createdAt: AT, createdBy: AUTHOR };
+}
+
+/** Rien en base, sauf ce que le test pose. */
+function stored(
+  rows: Partial<Parameters<typeof composeFeatureAccessBoard>[0]>,
+): Parameters<typeof composeFeatureAccessBoard>[0] {
+  return { overrides: [], exemptions: [], companyExemptions: [], ...rows };
+}
+
 describe("composeFeatureAccessBoard — l'écran admin", () => {
   it("montre le défaut du code quand rien n'est posé", () => {
-    const board = composeFeatureAccessBoard({ overrides: [], exemptions: [] });
+    const board = composeFeatureAccessBoard(stored({}));
 
     expect(board.ignored).toEqual([]);
-    // Quatre clés depuis le 2026-11-27 ; seul le planificateur propose l'exemption.
+    // Quatre clés ; seul le planificateur s'exempte, et société par société.
     expect(board.features).toEqual([
       expect.objectContaining({
         key: "customerMandate",
@@ -28,7 +40,7 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
         levels: ["closed", "open"],
         defaultLevel: "closed",
         effectiveLevel: "closed",
-        exemptible: false,
+        exemptBy: null,
         override: null,
         exemptions: [],
       }),
@@ -38,7 +50,7 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
         levels: ["hidden", "visible"],
         defaultLevel: "hidden",
         effectiveLevel: "hidden",
-        exemptible: false,
+        exemptBy: null,
         override: null,
         exemptions: [],
       }),
@@ -48,7 +60,7 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
         levels: ["hidden", "visible"],
         defaultLevel: "hidden",
         effectiveLevel: "hidden",
-        exemptible: false,
+        exemptBy: null,
         override: null,
         exemptions: [],
       }),
@@ -58,18 +70,21 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
         levels: ["closed", "open"],
         defaultLevel: "closed",
         effectiveLevel: "closed",
-        exemptible: true,
+        exemptBy: "company",
         override: null,
         exemptions: [],
+        companyExemptions: [],
       }),
     ]);
   });
 
   it("montre la dérogation, son auteur et sa date, et la valeur effective qui en découle", () => {
-    const board = composeFeatureAccessBoard({
-      overrides: [override("customerMandate", "open")],
-      exemptions: [],
-    });
+    const board = composeFeatureAccessBoard(
+      stored({
+        overrides: [override("customerMandate", "open")],
+        exemptions: [],
+      }),
+    );
 
     expect(board.features[0]).toMatchObject({
       effectiveLevel: "open",
@@ -84,10 +99,12 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
   });
 
   it("signale une ligne dont la clé n'est plus au catalogue, sans l'interpréter", () => {
-    const board = composeFeatureAccessBoard({
-      overrides: [override("legacy_flag", "on")],
-      exemptions: [exemption("legacy_flag", "vieux@exemple.fr")],
-    });
+    const board = composeFeatureAccessBoard(
+      stored({
+        overrides: [override("legacy_flag", "on")],
+        exemptions: [exemption("legacy_flag", "vieux@exemple.fr")],
+      }),
+    );
 
     expect(board.features[0]).toMatchObject({
       effectiveLevel: "closed",
@@ -95,8 +112,14 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
       exemptions: [],
     });
     expect(board.ignored).toEqual([
-      { table: "override", key: "legacy_flag", detail: "on", reason: "unknown_key" },
-      { table: "exemption", key: "legacy_flag", detail: "vieux@exemple.fr", reason: "unknown_key" },
+      { table: "override", key: "legacy_flag", id: null, detail: "on", reason: "unknown_key" },
+      {
+        table: "exemption",
+        key: "legacy_flag",
+        id: "ex_vieux@exemple.fr",
+        detail: "vieux@exemple.fr",
+        reason: "unknown_key",
+      },
     ]);
   });
 
@@ -106,10 +129,12 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
    */
   it("signale les lignes des clés retirées le 2026-10-09 en clé inconnue", () => {
     const removed = ["shop", "orders", "invoices", "desktopMenu", "publicDelivery"];
-    const board = composeFeatureAccessBoard({
-      overrides: removed.map((key) => override(key, "closed")),
-      exemptions: [exemption("shop", "testeur@exemple.fr")],
-    });
+    const board = composeFeatureAccessBoard(
+      stored({
+        overrides: removed.map((key) => override(key, "closed")),
+        exemptions: [exemption("shop", "testeur@exemple.fr")],
+      }),
+    );
 
     expect(board.features.map((feature) => feature.key)).toEqual([
       "customerMandate",
@@ -122,22 +147,104 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
       ...removed.map((key) => ({
         table: "override",
         key,
+        id: null,
         detail: "closed",
         reason: "unknown_key",
       })),
-      { table: "exemption", key: "shop", detail: "testeur@exemple.fr", reason: "unknown_key" },
+      {
+        table: "exemption",
+        key: "shop",
+        id: "ex_testeur@exemple.fr",
+        detail: "testeur@exemple.fr",
+        reason: "unknown_key",
+      },
     ]);
   });
 
   it("signale une dérogation dont la valeur n'est plus un niveau, et retombe sur le défaut", () => {
-    const board = composeFeatureAccessBoard({
-      overrides: [override("customerMandate", "maintenance")],
-      exemptions: [],
-    });
+    const board = composeFeatureAccessBoard(
+      stored({
+        overrides: [override("customerMandate", "maintenance")],
+        exemptions: [],
+      }),
+    );
 
     expect(board.features[0]).toMatchObject({ effectiveLevel: "closed", override: null });
     expect(board.ignored).toEqual([
-      { table: "override", key: "customerMandate", detail: "maintenance", reason: "unknown_level" },
+      {
+        table: "override",
+        key: "customerMandate",
+        id: null,
+        detail: "maintenance",
+        reason: "unknown_level",
+      },
+    ]);
+  });
+
+  it("liste les sociétés exemptées du planificateur, nom figé, auteur et date", () => {
+    const board = composeFeatureAccessBoard(
+      stored({ companyExemptions: [companyExemption("orderPlanner", "co_1", "Chalet Alpin")] }),
+    );
+
+    expect(board.features[3]?.companyExemptions).toEqual([
+      {
+        companyId: "co_1",
+        companyName: "Chalet Alpin",
+        createdAt: AT.toISOString(),
+        createdBy: { name: "Camille Admin", role: "admin" },
+      },
+    ]);
+    expect(board.ignored).toEqual([]);
+  });
+
+  /**
+   * Le planificateur s'exemptait par adresse avant de s'exempter par société
+   * (plan exemption par société, § 5) : ses lignes par adresse ne jouent plus,
+   * l'écran les signale pour qu'on les retire.
+   */
+  it("signale une exemption par adresse sur une clé qui s'exempte par société, sans la lister", () => {
+    const board = composeFeatureAccessBoard(
+      stored({ exemptions: [exemption("orderPlanner", "chef@chalet.test")] }),
+    );
+
+    expect(board.features[3]?.exemptions).toEqual([]);
+    expect(board.ignored).toEqual([
+      {
+        table: "exemption",
+        key: "orderPlanner",
+        id: "ex_chef@chalet.test",
+        detail: "chef@chalet.test",
+        reason: "exemption_kind_retired",
+      },
+    ]);
+  });
+
+  it("signale une exemption par société sur une clé qui ne s'exempte pas par société", () => {
+    const board = composeFeatureAccessBoard(
+      stored({
+        companyExemptions: [
+          companyExemption("customerMandate", "co_1", "Chalet Alpin"),
+          companyExemption("legacy_flag", "co_2", "Bistrot"),
+        ],
+      }),
+    );
+
+    expect(board.features[0]?.companyExemptions).toEqual([]);
+    expect(board.ignored).toEqual([
+      {
+        table: "company_exemption",
+        key: "customerMandate",
+        id: "co_1",
+        detail: "Chalet Alpin",
+        reason: "exemption_kind_retired",
+      },
+      {
+        table: "company_exemption",
+        key: "legacy_flag",
+        id: "co_2",
+        detail: "Bistrot",
+        reason: "unknown_key",
+      },
     ]);
   });
 });

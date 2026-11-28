@@ -40,9 +40,9 @@ function exemption(over: Partial<FeatureExemptionView> = {}): FeatureExemptionVi
 }
 
 /**
- * La seule clé du catalogue depuis le 2026-10-09. Posée EXEMPTIBLE ici : l'écran
- * peint ce que le serveur dit (`exemptible`), et la liste d'exemption reste son
- * comportement à éprouver même si aucune clé servie ne l'ouvre aujourd'hui.
+ * Posée exemptible PAR ADRESSE ici : l'écran peint ce que le serveur dit
+ * (`exemptBy`), et la liste d'adresses reste son comportement à éprouver même
+ * si aucune clé servie ne s'exempte ainsi aujourd'hui.
  */
 function mandate(over: Partial<AdminFeatureView> = {}): AdminFeatureView {
   return {
@@ -52,9 +52,10 @@ function mandate(over: Partial<AdminFeatureView> = {}): AdminFeatureView {
     levels: ['closed', 'open'],
     defaultLevel: 'closed',
     effectiveLevel: 'closed',
-    exemptible: true,
+    exemptBy: 'email',
     override: null,
     exemptions: [],
+    companyExemptions: [],
     ...over,
   };
 }
@@ -68,9 +69,10 @@ function facebook(over: Partial<AdminFeatureView> = {}): AdminFeatureView {
     levels: ['hidden', 'visible'],
     defaultLevel: 'hidden',
     effectiveLevel: 'hidden',
-    exemptible: false,
+    exemptBy: null,
     override: null,
     exemptions: [],
+    companyExemptions: [],
     ...over,
   };
 }
@@ -87,6 +89,12 @@ class FakeFeatureAccess {
   readonly clearOverride = vi.fn(async () => this.answer());
   readonly addExemption = vi.fn(async () => this.answer());
   readonly removeExemption = vi.fn(async () => this.answer());
+  readonly exemptibleCompanies = vi.fn(async () => [
+    { id: 'co_chalet', name: 'Chalet Alpin' },
+    { id: 'co_bistrot', name: 'Bistrot' },
+  ]);
+  readonly addCompanyExemption = vi.fn(async () => this.answer());
+  readonly removeCompanyExemption = vi.fn(async () => this.answer());
 
   private answer(): AdminFeatureAccessView {
     if (this.refuse) {
@@ -237,7 +245,7 @@ describe('FeatureAccessPage', () => {
               levels: ['closed', 'open'],
               defaultLevel: 'closed',
               effectiveLevel: 'closed',
-              exemptible: false,
+              exemptBy: null,
             }),
           ],
         }),
@@ -392,8 +400,14 @@ describe('FeatureAccessPage', () => {
       const { fixture } = await render(
         board({
           ignored: [
-            { table: 'override', key: 'loyalty', detail: 'on', reason: 'unknown_key' },
-            { table: 'exemption', key: 'loyalty', detail: 'x@lfc.test', reason: 'unknown_key' },
+            { table: 'override', key: 'loyalty', id: null, detail: 'on', reason: 'unknown_key' },
+            {
+              table: 'exemption',
+              key: 'loyalty',
+              id: 'ex_9',
+              detail: 'x@lfc.test',
+              reason: 'unknown_key',
+            },
           ],
         }),
         WRITER,
@@ -419,6 +433,77 @@ describe('FeatureAccessPage', () => {
 
       expect(host(fixture).querySelectorAll('fold-card')).toHaveLength(1);
       expect(text(fixture)).toContain('« loyalty » : cet écran ne la connaît pas');
+    });
+  });
+
+  /**
+   * Le planificateur s'exempte société par société : ses lignes par adresse
+   * sont « ignorées, sorte retirée », et le staff les retire de l'écran.
+   */
+  it('dit une adresse ignorée sur une clé passée à la société, et la retire', async () => {
+    const { fixture, api } = await render(
+      board({
+        ignored: [
+          {
+            table: 'exemption',
+            key: 'orderPlanner',
+            id: 'plannerex_1',
+            detail: 'chef@chalet.test',
+            reason: 'exemption_kind_retired',
+          },
+        ],
+      }),
+      WRITER,
+    );
+
+    expect(text(fixture)).toContain('ignorée, sorte retirée');
+    buttonSaying(fixture, 'Retirer')?.click();
+    await fixture.whenStable();
+
+    expect(api.removeExemption).toHaveBeenCalledWith('orderPlanner', 'plannerex_1');
+  });
+
+  describe('les sociétés exemptées', () => {
+    function planner(over: Partial<AdminFeatureView> = {}): AdminFeatureView {
+      return mandate({
+        key: 'orderPlanner',
+        label: 'Planificateur de commandes',
+        exemptBy: 'company',
+        companyExemptions: [
+          {
+            companyId: 'co_chalet',
+            companyName: 'Chalet Alpin',
+            createdAt: '2026-11-27T08:00:00.000Z',
+            createdBy: AUTHOR,
+          },
+        ],
+        ...over,
+      });
+    }
+
+    it('liste les sociétés, nom figé, sans formulaire d’adresse', async () => {
+      const { fixture, api } = await render(board({ features: [planner()] }), WRITER);
+
+      expect(text(fixture)).toContain('Sociétés exemptées');
+      expect(text(fixture)).toContain('Chalet Alpin');
+      expect(host(fixture).querySelector('fold-combobox')).not.toBeNull();
+      expect(host(fixture).querySelector('fold-input')).toBeNull();
+      expect(api.exemptibleCompanies).toHaveBeenCalledTimes(1);
+    });
+
+    it('en lecture seule, ni sélecteur ni retrait, et aucune liste de sociétés lue', async () => {
+      const { fixture, api } = await render(board({ features: [planner()] }), READER);
+
+      expect(text(fixture)).toContain('Chalet Alpin');
+      expect(host(fixture).querySelector('fold-combobox')).toBeNull();
+      expect(buttonSaying(fixture, 'Retirer')).toBeNull();
+      expect(api.exemptibleCompanies).not.toHaveBeenCalled();
+    });
+
+    it('ne lit pas les sociétés quand aucune clé ne s’exempte par société', async () => {
+      const { api } = await render(board(), WRITER);
+
+      expect(api.exemptibleCompanies).not.toHaveBeenCalled();
     });
   });
 

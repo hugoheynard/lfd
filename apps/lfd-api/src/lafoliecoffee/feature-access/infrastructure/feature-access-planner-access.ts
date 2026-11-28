@@ -5,8 +5,9 @@ import { FeatureLevelResolver } from "../application/feature-level.resolver.js";
 
 /**
  * La clé `orderPlanner`, lue par la résolution de l'accès aux fonctionnalités
- * pour la personne qui demande : une adresse prouvée et exemptée l'ouvre pour
- * elle seule, sinon la dérogation en base, sinon le défaut (fermé).
+ * pour la société de l'espace : exemptée à l'identique, elle l'ouvre pour
+ * tous ceux qui agissent pour elle ; sinon la dérogation en base, sinon le
+ * défaut (fermé).
  */
 @Injectable()
 export class FeatureAccessPlannerAccess extends PlannerAccess {
@@ -15,6 +16,6 @@ export class FeatureAccessPlannerAccess extends PlannerAccess {
   }
 
   async isOpenFor(caller: PlannerCaller): Promise<boolean> {
-    return (await this.resolver.levelFor("orderPlanner", caller)) === "open";
+    return (await this.resolver.levelForCompany("orderPlanner", caller.companyId)) === "open";
   }
 }

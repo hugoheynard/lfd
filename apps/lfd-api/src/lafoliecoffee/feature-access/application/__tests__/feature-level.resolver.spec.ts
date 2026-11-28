@@ -1,13 +1,14 @@
 import { FeatureLevelLookup } from "../../domain/ports/feature-level.lookup.js";
 import { FeatureLevelResolver } from "../feature-level.resolver.js";
 
-/** Une base en mémoire : une dérogation par clé, des adresses exemptées par clé. */
+/** Une base en mémoire : une dérogation par clé, des adresses et des sociétés exemptées. */
 class StubLookup extends FeatureLevelLookup {
   readonly asked: string[] = [];
 
   constructor(
     private readonly overrides: Readonly<Record<string, string>>,
     private readonly exempt: readonly string[],
+    private readonly exemptCompanies: readonly string[] = [],
   ) {
     super();
   }
@@ -29,6 +30,11 @@ class StubLookup extends FeatureLevelLookup {
   isExempt(key: string, normalizedEmail: string): Promise<boolean> {
     this.asked.push(`exempt:${key}:${normalizedEmail}`);
     return Promise.resolve(this.exempt.includes(normalizedEmail));
+  }
+
+  isCompanyExempt(key: string, companyId: string): Promise<boolean> {
+    this.asked.push(`company:${key}:${companyId}`);
+    return Promise.resolve(this.exemptCompanies.includes(companyId));
   }
 }
 
@@ -102,35 +108,44 @@ describe("FeatureLevelResolver — une clé qu'aucune exemption n'ouvre", () => 
   });
 });
 
-describe("FeatureLevelResolver.levelFor — le planificateur, exemptible", () => {
-  it("reste fermé pour une adresse non exemptée", async () => {
-    const lookup = new StubLookup({}, ["autre@exemple.fr"]);
+describe("FeatureLevelResolver — le planificateur, exempté société par société", () => {
+  it("s'ouvre pour la société exemptée, sans lire la dérogation", async () => {
+    const lookup = new StubLookup({ orderPlanner: "closed" }, [], ["co_chalet"]);
     await expect(
-      new FeatureLevelResolver(lookup).levelFor("orderPlanner", {
-        email: "chef@exemple.fr",
-        emailProven: true,
-      }),
-    ).resolves.toBe("closed");
-  });
-
-  it("s'ouvre pour une adresse prouvée et exemptée, sans lire la dérogation", async () => {
-    const lookup = new StubLookup({ orderPlanner: "closed" }, ["chef@exemple.fr"]);
-    await expect(
-      new FeatureLevelResolver(lookup).levelFor("orderPlanner", {
-        email: " Chef@Exemple.fr ",
-        emailProven: true,
-      }),
+      new FeatureLevelResolver(lookup).levelForCompany("orderPlanner", "co_chalet"),
     ).resolves.toBe("open");
-    expect(lookup.asked).toEqual(["exempt:orderPlanner:chef@exemple.fr"]);
+    expect(lookup.asked).toEqual(["company:orderPlanner:co_chalet"]);
   });
 
-  /** Sans preuve, une inscription à l'adresse d'un testeur hériterait de son exemption. */
-  it("ne cherche pas l'exemption d'une adresse non prouvée", async () => {
+  it("reste fermé pour une autre société, et suit alors la dérogation", async () => {
+    const lookup = new StubLookup({}, [], ["co_chalet"]);
+    await expect(
+      new FeatureLevelResolver(lookup).levelForCompany("orderPlanner", "co_bistrot"),
+    ).resolves.toBe("closed");
+    await expect(
+      new FeatureLevelResolver(new StubLookup({ orderPlanner: "open" }, [])).levelForCompany(
+        "orderPlanner",
+        "co_bistrot",
+      ),
+    ).resolves.toBe("open");
+  });
+
+  /** Une clé qui ne s'exempte pas par société ne regarde pas la liste. */
+  it("ne cherche aucune société pour le mandat client", async () => {
+    const lookup = new StubLookup({}, [], ["co_chalet"]);
+    await expect(
+      new FeatureLevelResolver(lookup).levelForCompany("customerMandate", "co_chalet"),
+    ).resolves.toBe("closed");
+    expect(lookup.asked).toEqual(["override:customerMandate"]);
+  });
+
+  /** `/me` et la garde ne s'égalent plus pour cette clé : l'adresse n'ouvre rien. */
+  it("ne cherche pas l'adresse, même prouvée et inscrite", async () => {
     const lookup = new StubLookup({}, ["chef@exemple.fr"]);
     await expect(
       new FeatureLevelResolver(lookup).levelFor("orderPlanner", {
         email: "chef@exemple.fr",
-        emailProven: false,
+        emailProven: true,
       }),
     ).resolves.toBe("closed");
     expect(lookup.asked).toEqual(["override:orderPlanner"]);
@@ -149,8 +164,11 @@ describe("FeatureLevelResolver.levelsFor — tous les niveaux d'un coup", () => 
     );
   });
 
-  /** Trois `findUnique` à chaque `/me` et `/feature-access` : une lecture suffit. */
-  it("lit les dérogations en UNE fois, et l'exemption des seules clés exemptibles", async () => {
+  /**
+   * Une lecture des dérogations suffit ; aucune clé ne s'exempte par adresse,
+   * et le planificateur y vaut son niveau GLOBAL (`/me` n'a pas d'espace).
+   */
+  it("lit les dérogations en UNE fois, et sert le planificateur au niveau global", async () => {
     const lookup = new StubLookup({ facebookLogin: "visible", customerMandate: "open" }, [
       "testeur@exemple.fr",
     ]);
@@ -163,11 +181,10 @@ describe("FeatureLevelResolver.levelsFor — tous les niveaux d'un coup", () => 
     expect(levels).toMatchObject({
       customerMandate: "open",
       facebookLogin: "visible",
-      orderPlanner: "open",
+      orderPlanner: "closed",
     });
     expect(lookup.asked).toEqual([
       "overrides:customerMandate,facebookLogin,proSignupCallback,orderPlanner",
-      "exempt:orderPlanner:testeur@exemple.fr",
     ]);
   });
 

@@ -11,14 +11,17 @@
  * - les favoris de la société (ceux de la boutique, par espace) en colonne de gauche ;
  * - la vérification de la passation servie avec la grille (§ 4 bis) ;
  * - la clé `orderPlanner` : fermée, chaque route refuse (409) après le mur ;
- *   une adresse PROUVÉE et exemptée l'ouvre pour elle seule ; ouverte, tous
- *   passent. Les autres cas l'ouvrent dans leur préparation.
+ *   une SOCIÉTÉ exemptée l'ouvre pour qui agit dans son espace, sans
+ *   héritage vers ses sites ; `GET /planner/access` dit la même chose sans
+ *   refus ; ouverte, tous passent. Les autres cas l'ouvrent dans leur
+ *   préparation.
  */
 import {
   WORKSPACE_HEADER,
   type PlannedColumnOpened,
   type PlannedColumnWritten,
   type PlannedRoutingPayload,
+  type PlannerAccessView,
   type PlannerView,
 } from "@lfd/contracts";
 
@@ -32,7 +35,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
-import { exemptFromFeature, openFeature } from "./feature-access-scene.js";
+import { exemptCompanyFromFeature, openFeature } from "./feature-access-scene.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const PRO_A = "auth0|planner-pro-a";
@@ -245,26 +248,33 @@ describe("planner — les favoris et la vérification", () => {
 });
 
 describe("planner — la clé orderPlanner", () => {
-  const TESTER = "auth0|planner-testeur";
-  const TESTER_EMAIL = "testeur-planificateur@exemple.fr";
+  const SITE_MEMBER = "auth0|planner-membre-du-site";
 
-  /** Ferme la clé (la préparation commune l'ouvre) et sème un pro à l'adresse PROUVÉE. */
-  async function closeAndSeedTester(emailVerified: boolean): Promise<void> {
-    await ctx.asSub(E2E_STAFF_SUB).delete("/admin/feature-access/orderPlanner").expect(204);
-    const user = await createUser(ctx.prisma, {
-      auth0Sub: TESTER,
-      email: TESTER_EMAIL,
-      emailVerified,
+  const closePlanner = () =>
+    ctx.asSub(E2E_STAFF_SUB).delete("/admin/feature-access/orderPlanner").expect(204);
+
+  async function accessOf(sub: string): Promise<boolean> {
+    const response = await as(sub).get("/planner/access").expect(200);
+    return jsonBody<PlannerAccessView>(response).open;
+  }
+
+  /** Un site de la société de PRO_A, et un membre rattaché au SITE seulement. */
+  async function seedSiteOfProA(): Promise<string> {
+    const site = await createCompany(ctx.prisma, { status: CompanyStatus.active });
+    await ctx.prisma.company.update({
+      where: { id: site.id },
+      data: { parentCompanyId: companyOf.get(PRO_A) ?? "" },
     });
-    const company = await createCompany(ctx.prisma, { status: CompanyStatus.active });
-    await attachTo(ctx.prisma, user.id, company.id, CustomerRole.owner);
-    companyOf.set(TESTER, company.id);
+    const member = await createUser(ctx.prisma, { auth0Sub: SITE_MEMBER });
+    await attachTo(ctx.prisma, member.id, site.id, CustomerRole.owner);
+    companyOf.set(SITE_MEMBER, site.id);
+    return site.id;
   }
 
   it("fermée, refuse chaque route (409) sans rien écrire", async () => {
     const day = serviceDay(2);
     const { id } = await openColumn(PRO_A, day);
-    await ctx.asSub(E2E_STAFF_SUB).delete("/admin/feature-access/orderPlanner").expect(204);
+    await closePlanner();
 
     const refused = await as(PRO_A).get(`/planner?from=${day}`).expect(409);
     expect(jsonBody<{ code: string }>(refused).code).toBe("planner.closed");
@@ -274,35 +284,50 @@ describe("planner — la clé orderPlanner", () => {
       .send({ version: 1, routing: MORNING, lines: lines(3) })
       .expect(409);
     await as(PRO_A).delete(`/planner/columns/${id}`).expect(409);
+    await expect(accessOf(PRO_A)).resolves.toBe(false);
 
     const stored = await ctx.prisma.plannedColumn.findMany({ select: { id: true, version: true } });
     expect(stored).toEqual([{ id, version: 1 }]);
   });
 
-  it("fermée, le particulier reste refusé par le mur (403), avant la clé", async () => {
-    await ctx.asSub(E2E_STAFF_SUB).delete("/admin/feature-access/orderPlanner").expect(204);
+  it("le particulier : refusé par le mur (403) sur les routes, `false` sur l'accès", async () => {
+    await closePlanner();
     await as(PERSON)
       .get(`/planner?from=${serviceDay(2)}`)
       .expect(403);
+    await expect(accessOf(PERSON)).resolves.toBe(false);
   });
 
-  it("fermée, s'ouvre pour une adresse prouvée et exemptée — elle seule", async () => {
-    await closeAndSeedTester(true);
-    await exemptFromFeature(ctx, "orderPlanner", TESTER_EMAIL);
+  it("fermée, s'ouvre pour la société exemptée — et elle seule", async () => {
+    await closePlanner();
+    await exemptCompanyFromFeature(ctx, "orderPlanner", companyOf.get(PRO_A) ?? "");
     const day = serviceDay(2);
 
-    await openColumn(TESTER, day);
-    const view = await plannerOf(TESTER, day);
+    await openColumn(PRO_A, day);
+    const view = await plannerOf(PRO_A, day);
     expect(view.days).toHaveLength(1);
-    await as(PRO_A).get(`/planner?from=${day}`).expect(409);
+    await expect(accessOf(PRO_A)).resolves.toBe(true);
+
+    const refused = await as(PRO_B).get(`/planner?from=${day}`).expect(409);
+    expect(jsonBody<{ code: string }>(refused).code).toBe("planner.closed");
+    await expect(accessOf(PRO_B)).resolves.toBe(false);
   });
 
-  /** Sans preuve, s'inscrire à l'adresse d'un testeur hériterait de son exemption. */
-  it("fermée, une exemption n'ouvre rien à une adresse non prouvée", async () => {
-    await closeAndSeedTester(false);
-    await exemptFromFeature(ctx, "orderPlanner", TESTER_EMAIL);
-    await as(TESTER)
+  /** Égalité exacte : exempter un principal n'ouvre pas ses sites. */
+  it("fermée, le membre d'un SITE du principal exempté reste refusé (409)", async () => {
+    await closePlanner();
+    await seedSiteOfProA();
+    await exemptCompanyFromFeature(ctx, "orderPlanner", companyOf.get(PRO_A) ?? "");
+
+    const refused = await as(SITE_MEMBER)
       .get(`/planner?from=${serviceDay(2)}`)
       .expect(409);
+    expect(jsonBody<{ code: string }>(refused).code).toBe("planner.closed");
+    await expect(accessOf(SITE_MEMBER)).resolves.toBe(false);
+  });
+
+  it("ouverte pour tous, l'accès le dit dans chaque espace société", async () => {
+    await expect(accessOf(PRO_A)).resolves.toBe(true);
+    await expect(accessOf(PRO_B)).resolves.toBe(true);
   });
 });

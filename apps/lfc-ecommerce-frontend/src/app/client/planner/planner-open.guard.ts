@@ -1,22 +1,20 @@
 import { inject } from '@angular/core';
 import { Router, type CanActivateFn } from '@angular/router';
 
-import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
+import { PlannerAccessStore } from './planner-access.store';
 
 /**
- * **`/planificateur` ne s'ouvre que si la clé `orderPlanner` l'est pour cette
- * personne** — la même lecture que le menu, exemption comprise. Fermé, ou
- * inconnu (lecture en échec), l'adresse renvoie au rayon : un écran dont chaque
- * requête partirait en 409 n'a rien à montrer.
+ * **`/planificateur` ne s'ouvre que si le planificateur l'est dans l'espace
+ * affiché** — la même lecture que le menu (`GET /planner/access`, rangée par
+ * espace). Fermé, ou inconnu (lecture en échec), l'adresse renvoie au rayon :
+ * un écran dont chaque requête partirait en 409 n'a rien à montrer.
  *
  * Ce n'est pas la protection : l'API refuse elle-même les routes du
- * planificateur quand la clé est fermée.
+ * planificateur quand la société de l'espace n'y a pas accès.
  */
 export const plannerOpenGuard: CanActivateFn = async () => {
   // Tout ce qui s'injecte l'est AVANT le premier `await`.
-  const features = inject(ClientFeatureAccess);
+  const access = inject(PlannerAccessStore);
   const router = inject(Router);
-  void features.load();
-  await features.settled();
-  return features.orderPlannerOpen() ? true : router.parseUrl('/boutique');
+  return (await access.openHere()) ? true : router.parseUrl('/boutique');
 };

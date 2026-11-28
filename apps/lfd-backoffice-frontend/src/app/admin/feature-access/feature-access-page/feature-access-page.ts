@@ -1,10 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type {
-  AdminFeatureAccessView,
-  AdminFeatureView,
-  FeatureKey,
-  IgnoredFeatureRowView,
-} from '@lfd/contracts';
+import type { AdminFeatureAccessView, FeatureKey, IgnoredFeatureRowView } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -19,68 +14,27 @@ import {
   FoldListboxComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
-  type FoldSelectOption,
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
-import { isKnownFeatureKey, levelLabel } from '../../../shared/feature-levels';
+import { isKnownFeatureKey } from '../../../shared/feature-levels';
+import { ignoredRowLine } from '../feature-access-labels';
 import {
-  ACCOUNT_STATE_BADGES,
-  type AccountStateBadge,
-  authoredLine,
-  ignoredRowLine,
-} from '../feature-access-labels';
+  type ExemptionRow,
+  type FeatureCard,
+  removable,
+  toCard,
+  type UnreadableRow,
+} from '../feature-access-cards';
 import { FeatureAccessService } from '../feature-access.service';
+import {
+  type CompanyExemptionRow,
+  type ExemptibleCompanyOption,
+  FeatureCompanyExemptions,
+} from '../feature-company-exemptions/feature-company-exemptions';
 
 type LoadState = 'loading' | 'ready' | 'error';
-
-/** Une adresse exemptée, telle que la ligne la peint. */
-interface ExemptionRow {
-  readonly id: string;
-  readonly email: string;
-  readonly added: string;
-  readonly badge: AccountStateBadge;
-}
-
-/** Une carte : un flag du catalogue, déjà traduit en ce que l'écran montre. */
-interface FeatureCard {
-  readonly key: FeatureKey;
-  readonly label: string;
-  readonly description: string;
-  readonly options: readonly FoldSelectOption<string>[];
-  readonly effectiveLevel: string;
-  readonly effectiveLabel: string;
-  /** `null` = défaut du code. */
-  readonly provenance: string | null;
-  readonly defaultLabel: string;
-  /** `false` : la clé ne s'ouvre pas adresse par adresse — pas de formulaire d'ajout. */
-  readonly exemptible: boolean;
-  readonly exemptions: readonly ExemptionRow[];
-}
-
-function toCard(key: FeatureKey, feature: AdminFeatureView): FeatureCard {
-  return {
-    key,
-    label: feature.label,
-    description: feature.description,
-    options: feature.levels.map((level) => ({ value: level, label: levelLabel(key, level) })),
-    effectiveLevel: feature.effectiveLevel,
-    effectiveLabel: levelLabel(key, feature.effectiveLevel),
-    provenance:
-      feature.override === null
-        ? null
-        : authoredLine('Posé', feature.override.updatedBy, feature.override.updatedAt),
-    defaultLabel: levelLabel(key, feature.defaultLevel),
-    exemptible: feature.exemptible,
-    exemptions: feature.exemptions.map((exemption) => ({
-      id: exemption.id,
-      email: exemption.email,
-      added: authoredLine('Ajoutée', exemption.createdBy, exemption.createdAt),
-      badge: ACCOUNT_STATE_BADGES[exemption.accountState],
-    })),
-  };
-}
 
 /**
  * **Accès aux fonctionnalités** — ce qu'on peut faire de la boutique, réglé
@@ -121,6 +75,7 @@ function toCard(key: FeatureKey, feature: AdminFeatureView): FeatureCard {
     FoldListboxComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    FeatureCompanyExemptions,
   ],
   templateUrl: './feature-access-page.html',
   styleUrl: './feature-access-page.scss',
@@ -135,7 +90,9 @@ export class FeatureAccessPage {
   /** Une relecture a échoué après un premier chargement : l'écran garde la dernière. */
   protected readonly staleBoard = signal(false);
   /** La clé dont une écriture est en vol — ses contrôles attendent. */
-  protected readonly pendingKey = signal<FeatureKey | null>(null);
+  protected readonly pendingKey = signal<string | null>(null);
+  /** Les sociétés que le sélecteur propose ; vide tant qu'elles ne sont pas lues. */
+  protected readonly companies = signal<readonly ExemptibleCompanyOption[]>([]);
   /** L'adresse en cours de saisie, par clé. */
   private readonly drafts = signal<Readonly<Record<string, string>>>({});
   /**
@@ -157,16 +114,19 @@ export class FeatureAccessPage {
    * Tout ce qui est en base et ne se lit pas : les lignes que le serveur a
    * écartées, et les clés qu'il connaît mais que CE front ne connaît pas encore.
    */
-  protected readonly unreadable = computed<readonly string[]>(() => {
+  protected readonly unreadable = computed<readonly UnreadableRow[]>(() => {
     const board = this.board();
     if (board === null) {
       return [];
     }
     const unknownToScreen = board.features
       .filter((feature) => !isKnownFeatureKey(feature.key))
-      .map((feature) => `la fonctionnalité « ${feature.key} » : cet écran ne la connaît pas`);
+      .map((feature) => ({
+        line: `la fonctionnalité « ${feature.key} » : cet écran ne la connaît pas`,
+        removal: null,
+      }));
     return [
-      ...board.ignored.map((row: IgnoredFeatureRowView) => ignoredRowLine(row)),
+      ...board.ignored.map((row) => ({ line: ignoredRowLine(row), removal: removable(row) })),
       ...unknownToScreen,
     ];
   });
@@ -183,6 +143,24 @@ export class FeatureAccessPage {
       this.state.set('ready');
     } catch {
       this.state.set('error');
+      return;
+    }
+    await this.loadCompanies();
+  }
+
+  /**
+   * Le sélecteur ne sert qu'à qui écrit, et qu'à une clé qui s'exempte par
+   * société. Un échec le laisse vide et le dit : la liste, elle, reste lue.
+   */
+  private async loadCompanies(): Promise<void> {
+    const wanted = this.cards().some((card) => card.exemptBy === 'company');
+    if (!this.canWrite() || !wanted) {
+      return;
+    }
+    try {
+      this.companies.set(await this.api.exemptibleCompanies());
+    } catch (error) {
+      this.notify.error(error);
     }
   }
 
@@ -222,6 +200,30 @@ export class FeatureAccessPage {
     await this.write(card.key, () => this.api.removeExemption(card.key, row.id));
   }
 
+  protected async addCompanyExemption(card: FeatureCard, companyId: string): Promise<void> {
+    await this.write(card.key, () => this.api.addCompanyExemption(card.key, companyId));
+  }
+
+  protected async removeCompanyExemption(
+    card: FeatureCard,
+    row: CompanyExemptionRow,
+  ): Promise<void> {
+    await this.write(card.key, () => this.api.removeCompanyExemption(card.key, row.companyId));
+  }
+
+  /** Retire une exemption que le catalogue ignore, par le geste de sa table. */
+  protected async removeIgnored(row: IgnoredFeatureRowView): Promise<void> {
+    const id = row.id;
+    if (id === null) {
+      return;
+    }
+    await this.write(row.key, () =>
+      row.table === 'company_exemption'
+        ? this.api.removeCompanyExemption(row.key, id)
+        : this.api.removeExemption(row.key, id),
+    );
+  }
+
   protected removeMessage(row: ExemptionRow): string {
     return `Retirer ${row.email} de la liste ? Cette adresse suivra de nouveau le niveau.`;
   }
@@ -232,7 +234,7 @@ export class FeatureAccessPage {
    * lieu. Rend vrai si l'écriture est passée.
    */
   private async write(
-    key: FeatureKey,
+    key: string,
     request: () => Promise<AdminFeatureAccessView>,
   ): Promise<boolean> {
     if (this.pendingKey() !== null) {

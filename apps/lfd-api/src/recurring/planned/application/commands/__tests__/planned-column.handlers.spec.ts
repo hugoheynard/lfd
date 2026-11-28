@@ -19,7 +19,6 @@ import {
 import { ConversionSchedule } from "../../services/conversion-schedule.js";
 import { PlannerWall } from "../../services/planner-wall.js";
 import {
-  CALLER,
   FixedPlannerAccess,
   InMemoryPlannedColumns,
   RecordingBasketCheck,
@@ -78,7 +77,7 @@ const openCommand = (
   user = "user_1",
   company: string | null = "chalet",
   intentKey = `intent-${String((intents += 1))}`,
-) => new OpenPlannedColumnCommand(user, company, { day, routing }, intentKey, CALLER);
+) => new OpenPlannedColumnCommand(user, company, { day, routing }, intentKey);
 
 const putCommand = (
   id: string,
@@ -87,17 +86,11 @@ const putCommand = (
   routing = MORNING,
   skus: readonly string[] = ["CRO-01"],
 ) =>
-  new PutPlannedColumnCommand(
-    "user_1",
-    "chalet",
-    id,
-    {
-      version,
-      routing,
-      lines: skus.map((sku) => ({ sku, quantity })),
-    },
-    CALLER,
-  );
+  new PutPlannedColumnCommand("user_1", "chalet", id, {
+    version,
+    routing,
+    lines: skus.map((sku) => ({ sku, quantity })),
+  });
 
 describe("OpenPlannedColumnHandler", () => {
   it("ouvre une colonne par créneau : deux créneaux du même jour font deux colonnes", async () => {
@@ -119,7 +112,7 @@ describe("OpenPlannedColumnHandler", () => {
   it("la même intention rejouée rend la même colonne, même retirée entre-temps", async () => {
     const { open, withdraw } = scene();
     const first = await open.execute(openCommand(MORNING, DAY, "user_1", "chalet", "same"));
-    await withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", first.id, CALLER));
+    await withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", first.id));
     const replay = await open.execute(openCommand(MORNING, DAY, "user_1", "chalet", "same"));
     expect(replay).toEqual(first);
   });
@@ -180,17 +173,11 @@ describe("PutPlannedColumnHandler", () => {
   it("ne trouve pas la colonne d'une autre société, même pour un membre des deux (404)", async () => {
     const { open, put } = scene();
     const { id } = await open.execute(openCommand());
-    const fromOther = new PutPlannedColumnCommand(
-      "user_1",
-      "autre",
-      id,
-      {
-        version: 1,
-        routing: MORNING,
-        lines: [],
-      },
-      CALLER,
-    );
+    const fromOther = new PutPlannedColumnCommand("user_1", "autre", id, {
+      version: 1,
+      routing: MORNING,
+      lines: [],
+    });
     await expect(put.execute(fromOther)).rejects.toThrow(PlannedColumnNotFoundError);
   });
 
@@ -253,8 +240,8 @@ describe("WithdrawPlannedColumnHandler", () => {
   it("retire la colonne, libère son créneau, et ne refait rien au rejeu", async () => {
     const { open, withdraw, columns } = scene();
     const { id } = await open.execute(openCommand());
-    await withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", id, CALLER));
-    await withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", id, CALLER));
+    await withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", id));
+    await withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", id));
     expect(columns.saves).toBe(2);
     const reopened = await open.execute(openCommand());
     expect(reopened.id).not.toBe(id);
@@ -263,7 +250,7 @@ describe("WithdrawPlannedColumnHandler", () => {
   it("refuse d'écrire une colonne retirée (404)", async () => {
     const { open, withdraw, put } = scene();
     const { id } = await open.execute(openCommand());
-    await withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", id, CALLER));
+    await withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", id));
     await expect(put.execute(putCommand(id, 2))).rejects.toThrow(PlannedColumnNotFoundError);
   });
 });
@@ -275,10 +262,14 @@ describe("la clé orderPlanner", () => {
     await expect(open.execute(openCommand())).rejects.toThrow(PlannerClosedError);
     await expect(put.execute(putCommand("col_000001", 1))).rejects.toThrow(PlannerClosedError);
     await expect(
-      withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", "col_000001", CALLER)),
+      withdraw.execute(new WithdrawPlannedColumnCommand("user_1", "chalet", "col_000001")),
     ).rejects.toThrow(PlannerClosedError);
     expect(columns.saves).toBe(0);
-    expect(access.asked).toEqual([CALLER, CALLER, CALLER]);
+    expect(access.asked).toEqual([
+      { companyId: "chalet" },
+      { companyId: "chalet" },
+      { companyId: "chalet" },
+    ]);
   });
 
   it("n'est jugée qu'après le mur : l'espace personnel reste un 403", async () => {

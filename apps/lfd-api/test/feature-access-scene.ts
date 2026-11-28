@@ -1,6 +1,6 @@
 /**
  * **Les gestes de l'écran des accès** pour les e2e d'une surface fermée par une
- * clé : ouvrir à tous, exempter une adresse. Par les vraies routes du staff,
+ * clé : ouvrir à tous, exempter une société. Par les vraies routes du staff,
  * pour que la résolution lue soit celle de la production. Demande l'admin
  * doublé à l'amorçage (`ADMIN_VERIFIER_OVERRIDE`).
  */
@@ -17,15 +17,15 @@ export async function openFeature(ctx: E2eContext, key: FeatureKey): Promise<voi
     .expect(204);
 }
 
-/** Ajoute une adresse à la liste d'exemption d'une clé exemptible. */
-export async function exemptFromFeature(
+/** Ajoute une société à la liste d'exemption d'une clé qui s'exempte par société. */
+export async function exemptCompanyFromFeature(
   ctx: E2eContext,
   key: FeatureKey,
-  email: string,
+  companyId: string,
 ): Promise<void> {
   await ctx
     .asSub(E2E_STAFF_SUB)
-    .post(`/admin/feature-access/${key}/exemptions`)
-    .send({ email })
-    .expect(201);
+    .post(`/admin/feature-access/${key}/company-exemptions`)
+    .send({ companyId })
+    .expect(204);
 }

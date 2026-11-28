@@ -1971,6 +1971,33 @@
       "information": false
     },
     {
+      "colonne": "public.feature_access_company_exemptions.created_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur de l'exemption d'une société sur `feature_access_company_exemptions`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.feature_access_company_exemptions.created_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a exempté une société (`created_by_staff_id`) sur `feature_access_company_exemptions`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.feature_access_exemptions.email",
+      "personne": "client",
+      "categorie": "coordonnees",
+      "finalite": "L'adresse d'un client (ou d'un futur client) exemptée d'une fonctionnalité fermée, pour la tester avant tous ; la ligne est supprimée au retrait, le journal garde l'adresse.",
+      "conservation": "a-decider",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.feature_access_overrides.updated_by_name",
       "personne": "staff",
       "categorie": "identite",

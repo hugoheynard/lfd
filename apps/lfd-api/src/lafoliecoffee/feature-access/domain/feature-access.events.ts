@@ -21,6 +21,8 @@ export const FEATURE_ACCESS_FACTS = {
   overrideCleared: "feature_access.override_cleared",
   exemptionAdded: "feature_access.exemption_added",
   exemptionRemoved: "feature_access.exemption_removed",
+  companyExemptionAdded: "feature_access.company_exemption_added",
+  companyExemptionRemoved: "feature_access.company_exemption_removed",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 const SUBJECT_TYPE = "feature_access";
@@ -123,6 +125,56 @@ export class FeatureExemptionRemovedEvent implements JournaledEvent {
         subjectLabel: labelOf(this.key),
         exemptionId: this.exemptionId,
         email: this.email,
+      },
+    };
+  }
+}
+
+/**
+ * Une société exemptée, ou retirée de la liste d'une clé. La société est
+ * nommée du nom figé à l'ajout : la ligne retirée est supprimée, et le fait
+ * reste la seule mémoire de qui l'avait ouverte.
+ */
+export class FeatureCompanyExemptionEvent implements JournaledEvent {
+  private constructor(
+    private readonly type: JournalFactType,
+    readonly key: string,
+    readonly companyId: string,
+    readonly companyName: string,
+  ) {}
+
+  static added(key: string, companyId: string, companyName: string): FeatureCompanyExemptionEvent {
+    return new FeatureCompanyExemptionEvent(
+      FEATURE_ACCESS_FACTS.companyExemptionAdded,
+      key,
+      companyId,
+      companyName,
+    );
+  }
+
+  static removed(
+    key: string,
+    companyId: string,
+    companyName: string,
+  ): FeatureCompanyExemptionEvent {
+    return new FeatureCompanyExemptionEvent(
+      FEATURE_ACCESS_FACTS.companyExemptionRemoved,
+      key,
+      companyId,
+      companyName,
+    );
+  }
+
+  journalFact(): JournalFact {
+    return {
+      type: this.type,
+      subjectType: SUBJECT_TYPE,
+      subjectId: this.key,
+      payload: {
+        subjectLabel: labelOf(this.key),
+        // `named` exige un nom : une ligne au nom vide (jamais écrite par la
+        // factory) se nommerait par son identifiant plutôt qu'un nom inventé.
+        company: { id: this.companyId, name: this.companyName || this.companyId },
       },
     };
   }

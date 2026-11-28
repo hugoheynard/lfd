@@ -1,6 +1,7 @@
 import {
   FEATURE_CATALOGUE,
   FEATURE_KEYS,
+  exemptionKindOf,
   isAtLeast,
   isExemptible,
   isFeatureKey,
@@ -19,13 +20,17 @@ describe("le catalogue de l'accès aux fonctionnalités", () => {
     expect(Object.keys(FEATURE_CATALOGUE)).toEqual(keys);
   });
 
-  /** Ajoutée le 2026-11-27 (Hugo) : une porte que le serveur ferme, ouverte d'abord par exemption. */
-  it("porte le planificateur de commandes, fermé par défaut et exemptible", () => {
+  /**
+   * Une porte que le serveur ferme, ouverte d'abord à quelques clients : une
+   * société, pas une personne (Hugo, 2026-11-27).
+   */
+  it("porte le planificateur de commandes, fermé par défaut et exempté par société", () => {
     expect(FEATURE_CATALOGUE.orderPlanner.label).toBe("Planificateur de commandes");
     expect(FEATURE_CATALOGUE.orderPlanner.description).toContain("se convertissent quand même");
     expect(FEATURE_CATALOGUE.orderPlanner.levels).toEqual(["closed", "open"]);
     expect(FEATURE_CATALOGUE.orderPlanner.defaultLevel).toBe("closed");
     expect(isExemptible("orderPlanner")).toBe(true);
+    expect(exemptionKindOf("orderPlanner")).toBe("company");
     expect(mostOpenLevel("orderPlanner")).toBe("open");
   });
 
@@ -59,6 +64,12 @@ describe("le catalogue de l'accès aux fonctionnalités", () => {
   /** Un mandat signé par un testeur exempté serait un vrai mandat, sur un vrai compte. */
   it("rend le mandat client non exemptible", () => {
     expect(isExemptible("customerMandate")).toBe(false);
+    expect(exemptionKindOf("customerMandate")).toBeNull();
+  });
+
+  /** Le chemin par adresse reste, sans consommateur aujourd'hui (plan, § 2.3). */
+  it("n'exempte aucune clé par adresse", () => {
+    expect(FEATURE_KEYS.filter((key) => exemptionKindOf(key) === "email")).toEqual([]);
   });
 
   it("déclare chaque défaut parmi les niveaux de sa clé", () => {

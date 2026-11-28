@@ -5,7 +5,16 @@ import {
   StaffDirectory,
   type StaffIdentity,
 } from "../../../../account/domain/ports/staff-directory.js";
+import type {
+  ExemptionCompanyFacts,
+  FeatureCompanyExemption,
+} from "../../../domain/feature-company-exemption.js";
 import type { FeatureExemption } from "../../../domain/feature-exemption.js";
+import { ExemptionCompanyLookup } from "../../../domain/ports/exemption-company.lookup.js";
+import {
+  FeatureCompanyExemptionRepository,
+  type RemovedCompanyExemption,
+} from "../../../domain/ports/feature-company-exemption.repository.js";
 import type { FeatureOverride } from "../../../domain/feature-override.js";
 import {
   FeatureExemptionRepository,
@@ -123,5 +132,46 @@ export class InMemoryExemptions extends FeatureExemptionRepository {
     }
     const [removed] = this.rows.splice(index, 1);
     return Promise.resolve(removed === undefined ? null : { email: removed.email });
+  }
+}
+
+/** Exemptions par société en mémoire, uniques sur `(clé, société)` comme en base. */
+export class InMemoryCompanyExemptions extends FeatureCompanyExemptionRepository {
+  readonly rows: FeatureCompanyExemption[] = [];
+
+  constructor(private readonly steps: Steps) {
+    super();
+  }
+
+  addIfAbsent(exemption: FeatureCompanyExemption): Promise<boolean> {
+    this.steps.log.push(`company-exemption:add:${exemption.companyId}`);
+    const exists = this.rows.some(
+      (row) => row.key === exemption.key && row.companyId === exemption.companyId,
+    );
+    if (!exists) {
+      this.rows.push(exemption);
+    }
+    return Promise.resolve(!exists);
+  }
+
+  remove(key: string, companyId: string): Promise<RemovedCompanyExemption | null> {
+    this.steps.log.push(`company-exemption:remove:${companyId}`);
+    const index = this.rows.findIndex((row) => row.key === key && row.companyId === companyId);
+    if (index === -1) {
+      return Promise.resolve(null);
+    }
+    const [removed] = this.rows.splice(index, 1);
+    return Promise.resolve(removed === undefined ? null : { companyName: removed.companyName });
+  }
+}
+
+/** Les sociétés du compte, en mémoire. */
+export class KnownCompanies extends ExemptionCompanyLookup {
+  constructor(private readonly companies: readonly ExemptionCompanyFacts[]) {
+    super();
+  }
+
+  describe(companyId: string): Promise<ExemptionCompanyFacts | null> {
+    return Promise.resolve(this.companies.find((company) => company.id === companyId) ?? null);
   }
 }

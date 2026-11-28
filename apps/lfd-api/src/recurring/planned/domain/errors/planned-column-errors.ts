@@ -109,8 +109,8 @@ export class PlannedColumnAlreadySettledError extends BusinessError {
 }
 
 /**
- * Le planificateur n'est pas ouvert à cette personne (clé `orderPlanner`
- * fermée, et son adresse n'est pas exemptée) — **409**. Refus d'état, pas
+ * Le planificateur n'est pas ouvert à cette société (clé `orderPlanner`
+ * fermée, et la société de l'espace n'est pas exemptée) — **409**. Refus d'état, pas
  * d'autorisation : il tombe APRÈS le mur, pour ne rien dire à un non-membre.
  */
 export class PlannerClosedError extends BusinessError {

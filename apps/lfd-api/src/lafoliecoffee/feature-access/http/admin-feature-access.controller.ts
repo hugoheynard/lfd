@@ -1,6 +1,9 @@
 import {
   type AdminFeatureAccessView,
   type CreatedIdResponse,
+  type ExemptibleCompanyView,
+  type FeatureCompanyExemptionPayload,
+  featureCompanyExemptionPayloadSchema,
   type FeatureExemptionPayload,
   featureExemptionPayloadSchema,
   type FeatureOverridePayload,
@@ -22,11 +25,14 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { AddFeatureCompanyExemptionCommand } from "../application/commands/add-feature-company-exemption.command.js";
 import { AddFeatureExemptionCommand } from "../application/commands/add-feature-exemption.command.js";
 import { ClearFeatureOverrideCommand } from "../application/commands/clear-feature-override.command.js";
+import { RemoveFeatureCompanyExemptionCommand } from "../application/commands/remove-feature-company-exemption.command.js";
 import { RemoveFeatureExemptionCommand } from "../application/commands/remove-feature-exemption.command.js";
 import { SetFeatureOverrideCommand } from "../application/commands/set-feature-override.command.js";
 import { GetFeatureAccessBoardQuery } from "../application/queries/get-feature-access-board.query.js";
+import { ListExemptibleCompaniesQuery } from "../application/queries/list-exemptible-companies.query.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
@@ -48,6 +54,14 @@ export class AdminFeatureAccessController {
   board(): Promise<AdminFeatureAccessView> {
     return this.queries.execute<GetFeatureAccessBoardQuery, AdminFeatureAccessView>(
       new GetFeatureAccessBoardQuery(),
+    );
+  }
+
+  /** Les sociétés que le sélecteur propose : celles dont le compte n'est pas supprimé. */
+  @Get("exemptible-companies")
+  exemptibleCompanies(): Promise<readonly ExemptibleCompanyView[]> {
+    return this.queries.execute<ListExemptibleCompaniesQuery, readonly ExemptibleCompanyView[]>(
+      new ListExemptibleCompaniesQuery(),
     );
   }
 
@@ -103,6 +117,37 @@ export class AdminFeatureAccessController {
   async removeExemption(@Param("key") key: string, @Param("id") id: string): Promise<void> {
     await this.commands.execute<RemoveFeatureExemptionCommand, void>(
       new RemoveFeatureExemptionCommand(key, id),
+    );
+  }
+
+  /** Exempte une société pour une clé qui s'exempte société par société. */
+  @Post(":key/company-exemptions")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "rejouée, la société est déjà exemptée : le geste est refusé (409) avant toute écriture, sans seconde ligne ni fait",
+  )
+  async addCompanyExemption(
+    @Param("key") key: string,
+    @Body(new ZodBody(featureCompanyExemptionPayloadSchema))
+    payload: FeatureCompanyExemptionPayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.commands.execute<AddFeatureCompanyExemptionCommand, void>(
+      new AddFeatureCompanyExemptionCommand(key, payload.companyId, staffUserId),
+    );
+  }
+
+  @Delete(":key/company-exemptions/:companyId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "retire la société : rejouée, elle n'est plus dans la liste et le geste est refusé (404) sans rien écrire ni journaliser",
+  )
+  async removeCompanyExemption(
+    @Param("key") key: string,
+    @Param("companyId") companyId: string,
+  ): Promise<void> {
+    await this.commands.execute<RemoveFeatureCompanyExemptionCommand, void>(
+      new RemoveFeatureCompanyExemptionCommand(key, companyId),
     );
   }
 }

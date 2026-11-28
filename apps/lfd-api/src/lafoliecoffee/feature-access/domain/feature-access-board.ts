@@ -1,8 +1,8 @@
 import {
   FEATURE_CATALOGUE,
   FEATURE_KEYS,
+  exemptionKindOf,
   featureLevelsOf,
-  isExemptible,
   isFeatureKey,
   isFeatureLevel,
   type AdminFeatureAccessView,
@@ -15,6 +15,7 @@ import {
 import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.js";
 
 import type {
+  StoredCompanyExemptionRow,
   StoredExemptionRow,
   StoredFeatureAccess,
   StoredOverrideRow,
@@ -34,6 +35,7 @@ export function composeFeatureAccessBoard(stored: StoredFeatureAccess): AdminFea
     ignored: [
       ...stored.overrides.flatMap(ignoredOverride),
       ...stored.exemptions.flatMap(ignoredExemption),
+      ...stored.companyExemptions.flatMap(ignoredCompanyExemption),
     ],
   };
 }
@@ -48,7 +50,7 @@ function featureView(key: FeatureKey, stored: StoredFeatureAccess): AdminFeature
     description: definition.description,
     levels: featureLevelsOf(key),
     defaultLevel: definition.defaultLevel,
-    exemptible: isExemptible(key),
+    exemptBy: exemptionKindOf(key),
     effectiveLevel: resolveFeatureLevel(key, {
       exempt: false,
       storedOverride: override?.value ?? null,
@@ -62,13 +64,21 @@ function featureView(key: FeatureKey, stored: StoredFeatureAccess): AdminFeature
             updatedBy: authorView(override.updatedBy),
           },
     exemptions: stored.exemptions
-      .filter((exemption) => exemption.key === key)
+      .filter((exemption) => exemption.key === key && exemptionKindOf(key) === "email")
       .map((exemption) => ({
         id: exemption.id,
         email: exemption.email,
         createdAt: exemption.createdAt.toISOString(),
         createdBy: authorView(exemption.createdBy),
         accountState: exemption.accountState,
+      })),
+    companyExemptions: stored.companyExemptions
+      .filter((exemption) => exemption.key === key && exemptionKindOf(key) === "company")
+      .map((exemption) => ({
+        companyId: exemption.companyId,
+        companyName: exemption.companyName,
+        createdAt: exemption.createdAt.toISOString(),
+        createdBy: authorView(exemption.createdBy),
       })),
   };
 }
@@ -79,17 +89,42 @@ function authorView(trace: StaffTrace): FeatureAccessAuthorView {
 }
 
 function ignoredOverride(row: StoredOverrideRow): readonly IgnoredFeatureRowView[] {
+  const base = { table: "override", key: row.key, id: null, detail: row.value } as const;
   if (!isFeatureKey(row.key)) {
-    return [{ table: "override", key: row.key, detail: row.value, reason: "unknown_key" }];
+    return [{ ...base, reason: "unknown_key" }];
   }
   if (!isFeatureLevel(row.key, row.value)) {
-    return [{ table: "override", key: row.key, detail: row.value, reason: "unknown_level" }];
+    return [{ ...base, reason: "unknown_level" }];
   }
   return [];
 }
 
+/**
+ * Une exemption par adresse qui ne joue pas : sa clé a disparu, ou ne
+ * s'exempte plus par adresse (`orderPlanner`, passée à la société).
+ */
 function ignoredExemption(row: StoredExemptionRow): readonly IgnoredFeatureRowView[] {
-  return isFeatureKey(row.key)
+  const base = { table: "exemption", key: row.key, id: row.id, detail: row.email } as const;
+  if (!isFeatureKey(row.key)) {
+    return [{ ...base, reason: "unknown_key" }];
+  }
+  return exemptionKindOf(row.key) === "email"
     ? []
-    : [{ table: "exemption", key: row.key, detail: row.email, reason: "unknown_key" }];
+    : [{ ...base, reason: "exemption_kind_retired" }];
+}
+
+/** Une exemption par société qui ne joue pas, pour les mêmes raisons. */
+function ignoredCompanyExemption(row: StoredCompanyExemptionRow): readonly IgnoredFeatureRowView[] {
+  const base = {
+    table: "company_exemption",
+    key: row.key,
+    id: row.companyId,
+    detail: row.companyName,
+  } as const;
+  if (!isFeatureKey(row.key)) {
+    return [{ ...base, reason: "unknown_key" }];
+  }
+  return exemptionKindOf(row.key) === "company"
+    ? []
+    : [{ ...base, reason: "exemption_kind_retired" }];
 }

@@ -92,6 +92,31 @@ describe('FeatureAccessService', () => {
     );
   });
 
+  it('exempte une société par POST, puis relit', async () => {
+    const { body } = await answerWriteThenBoard(
+      'POST',
+      `${BASE}/orderPlanner/company-exemptions`,
+      service.addCompanyExemption('orderPlanner', 'co_chalet'),
+    );
+    expect(body).toEqual({ companyId: 'co_chalet' });
+  });
+
+  it('retire une société par DELETE sur son identifiant, puis relit', async () => {
+    await answerWriteThenBoard(
+      'DELETE',
+      `${BASE}/orderPlanner/company-exemptions/co_chalet`,
+      service.removeCompanyExemption('orderPlanner', 'co_chalet'),
+    );
+  });
+
+  it('lit les sociétés du sélecteur', async () => {
+    const pending = service.exemptibleCompanies();
+    ctrl
+      .expectOne({ method: 'GET', url: `${BASE}/exemptible-companies` })
+      .flush([{ id: 'co_chalet', name: 'Chalet Alpin' }]);
+    await expect(pending).resolves.toEqual([{ id: 'co_chalet', name: 'Chalet Alpin' }]);
+  });
+
   it("ne relit pas quand l'écriture est refusée", async () => {
     // Le refus remonte tel quel à l'écran, qui le notifie et relit lui-même :
     // une relecture ici masquerait l'erreur derrière un tableau à jour.

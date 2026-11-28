@@ -1,6 +1,6 @@
 import {
+  exemptionKindOf,
   FEATURE_KEYS,
-  isExemptible,
   type FeatureKey,
   type FeatureLevel,
   type FeatureLevelsView,
@@ -9,6 +9,7 @@ import {
 import { Injectable } from "@nestjs/common";
 
 import {
+  emailLookupFor,
   exemptionLookupEmail,
   resolveFeatureLevel,
   type FeatureSubject,
@@ -31,11 +32,28 @@ export class FeatureLevelResolver {
     key: Key,
     subject: FeatureSubject,
   ): Promise<FeatureLevel<Key>> {
-    // Une clé non exemptible ne cherche même pas l'adresse : la réponse ne
-    // pourrait rien changer, et la requête laisserait croire le contraire.
-    const email = isExemptible(key) ? exemptionLookupEmail(subject) : null;
+    // Une clé qui ne s'exempte pas par adresse ne cherche même pas
+    // l'adresse : la réponse ne pourrait rien changer, et la requête
+    // laisserait croire le contraire.
+    const email = emailLookupFor(key, subject);
     const exempt = email !== null && (await this.lookup.isExempt(key, email));
     // Exempté, la dérogation ne changerait rien : on ne la lit pas.
+    const storedOverride = exempt ? null : await this.lookup.storedOverride(key);
+    return resolveFeatureLevel(key, { exempt, storedOverride });
+  }
+
+  /**
+   * Le niveau d'une clé **pour la société de l'espace** — la question du mur
+   * du planificateur. Exemptée à l'identique (sans héritage entre un
+   * principal et ses sites) si la clé s'exempte société par société ; sinon
+   * la dérogation, sinon le défaut.
+   */
+  async levelForCompany<Key extends FeatureKey>(
+    key: Key,
+    companyId: string,
+  ): Promise<FeatureLevel<Key>> {
+    const exempt =
+      exemptionKindOf(key) === "company" && (await this.lookup.isCompanyExempt(key, companyId));
     const storedOverride = exempt ? null : await this.lookup.storedOverride(key);
     return resolveFeatureLevel(key, { exempt, storedOverride });
   }
@@ -44,10 +62,11 @@ export class FeatureLevelResolver {
    * **Tous** les niveaux pour ce sujet, en une lecture des dérogations au lieu
    * d'une par clé — ce que lisent `GET /feature-access` et `GET /me`.
    *
-   * Même résolution que {@link levelFor}, clé par clé : seules les clés
-   * exemptibles cherchent l'adresse (`orderPlanner` seule, vérifié le
-   * 2026-11-27). La dérogation d'une clé exemptée est lue
-   * quand même, dans le même `IN` : elle n'y change rien.
+   * Même résolution que {@link levelFor}, clé par clé : seules les clés qui
+   * s'exemptent par adresse cherchent l'adresse — aucune ne le fait
+   * aujourd'hui (vérifié le 2026-11-27). Une clé qui s'exempte par société
+   * (`orderPlanner`) y vaut son niveau GLOBAL : ces niveaux sont lus sans
+   * espace, ils ne peuvent rien dire d'une société.
    */
   async levelsFor(subject: FeatureSubject): Promise<FeatureLevelsView> {
     const email = exemptionLookupEmail(subject);
@@ -69,12 +88,12 @@ export class FeatureLevelResolver {
     };
   }
 
-  /** Les clés exemptibles où cette adresse prouvée est exemptée. */
+  /** Les clés exemptées par adresse où cette adresse prouvée est exemptée. */
   private async exemptKeys(email: string | null): Promise<ReadonlySet<FeatureKey>> {
     if (email === null) {
       return new Set();
     }
-    const exemptible = FEATURE_KEYS.filter((key) => isExemptible(key));
+    const exemptible = FEATURE_KEYS.filter((key) => exemptionKindOf(key) === "email");
     const answers = await Promise.all(
       exemptible.map(async (key) => ((await this.lookup.isExempt(key, email)) ? [key] : [])),
     );

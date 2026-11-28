@@ -1,5 +1,6 @@
 import {
   FEATURE_CATALOGUE,
+  exemptionKindOf,
   isExemptible,
   isFeatureLevel,
   mostOpenLevel,
@@ -19,6 +20,15 @@ export type FeatureSubject = {
   readonly email: string;
   readonly emailProven: boolean;
 } | null;
+
+/**
+ * L'adresse à chercher pour une clé : seulement si la clé s'exempte par
+ * adresse. Une clé qui s'ouvre société par société ne regarde jamais
+ * l'adresse — sans quoi `GET /me` mentirait sur l'espace affiché.
+ */
+export function emailLookupFor(key: FeatureKey, subject: FeatureSubject): string | null {
+  return exemptionKindOf(key) === "email" ? exemptionLookupEmail(subject) : null;
+}
 
 /**
  * La forme sous laquelle une adresse se cherche dans les exemptions : sans
@@ -47,7 +57,8 @@ export function exemptionLookupEmail(subject: FeatureSubject): string | null {
 /**
  * **La résolution**, dans l'ordre du plan :
  *
- * 1. adresse prouvée ET dans les exemptions → niveau le plus ouvert ;
+ * 1. exempté (adresse prouvée, ou société de l'espace, selon `exemptBy`)
+ *    → niveau le plus ouvert ;
  * 2. sinon dérogation en base, si elle est un niveau de la clé ;
  * 3. sinon défaut du code.
  *

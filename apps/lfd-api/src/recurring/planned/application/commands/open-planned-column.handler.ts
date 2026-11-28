@@ -57,16 +57,12 @@ export class OpenPlannedColumnHandler implements ICommandHandler<
   /**
    * @throws {PlannerProOnlyError} espace personnel.
    * @throws {PlannerMembershipLostError} la personne n'est plus membre de la société.
-   * @throws {PlannerClosedError} le planificateur n'est pas ouvert à cette personne.
+   * @throws {PlannerClosedError} le planificateur n'est pas ouvert à cette société.
    * @throws {PlannedColumnInPastError} le jour est passé.
    * @throws {PlannedColumnBeyondHorizonError} le jour dépasse l'horizon.
    */
   async execute(command: OpenPlannedColumnCommand): Promise<PlannedColumnOpened> {
-    const companyId = await this.wall.companyOf(
-      command.actorUserId,
-      command.companyId,
-      command.caller,
-    );
+    const companyId = await this.wall.companyOf(command.actorUserId, command.companyId);
     return this.intents.runSealed(
       {
         actorId: customerIntentActor(command.actorUserId),

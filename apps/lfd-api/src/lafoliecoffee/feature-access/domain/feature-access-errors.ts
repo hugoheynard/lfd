@@ -67,3 +67,78 @@ export class FeatureNotExemptibleError extends BusinessError {
     );
   }
 }
+
+/**
+ * On a voulu exempter une adresse sur une clé qui s'ouvre société par
+ * société (**409**). Le message dit le geste de sortie : exempter la société.
+ */
+export class FeatureExemptedByCompanyError extends BusinessError {
+  constructor(readonly key: string) {
+    super(
+      "feature_access.exempted_by_company",
+      `« ${key} » s'ouvre société par société, pas adresse par adresse : choisissez la société dans la liste des sociétés exemptées.`,
+    );
+  }
+}
+
+/**
+ * On a voulu exempter une société sur une clé qui ne s'ouvre pas société par
+ * société (**409**).
+ */
+export class FeatureNotExemptibleByCompanyError extends BusinessError {
+  constructor(readonly key: string) {
+    super(
+      "feature_access.not_exemptible_by_company",
+      `« ${key} » ne s'ouvre pas société par société. Réglez son niveau pour tous, ou laissez-la fermée.`,
+    );
+  }
+}
+
+/** La société à exempter n'existe pas (**404**). */
+export class ExemptedCompanyNotFoundError extends ResourceNotFoundError {
+  constructor(readonly companyId: string) {
+    super(
+      "feature_access.company_not_found",
+      "Cette société n'existe pas : elle ne peut pas être exemptée. Rechargez la page et choisissez-la dans la liste.",
+    );
+  }
+}
+
+/** La société à exempter est archivée (« Supprimer le compte ») — **409**. */
+export class ArchivedCompanyExemptionError extends BusinessError {
+  constructor(
+    readonly companyId: string,
+    readonly companyName: string,
+  ) {
+    super(
+      "feature_access.company_archived",
+      `Le compte de « ${companyName} » a été supprimé : il ne peut pas être exempté. Choisissez une société active.`,
+    );
+  }
+}
+
+/** La société est déjà exemptée pour cette clé (**409**). */
+export class CompanyAlreadyExemptedError extends BusinessError {
+  constructor(
+    readonly key: string,
+    readonly companyName: string,
+  ) {
+    super(
+      "feature_access.company_already_exempted",
+      `« ${companyName} » est déjà exemptée pour « ${key} » : rien à ajouter. Rechargez la page pour voir la liste à jour.`,
+    );
+  }
+}
+
+/** La société visée n'est pas (ou plus) dans la liste d'exemption de cette clé (**404**). */
+export class FeatureCompanyExemptionNotFoundError extends ResourceNotFoundError {
+  constructor(
+    readonly key: string,
+    readonly companyId: string,
+  ) {
+    super(
+      "feature_access.company_exemption_not_found",
+      `Cette société n'est plus dans la liste d'exemption de « ${key} » : elle a sans doute déjà été retirée. Rechargez la page.`,
+    );
+  }
+}

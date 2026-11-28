@@ -291,8 +291,13 @@ function signupConsentOf(
 
 /**
  * La lecture de `GET /me` pour cet appelant. Le sujet des niveaux passe par
- * `featureSubjectOf`, l'unique conversion `Principal` → sujet : la garde et
- * `/me` ne peuvent pas répondre deux choses à la même personne.
+ * `featureSubjectOf`, l'unique conversion `Principal` → sujet : pour une clé
+ * qui s'exempte par adresse, la garde et `/me` répondent la même chose.
+ *
+ * ⚠️ Pas pour une clé qui s'exempte par société (`orderPlanner`) : `/me` est
+ * lu sans espace et une fois par chargement, il sert donc son niveau GLOBAL,
+ * sans exemption. Le planificateur se juge dans l'espace vérifié, par
+ * `GET /planner/access` et par le mur de ses routes.
  */
 function myAccountQuery(user: Principal): GetMyAccountQuery {
   return new GetMyAccountQuery(user.userId, featureSubjectOf(user));

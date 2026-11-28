@@ -67,3 +67,27 @@ model FeatureAccessExemption {
   @@map("feature_access_exemptions")
   @@schema("public")
 }
+
+/// Une **exemption par société** : une société qui garde le niveau le plus
+/// ouvert d'une clé qui s'exempte société par société (`exemptBy: "company"`).
+/// Joue pour qui agit dans l'espace de CETTE société, sans héritage entre un
+/// principal et ses sites. Aucune clé étrangère : la ligne survit à la
+/// société, et son nom est figé à l'ajout.
+model FeatureAccessCompanyExemption {
+  key         String
+  /// L'identifiant opaque de la société exemptée.
+  companyId   String @map("company_id")
+  /// Le nom d'usage de la société au jour de l'ajout.
+  companyName String @map("company_name")
+
+  createdAt        DateTime @map("created_at")
+  createdByStaffId String   @map("created_by_staff_id")
+  createdByName    String   @map("created_by_name")
+  createdByRole    String   @map("created_by_role")
+
+  /// Une société au plus une fois par clé, et l'index de la lecture faite à
+  /// chaque requête gardée du planificateur.
+  @@id([key, companyId])
+  @@map("feature_access_company_exemptions")
+  @@schema("public")
+}

@@ -12,7 +12,7 @@ import { AccountService } from '../../account/account.service';
 import { companyScreensClosed } from '../company-screens';
 import { ProOnboarding } from '../pro-onboarding.service';
 import { ManageableSites } from '../site-menu/manageable-sites';
-import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
+import { PlannerAccessStore } from '../planner/planner-access.store';
 
 /** Une destination du menu, telle qu'elle est DÉCLARÉE — sans compteur ni libellé. */
 interface Destination {
@@ -48,7 +48,8 @@ interface Destination {
   readonly sitesOnly?: true;
   /**
    * Un écran derrière la clé `orderPlanner` : le planificateur ne paraît que
-   * si le serveur le dit ouvert à cette personne (exemption comprise).
+   * si le serveur le dit ouvert dans l'espace affiché (`GET /planner/access`,
+   * exemption de la société comprise).
    */
   readonly plannerOnly?: true;
 }
@@ -150,7 +151,7 @@ export class ClientNav {
   private readonly router = inject(Router);
   private readonly loyalty = inject(ClientLoyalty);
   private readonly sites = inject(ManageableSites);
-  private readonly features = inject(ClientFeatureAccess);
+  private readonly plannerAccess = inject(PlannerAccessStore);
 
   /**
    * L'adresse courante, en SIGNAL.
@@ -180,7 +181,7 @@ export class ClientNav {
         // `{ open: false }` ailleurs sans appel, et lit une seule fois sinon.
         (d.loyaltyOnly !== true || this.loyalty.isOpen()) &&
         (d.sitesOnly !== true || this.sites.sites().length > 0) &&
-        (d.plannerOnly !== true || this.features.orderPlannerOpen()),
+        (d.plannerOnly !== true || this.plannerAccess.open()),
     ).map((d) => ({
       id: d.id,
       route: d.route,

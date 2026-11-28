@@ -825,6 +825,24 @@ function exemption(verb: string, end: string): Phrase {
   return (fact) => byActor(fact, [text(`${verb} `), ...feature(fact), text(end)], ['subjectLabel']);
 }
 
+/** La société exemptée, citée de son nom figé à l'ajout. */
+const EXEMPTED_COMPANY = { the: 'à la société', a: 'à une société' } as const;
+
+/** « … a ouvert « Planificateur de commandes » à la société « Chalet Alpin » ». */
+function companyExemption(verb: string, link: string): Phrase {
+  return (fact) =>
+    byActor(
+      fact,
+      [
+        text(`${verb} `),
+        ...feature(fact),
+        text(` ${link} `),
+        ...cite(EXEMPTED_COMPANY, fact.payload['company']),
+      ],
+      ['subjectLabel', 'company'],
+    );
+}
+
 /**
  * « … a noté un contact (Téléphone) le 14 novembre 2026 avec le client « X » ».
  * La note reste au détail : une phrase ne cite pas un texte libre.
@@ -999,4 +1017,9 @@ export const ACCOUNTS_PHRASES = {
     ),
   'feature_access.exemption_added': exemption('a ouvert', ' à une adresse exemptée'),
   'feature_access.exemption_removed': exemption('a retiré l’exemption d’une adresse sur', ''),
+  'feature_access.company_exemption_added': companyExemption('a ouvert', 'par exemption'),
+  'feature_access.company_exemption_removed': companyExemption(
+    'a retiré l’exemption de',
+    'accordée',
+  ),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

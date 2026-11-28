@@ -4,6 +4,8 @@ import { firstValueFrom } from 'rxjs';
 
 import type {
   AdminFeatureAccessView,
+  ExemptibleCompanyView,
+  FeatureCompanyExemptionPayload,
   FeatureExemptionPayload,
   FeatureOverridePayload,
 } from '@lfd/contracts';
@@ -59,6 +61,31 @@ export class FeatureAccessService {
     await firstValueFrom(
       this.http.delete<void>(
         `${BASE}/${encodeURIComponent(key)}/exemptions/${encodeURIComponent(id)}`,
+      ),
+    );
+    return this.board();
+  }
+
+  /** Les sociétés que le sélecteur propose : celles dont le compte n'est pas supprimé. */
+  async exemptibleCompanies(): Promise<readonly ExemptibleCompanyView[]> {
+    return firstValueFrom(
+      this.http.get<readonly ExemptibleCompanyView[]>(`${BASE}/exemptible-companies`),
+    );
+  }
+
+  /** Exempte une société ; le serveur refuse en 409 une société déjà exemptée ou archivée. */
+  async addCompanyExemption(key: string, companyId: string): Promise<AdminFeatureAccessView> {
+    const payload: FeatureCompanyExemptionPayload = { companyId };
+    await firstValueFrom(
+      this.http.post<void>(`${BASE}/${encodeURIComponent(key)}/company-exemptions`, payload),
+    );
+    return this.board();
+  }
+
+  async removeCompanyExemption(key: string, companyId: string): Promise<AdminFeatureAccessView> {
+    await firstValueFrom(
+      this.http.delete<void>(
+        `${BASE}/${encodeURIComponent(key)}/company-exemptions/${encodeURIComponent(companyId)}`,
       ),
     );
     return this.board();

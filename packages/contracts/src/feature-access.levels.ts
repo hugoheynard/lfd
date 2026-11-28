@@ -49,15 +49,24 @@ export interface FeatureDefinition<Level extends string> {
   /** La valeur quand aucune dérogation n'est posée. */
   readonly defaultLevel: Level;
   /**
-   * Une adresse exemptée peut-elle ouvrir cette clé pour elle seule ?
+   * **Par quoi une exemption ouvre cette clé** — absent : par rien.
    *
-   * `false` quand ouvrir à une personne n'a pas de sens métier : un mandat de
+   * - `email` : une adresse PROUVÉE, pour elle seule — une clé qui se teste
+   *   avant toute société. Aucune clé ne s'exempte ainsi aujourd'hui ; le
+   *   chemin reste pour la prochaine ;
+   * - `company` : une société, pour tous ceux qui agissent pour elle dans son
+   *   espace, sans héritage entre un principal et ses sites.
+   *
+   * Absent quand ouvrir à quelques-uns n'a pas de sens métier : un mandat de
    * prélèvement signé par un testeur est un vrai mandat, sur un vrai compte.
-   * Le résolveur ignore alors les exemptions, et l'ajout d'une exemption est
-   * refusé.
+   * Le résolveur ignore alors toute exemption, et l'ajout est refusé.
    */
-  readonly exemptible: boolean;
+  readonly exemptBy?: FeatureExemptionKind;
 }
+
+/** Ce qu'une exemption désigne : une adresse prouvée, ou une société. */
+export const FEATURE_EXEMPTION_KINDS = ["email", "company"] as const;
+export type FeatureExemptionKind = (typeof FEATURE_EXEMPTION_KINDS)[number];
 
 /**
  * **Les clés retirées le 2026-10-09** (Hugo) : `shop`, `orders`, `invoices`,
@@ -86,7 +95,6 @@ export const FEATURE_CATALOGUE = {
     defaultLevel: "closed",
     // 🔴 Non exemptible (plan mandat client §8, 2026-09-14) : ce que la clé
     // ouvre produit une autorisation de débit opposable, pas un aperçu.
-    exemptible: false,
   },
   facebookLogin: {
     label: "Connexion par Facebook",
@@ -98,7 +106,6 @@ export const FEATURE_CATALOGUE = {
     // adresse ne peut donc compter — seul le niveau global a du sens.
     // Aucune garde serveur : cacher le bouton suffit, la connexion elle-même
     // se règle chez Auth0.
-    exemptible: false,
   },
   proSignupCallback: {
     label: "Rappel depuis l'inscription pro",
@@ -110,7 +117,6 @@ export const FEATURE_CATALOGUE = {
     defaultLevel: "hidden",
     // Non exemptible : la porte pro précède toute identité, comme le bouton
     // Facebook — seul le niveau global a du sens.
-    exemptible: false,
   },
   orderPlanner: {
     label: "Planificateur de commandes",
@@ -120,9 +126,10 @@ export const FEATURE_CATALOGUE = {
     // Fermé par défaut (Hugo, 2026-11-27) : on l'ouvre d'abord à quelques
     // clients par exemption, puis à tous.
     defaultLevel: "closed",
-    // Exemptible : ouvrir le planificateur à une adresse prouvée ne produit
-    // que des brouillons de commande pour sa société — rien d'opposable.
-    exemptible: true,
+    // Exemptée société par société (Hugo, 2026-11-27) : on l'ouvre à un
+    // client, pas à une personne. Ne produit que des brouillons de commande
+    // pour cette société — rien d'opposable.
+    exemptBy: "company",
   },
 } as const satisfies Readonly<Record<string, FeatureDefinition<string>>>;
 
@@ -141,15 +148,23 @@ export const FEATURE_KEYS: readonly FeatureKey[] = [
 
 /**
  * Les clés qu'aucune exemption n'ouvre — calculées depuis le catalogue, pour
- * qu'une clé déclarée `exemptible: false` n'ait pas à être recopiée ici.
+ * qu'une clé sans `exemptBy` n'ait pas à être recopiée ici.
  */
 export type UnexemptibleFeatureKey = {
-  [Key in FeatureKey]: (typeof FEATURE_CATALOGUE)[Key]["exemptible"] extends false ? Key : never;
+  [Key in FeatureKey]: (typeof FEATURE_CATALOGUE)[Key] extends { readonly exemptBy: string }
+    ? never
+    : Key;
 }[FeatureKey];
 
-/** Vrai si une exemption peut ouvrir cette clé. */
+/** Ce qu'une exemption de cette clé désigne, ou `null` si aucune ne l'ouvre. */
+export function exemptionKindOf(key: FeatureKey): FeatureExemptionKind | null {
+  const definition: FeatureDefinition<string> = FEATURE_CATALOGUE[key];
+  return definition.exemptBy ?? null;
+}
+
+/** Vrai si une exemption, quelle qu'elle soit, peut ouvrir cette clé. */
 export function isExemptible(key: FeatureKey): boolean {
-  return FEATURE_CATALOGUE[key].exemptible;
+  return exemptionKindOf(key) !== null;
 }
 
 /** Vrai si `key` est une clé du catalogue — une ligne de base peut en porter une disparue. */

@@ -5,7 +5,7 @@ import { FeatureLevelLookup } from "../domain/ports/feature-level.lookup.js";
 
 /**
  * Les lectures indexées de la résolution : la clé primaire (une clé, ou toutes
- * en un `IN`), l'unicité `(key, email)`.
+ * en un `IN`), l'unicité `(key, email)`, la clé `(key, company_id)`.
  */
 @Injectable()
 export class PrismaFeatureLevelLookup extends FeatureLevelLookup {
@@ -33,6 +33,14 @@ export class PrismaFeatureLevelLookup extends FeatureLevelLookup {
     const row = await this.prisma.featureAccessExemption.findUnique({
       where: { key_email: { key, email: normalizedEmail } },
       select: { id: true },
+    });
+    return row !== null;
+  }
+
+  async isCompanyExempt(key: string, companyId: string): Promise<boolean> {
+    const row = await this.prisma.featureAccessCompanyExemption.findUnique({
+      where: { key_companyId: { key, companyId } },
+      select: { key: true },
     });
     return row !== null;
   }

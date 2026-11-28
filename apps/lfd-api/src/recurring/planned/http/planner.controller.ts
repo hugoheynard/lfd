@@ -3,6 +3,7 @@ import {
   plannerQuerySchema,
   putPlannedColumnPayloadSchema,
   type OpenPlannedColumnPayload,
+  type PlannerAccessView,
   type PlannedColumnOpened,
   type PlannedColumnWritten,
   type PlannerQuery,
@@ -29,10 +30,10 @@ import type { Principal } from "../../../platform/auth/principal.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
-import type { PlannerCaller } from "../../channels/commerce/planner-access.js";
 import { OpenPlannedColumnCommand } from "../application/commands/open-planned-column.command.js";
 import { PutPlannedColumnCommand } from "../application/commands/put-planned-column.command.js";
 import { WithdrawPlannedColumnCommand } from "../application/commands/withdraw-planned-column.command.js";
+import { GetPlannerAccessQuery } from "../application/queries/get-planner-access.query.js";
 import { GetPlannerQuery } from "../application/queries/get-planner.query.js";
 
 /**
@@ -44,7 +45,9 @@ import { GetPlannerQuery } from "../application/queries/get-planner.query.js";
  * pour un jour et un créneau.
  *
  * Chaque route est derrière la clé `orderPlanner` (fermée → 409), jugée dans
- * le mur après la société ; le balayage des colonnes ne l'est pas.
+ * le mur après la société, pour la société de l'espace ; le balayage des
+ * colonnes ne l'est pas. `GET /planner/access` pose la même question sans
+ * refus, pour le menu et la garde de la boutique.
  */
 @Controller("planner")
 export class PlannerController {
@@ -60,7 +63,18 @@ export class PlannerController {
     @Query(new ZodQuery(plannerQuerySchema)) query: PlannerQuery,
   ): Promise<PlannerView> {
     return this.queries.execute<GetPlannerQuery, PlannerView>(
-      new GetPlannerQuery(user.userId, companyId, query.from, callerOf(user)),
+      new GetPlannerQuery(user.userId, companyId, query.from),
+    );
+  }
+
+  /** Ouvert dans l'espace de la requête ? `false` en perso, jamais de refus. */
+  @Get("access")
+  access(
+    @CurrentUser() user: Principal,
+    @ActingCompany() companyId: string | null,
+  ): Promise<PlannerAccessView> {
+    return this.queries.execute<GetPlannerAccessQuery, PlannerAccessView>(
+      new GetPlannerAccessQuery(user.userId, companyId),
     );
   }
 
@@ -73,7 +87,7 @@ export class PlannerController {
     @IntentKey() intentKey: string,
   ): Promise<PlannedColumnOpened> {
     return this.commands.execute<OpenPlannedColumnCommand, PlannedColumnOpened>(
-      new OpenPlannedColumnCommand(user.userId, companyId, payload, intentKey, callerOf(user)),
+      new OpenPlannedColumnCommand(user.userId, companyId, payload, intentKey),
     );
   }
 
@@ -88,7 +102,7 @@ export class PlannerController {
     @Body(new ZodBody(putPlannedColumnPayloadSchema)) payload: PutPlannedColumnPayload,
   ): Promise<PlannedColumnWritten> {
     return this.commands.execute<PutPlannedColumnCommand, PlannedColumnWritten>(
-      new PutPlannedColumnCommand(user.userId, companyId, id, payload, callerOf(user)),
+      new PutPlannedColumnCommand(user.userId, companyId, id, payload),
     );
   }
 
@@ -103,12 +117,7 @@ export class PlannerController {
     @Param("id") id: string,
   ): Promise<void> {
     await this.commands.execute<WithdrawPlannedColumnCommand, void>(
-      new WithdrawPlannedColumnCommand(user.userId, companyId, id, callerOf(user)),
+      new WithdrawPlannedColumnCommand(user.userId, companyId, id),
     );
   }
-}
-
-/** Le sujet de la clé `orderPlanner` : l'adresse et sa preuve, recopiées du `Principal`. */
-function callerOf(user: Principal): PlannerCaller {
-  return { email: user.email, emailProven: user.emailProven };
 }

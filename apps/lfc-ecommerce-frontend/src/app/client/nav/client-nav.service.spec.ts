@@ -19,8 +19,7 @@ import { ClientNav } from './client-nav.service';
 import { ManageableSites } from '../site-menu/manageable-sites';
 import { provideWorkspace, workspaceDouble } from '../client-workspace.fixture';
 import { TOMMEUSES } from '../mon-compte/account.fixture';
-import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
-import { DEFAULT_LEVELS } from '../feature-access/feature-access.fixture';
+import { PlannerAccessStore } from '../planner/planner-access.store';
 
 /** De quoi naviguer : le routeur refuse une adresse qu'aucune route ne couvre. */
 const ROUTES = [
@@ -180,11 +179,9 @@ describe('Les destinations du menu, selon l’espace', () => {
           },
         },
         { provide: ManageableSites, useValue: { sites: signal(sites) } },
+        // La réponse de `GET /planner/access` pour l'espace affiché.
+        { provide: PlannerAccessStore, useValue: { open: signal(plannerOpen) } },
       ],
-    });
-    TestBed.inject(ClientFeatureAccess).receive({
-      ...DEFAULT_LEVELS,
-      orderPlanner: plannerOpen ? 'open' : 'closed',
     });
     return TestBed.inject(ClientNav)
       .items()
@@ -205,8 +202,8 @@ describe('Les destinations du menu, selon l’espace', () => {
     expect(idsIn(TOMMEUSES.id, [TOMMEUSES], [chalet])).toEqual([...ORDER, 'sites']);
   });
 
-  /** Q7 du plan du planificateur : la clé `orderPlanner`, exemption comprise. */
-  it('ajoute le planificateur après les paniers quand la clé est ouverte', () => {
+  /** Q7 du plan du planificateur : ouvert dans l'espace affiché, exemption de la société comprise. */
+  it('ajoute le planificateur après les paniers quand il est ouvert dans l’espace', () => {
     expect(idsIn(TOMMEUSES.id, [TOMMEUSES], [], true)).toEqual([
       'shop',
       'orders',

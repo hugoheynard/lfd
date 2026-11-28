@@ -20,10 +20,20 @@ export interface StoredExemptionRow {
   readonly accountState: FeatureExemptionAccountState;
 }
 
+/** Une exemption par société telle qu'elle est en base, nom figé à l'ajout. */
+export interface StoredCompanyExemptionRow {
+  readonly key: string;
+  readonly companyId: string;
+  readonly companyName: string;
+  readonly createdAt: Date;
+  readonly createdBy: StaffTrace;
+}
+
 /** Tout ce qui est en base, pour l'écran admin. */
 export interface StoredFeatureAccess {
   readonly overrides: readonly StoredOverrideRow[];
   readonly exemptions: readonly StoredExemptionRow[];
+  readonly companyExemptions: readonly StoredCompanyExemptionRow[];
 }
 
 /**

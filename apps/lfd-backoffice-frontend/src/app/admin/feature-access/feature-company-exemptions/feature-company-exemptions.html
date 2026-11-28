@@ -1,0 +1,46 @@
+<fold-element-title variant="bar" title="Sociétés exemptées" [level]="3" />
+
+@if (canWrite()) {
+  <fold-combobox
+    label="Ajouter une société"
+    placeholder="Nom de la société"
+    emptyText="Aucune société ne correspond."
+    resultLabel="sociétés"
+    clearOnSelect
+    [disabled]="busy()"
+    [options]="options()"
+    (selectionChange)="choose($event)"
+  />
+}
+
+<ul class="rows">
+  @for (row of rows(); track row.companyId) {
+    <li class="row">
+      <div class="row-main">
+        <span class="name">{{ row.companyName }}</span>
+        <span class="muted">{{ row.added }}</span>
+      </div>
+      @if (canWrite()) {
+        <fold-inline-confirm
+          [message]="removeMessage(row)"
+          [loading]="busy()"
+          (confirmed)="removed.emit(row)"
+        >
+          <button foldButton size="sm" emphasis="outline" intent="danger" icon="bin">
+            Retirer
+          </button>
+        </fold-inline-confirm>
+      }
+    </li>
+  } @empty {
+    <li>
+      <fold-callout variant="neutral">Aucune société exemptée.</fold-callout>
+    </li>
+  }
+</ul>
+
+<p class="muted">
+  Une société exemptée garde la fonctionnalité ouverte pour tous ceux qui agissent dans son espace,
+  quel que soit le niveau. Ses sites et son principal ne sont pas concernés : chacun s'exempte pour
+  lui-même.
+</p>

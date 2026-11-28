@@ -162,10 +162,7 @@ export class RecordingBasketCheck extends PlannedBasketCheck {
   }
 }
 
-/** Le client des scènes : une adresse prouvée. */
-export const CALLER: PlannerCaller = { email: "chef@chalet.test", emailProven: true };
-
-/** La clé `orderPlanner` doublée : ouverte ou fermée pour tous ; garde qui a été jugé. */
+/** La clé `orderPlanner` doublée : ouverte ou fermée pour tous ; garde quelle société a été jugée. */
 export class FixedPlannerAccess extends PlannerAccess {
   readonly asked: PlannerCaller[] = [];
 

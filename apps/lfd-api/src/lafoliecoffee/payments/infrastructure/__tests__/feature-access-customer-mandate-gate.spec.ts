@@ -19,6 +19,10 @@ class StubLookup extends FeatureLevelLookup {
   isExempt(): Promise<boolean> {
     return Promise.resolve(true);
   }
+
+  isCompanyExempt(): Promise<boolean> {
+    return Promise.resolve(true);
+  }
 }
 
 function gate(override: string | null): FeatureAccessCustomerMandateGate {

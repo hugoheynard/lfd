@@ -19,4 +19,7 @@ export abstract class FeatureLevelLookup {
 
   /** Vrai si cette adresse, déjà normalisée, est exemptée pour cette clé. */
   abstract isExempt(key: string, normalizedEmail: string): Promise<boolean>;
+
+  /** Vrai si cette société, à l'identique, est exemptée pour cette clé. */
+  abstract isCompanyExempt(key: string, companyId: string): Promise<boolean>;
 }

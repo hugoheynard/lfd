@@ -45,7 +45,7 @@ export class PutPlannedColumnHandler implements ICommandHandler<
   /**
    * @throws {PlannerProOnlyError} espace personnel.
    * @throws {PlannerMembershipLostError} la personne n'est plus membre de la société.
-   * @throws {PlannerClosedError} le planificateur n'est pas ouvert à cette personne.
+   * @throws {PlannerClosedError} le planificateur n'est pas ouvert à cette société.
    * @throws {PlannedColumnNotFoundError} absente, retirée, ou d'une autre société.
    * @throws {PlannedColumnInPastError} le jour est passé.
    * @throws {PlannedColumnFrozenError} la colonne se commande ou s'est commandée.
@@ -53,11 +53,7 @@ export class PutPlannedColumnHandler implements ICommandHandler<
    * @throws {PlannedWindowTakenError} le nouveau créneau est occupé par une autre colonne.
    */
   async execute(command: PutPlannedColumnCommand): Promise<PlannedColumnWritten> {
-    const companyId = await this.wall.companyOf(
-      command.actorUserId,
-      command.companyId,
-      command.caller,
-    );
+    const companyId = await this.wall.companyOf(command.actorUserId, command.companyId);
     const lines = command.payload.lines.map((line) => PlannedLine.create(line.sku, line.quantity));
     const now = this.clock.now();
     const moment: PlannedColumnMoment = { now, today: parisDay(now) };

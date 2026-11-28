@@ -1,7 +1,8 @@
 <fold-page-layout icon="sliders" title="Accès aux fonctionnalités">
   <p description>
     Ce que les clients peuvent faire de la plateforme, réglé <strong>sans redéployer</strong>. Une
-    valeur posée ici remplace le défaut du code pour tout le monde, sauf les adresses exemptées.
+    valeur posée ici remplace le défaut du code pour tout le monde, sauf les sociétés ou les
+    adresses exemptées.
   </p>
 
   @switch (state()) {
@@ -36,8 +37,23 @@
           Des lignes en base ne correspondent pas au catalogue. Elles ne s'appliquent pas, et cet
           écran ne les interprète pas&nbsp;:
           <ul class="unreadable">
-            @for (line of unreadable(); track line) {
-              <li>{{ line }}</li>
+            @for (row of unreadable(); track row.line) {
+              <li>
+                {{ row.line }}
+                @if (canWrite() && row.removal; as removal) {
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="outline"
+                    intent="danger"
+                    icon="bin"
+                    [disabled]="pendingKey() !== null"
+                    (click)="removeIgnored(removal)"
+                  >
+                    Retirer
+                  </button>
+                }
+              </li>
             }
           </ul>
         </fold-callout>
@@ -85,72 +101,88 @@
               </div>
             </div>
 
-            <div class="exemptions">
-              <fold-element-title variant="bar" title="Adresses exemptées" [level]="3" />
+            @if (card.exemptBy === 'company') {
+              <app-feature-company-exemptions
+                [rows]="card.companyExemptions"
+                [companies]="companies()"
+                [canWrite]="canWrite()"
+                [busy]="pendingKey() !== null"
+                (added)="addCompanyExemption(card, $event)"
+                (removed)="removeCompanyExemption(card, $event)"
+              />
+            } @else {
+              <div class="exemptions">
+                <fold-element-title variant="bar" title="Adresses exemptées" [level]="3" />
 
-              <!-- Clé non exemptible (le mandat client, 2026-09-14) : le serveur
-                     refuse l'ajout en 409, donc l'écran ne le propose pas. Les
-                     lignes déjà en base restent listées pour pouvoir les retirer. -->
-              @if (canWrite() && card.exemptible) {
-                <div class="add">
-                  <fold-input
-                    class="add-input"
-                    label="Adresse e-mail"
-                    type="email"
-                    placeholder="testeur@exemple.fr"
-                    [value]="draft(card.key)"
-                    (valueChange)="setDraft(card.key, $event)"
-                  />
-                  <button
-                    foldButton
-                    icon="plus"
-                    [disabled]="draft(card.key).trim() === '' || pendingKey() !== null"
-                    (click)="addExemption(card)"
-                  >
-                    Ajouter
-                  </button>
-                </div>
-              }
-
-              <ul class="rows">
-                @for (row of card.exemptions; track row.id) {
-                  <li class="row">
-                    <div class="row-main">
-                      <span class="email">{{ row.email }}</span>
-                      <fold-badge [content]="row.badge.label" [variant]="row.badge.variant" />
-                      <span class="muted">{{ row.added }}</span>
-                    </div>
-                    @if (canWrite()) {
-                      <fold-inline-confirm
-                        [message]="removeMessage(row)"
-                        [loading]="pendingKey() === card.key"
-                        (confirmed)="removeExemption(card, row)"
-                      >
-                        <button foldButton size="sm" emphasis="outline" intent="danger" icon="bin">
-                          Retirer
-                        </button>
-                      </fold-inline-confirm>
-                    }
-                  </li>
-                } @empty {
-                  <li>
-                    <fold-callout variant="neutral">Aucune adresse exemptée.</fold-callout>
-                  </li>
+                <!-- Clé qui ne s'exempte pas par adresse : le serveur refuse
+                     l'ajout en 409, donc l'écran ne le propose pas. -->
+                @if (canWrite() && card.exemptBy === 'email') {
+                  <div class="add">
+                    <fold-input
+                      class="add-input"
+                      label="Adresse e-mail"
+                      type="email"
+                      placeholder="testeur@exemple.fr"
+                      [value]="draft(card.key)"
+                      (valueChange)="setDraft(card.key, $event)"
+                    />
+                    <button
+                      foldButton
+                      icon="plus"
+                      [disabled]="draft(card.key).trim() === '' || pendingKey() !== null"
+                      (click)="addExemption(card)"
+                    >
+                      Ajouter
+                    </button>
+                  </div>
                 }
-              </ul>
 
-              @if (card.exemptible) {
-                <p class="muted">
-                  Ces adresses gardent la fonctionnalité ouverte, quel que soit le niveau. Elles
-                  doivent être vérifiées pour compter.
-                </p>
-              } @else {
-                <p class="muted">
-                  Aucune exemption ne s'applique ici : cette fonctionnalité s'ouvre pour tous, ou
-                  pour personne.
-                </p>
-              }
-            </div>
+                <ul class="rows">
+                  @for (row of card.exemptions; track row.id) {
+                    <li class="row">
+                      <div class="row-main">
+                        <span class="email">{{ row.email }}</span>
+                        <fold-badge [content]="row.badge.label" [variant]="row.badge.variant" />
+                        <span class="muted">{{ row.added }}</span>
+                      </div>
+                      @if (canWrite()) {
+                        <fold-inline-confirm
+                          [message]="removeMessage(row)"
+                          [loading]="pendingKey() === card.key"
+                          (confirmed)="removeExemption(card, row)"
+                        >
+                          <button
+                            foldButton
+                            size="sm"
+                            emphasis="outline"
+                            intent="danger"
+                            icon="bin"
+                          >
+                            Retirer
+                          </button>
+                        </fold-inline-confirm>
+                      }
+                    </li>
+                  } @empty {
+                    <li>
+                      <fold-callout variant="neutral">Aucune adresse exemptée.</fold-callout>
+                    </li>
+                  }
+                </ul>
+
+                @if (card.exemptBy === 'email') {
+                  <p class="muted">
+                    Ces adresses gardent la fonctionnalité ouverte, quel que soit le niveau. Elles
+                    doivent être vérifiées pour compter.
+                  </p>
+                } @else {
+                  <p class="muted">
+                    Aucune exemption ne s'applique ici : cette fonctionnalité s'ouvre pour tous, ou
+                    pour personne.
+                  </p>
+                }
+              </div>
+            }
           </div>
         </fold-card>
       } @empty {

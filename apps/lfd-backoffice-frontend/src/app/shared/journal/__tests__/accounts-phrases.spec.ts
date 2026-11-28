@@ -721,6 +721,29 @@ describe('l’accès aux fonctionnalités', () => {
     );
   });
 
+  it('dit la société exemptée de son nom figé, ou de son identifiant sans nom', () => {
+    expect(
+      sentence(
+        feature('feature_access.company_exemption_added', {
+          subjectLabel: 'Planificateur de commandes',
+          company: { id: 'co_1', name: 'Chalet Alpin' },
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a ouvert « Planificateur de commandes » par exemption à la société « Chalet Alpin »',
+    );
+    expect(
+      sentence(
+        feature('feature_access.company_exemption_removed', {
+          subjectLabel: 'Planificateur de commandes',
+          company: { id: 'co_1' },
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a retiré l’exemption de « Planificateur de commandes » accordée à une société (identifiant co_1)',
+    );
+  });
+
   it('dit l’exemption ouverte ou retirée, et laisse l’adresse au détail telle quelle', () => {
     const added = renderFact(
       feature('feature_access.exemption_added', {

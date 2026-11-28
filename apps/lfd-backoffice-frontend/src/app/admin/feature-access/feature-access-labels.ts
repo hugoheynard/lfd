@@ -50,15 +50,19 @@ export const ACCOUNT_STATE_BADGES: Readonly<
   none: { label: 'aucun compte', variant: 'neutral' },
 };
 
+const IGNORED_REASONS: Readonly<Record<IgnoredFeatureRowView['reason'], string>> = {
+  unknown_key: 'cette clé n’existe pas au catalogue',
+  unknown_level: 'cette valeur n’est pas un niveau de sa clé',
+  exemption_kind_retired: 'ignorée, sorte retirée : cette clé ne s’exempte plus de cette façon',
+};
+
 /** Une ligne ignorée, dite en une phrase. */
 export function ignoredRowLine(row: IgnoredFeatureRowView): string {
   const what =
     row.table === 'override'
       ? `la dérogation « ${row.key} = ${row.detail} »`
-      : `l’exemption de ${row.detail} sur « ${row.key} »`;
-  const why =
-    row.reason === 'unknown_key'
-      ? 'cette clé n’existe pas au catalogue'
-      : 'cette valeur n’est pas un niveau de sa clé';
-  return `${what} : ${why}`;
+      : row.table === 'company_exemption'
+        ? `l’exemption de la société ${row.detail} sur « ${row.key} »`
+        : `l’exemption de ${row.detail} sur « ${row.key} »`;
+  return `${what} : ${IGNORED_REASONS[row.reason]}`;
 }

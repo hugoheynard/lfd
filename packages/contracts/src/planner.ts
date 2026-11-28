@@ -141,6 +141,16 @@ export interface PlannedLineCheckView {
 }
 
 /** `GET /planner` : les colonnes de la fenêtre, les favoris de la société et leur vérification. */
+/**
+ * `GET /planner/access` — le planificateur est-il ouvert dans l'espace de la
+ * requête ? La société jugée est celle de l'espace déclaré, vérifiée par le
+ * serveur : exemptée pour `orderPlanner`, ou clé ouverte pour tous. Dans
+ * l'espace personnel, `false`.
+ */
+export interface PlannerAccessView {
+  readonly open: boolean;
+}
+
 export interface PlannerView {
   readonly from: string;
   /** Le dernier jour qu'on peut préparer (aujourd'hui + l'horizon). */

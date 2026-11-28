@@ -731,4 +731,15 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
     exemptionId: ref("feature_exemption"),
     email: z.string(),
   }),
+  /**
+   * Une société exemptée d'une clé, ou retirée de la liste. La société est
+   * nommée du nom figé à l'ajout : la ligne retirée est SUPPRIMÉE, et le
+   * journal est alors la seule mémoire de qui l'avait ouverte.
+   */
+  "feature_access.company_exemption_added": fact(
+    payload({ subjectLabel: subjectLabel(), company: named("company") }),
+  ),
+  "feature_access.company_exemption_removed": fact(
+    payload({ subjectLabel: subjectLabel(), company: named("company") }),
+  ),
 } as const satisfies JournalFactFamily;

@@ -1,8 +1,13 @@
 import {
+  ArchivedCompanyExemptionError,
+  ExemptedCompanyNotFoundError,
+  FeatureExemptedByCompanyError,
+  FeatureNotExemptibleByCompanyError,
   FeatureNotExemptibleError,
   UnknownFeatureError,
   UnknownFeatureLevelError,
 } from "../feature-access-errors.js";
+import { FeatureCompanyExemption } from "../feature-company-exemption.js";
 import { FeatureExemption } from "../feature-exemption.js";
 import { FeatureOverride } from "../feature-override.js";
 
@@ -91,5 +96,57 @@ describe("FeatureExemption.grant", () => {
         author: AUTHOR,
       }),
     ).toThrow(FeatureNotExemptibleError);
+  });
+});
+
+describe("FeatureExemption.grant — une clé qui s'exempte par société", () => {
+  it("refuse une adresse pour le planificateur, et dit de choisir la société", () => {
+    expect(() =>
+      FeatureExemption.grant({
+        id: "ex_1",
+        key: "orderPlanner",
+        email: "chef@chalet.test",
+        at: AT,
+        author: AUTHOR,
+      }),
+    ).toThrow(FeatureExemptedByCompanyError);
+  });
+});
+
+describe("FeatureCompanyExemption.grant", () => {
+  const CHALET = { id: "co_chalet", name: "Chalet Alpin", archived: false };
+  const grant = (key: string, company: typeof CHALET | null) =>
+    FeatureCompanyExemption.grant({ key, companyId: "co_chalet", company, at: AT, author: AUTHOR });
+
+  it("exempte la société, nom figé et auteur figé", () => {
+    const exemption = grant("orderPlanner", CHALET);
+
+    expect(exemption).toMatchObject({
+      key: "orderPlanner",
+      companyId: "co_chalet",
+      companyName: "Chalet Alpin",
+      at: AT,
+      author: AUTHOR,
+    });
+  });
+
+  it("refuse une clé hors catalogue", () => {
+    expect(() => grant("legacy_flag", CHALET)).toThrow(UnknownFeatureError);
+  });
+
+  it("refuse une clé qui ne s'exempte pas société par société", () => {
+    expect(() => grant("customerMandate", CHALET)).toThrow(FeatureNotExemptibleByCompanyError);
+    expect(() => grant("facebookLogin", CHALET)).toThrow(FeatureNotExemptibleByCompanyError);
+  });
+
+  it("refuse une société inconnue", () => {
+    expect(() => grant("orderPlanner", null)).toThrow(ExemptedCompanyNotFoundError);
+  });
+
+  it("refuse une société dont le compte a été supprimé, en la nommant", () => {
+    expect(() => grant("orderPlanner", { ...CHALET, archived: true })).toThrow(/Chalet Alpin/);
+    expect(() => grant("orderPlanner", { ...CHALET, archived: true })).toThrow(
+      ArchivedCompanyExemptionError,
+    );
   });
 });
