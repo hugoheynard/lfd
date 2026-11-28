@@ -2,14 +2,13 @@ import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import type { DossierDispatchView, PlanVersionDiffView, PlanVersionView } from '@lfd/contracts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DossierPrintService } from '../../dossier-print.service';
 import { PlanVersionsService } from '../../plan-versions/plan-versions.service';
-import { defaultRange, PlanVersionsSection } from './plan-versions-section';
+import { defaultRange, openablePaper, PlanVersionsSection } from './plan-versions-section';
 
 /**
  * **Le panneau des versions** : la liste (la plus récente d'abord), la
- * comparaison par défaut (la courante contre la précédente), le papier qui ne
- * s'ouvre que pour la courante, les destinataires pas à jour, et les états.
+ * comparaison par défaut (la courante contre la précédente), le papier rangé
+ * de chaque version, la relecture des envois après un renvoi, et les états.
  * Instants comparés à aucune horloge : absolus.
  */
 
@@ -54,14 +53,15 @@ const DIFF: PlanVersionDiffView = {
 
 interface Doubles {
   readonly compared: [string, number, number][];
-  readonly pdfs: string[];
+  readonly pdfs: [string, number, string][];
+  dispatchReads: number;
 }
 
 async function render(
   versions: readonly PlanVersionView[] | Error,
   dispatches: readonly DossierDispatchView[] | Error = [],
 ): Promise<{ fixture: ComponentFixture<PlanVersionsSection>; doubles: Doubles }> {
-  const doubles: Doubles = { compared: [], pdfs: [] };
+  const doubles: Doubles = { compared: [], pdfs: [], dispatchReads: 0 };
   TestBed.configureTestingModule({
     providers: [
       {
@@ -72,6 +72,7 @@ async function render(
             return versions;
           },
           dispatches: async () => {
+            doubles.dispatchReads += 1;
             if (dispatches instanceof Error) throw dispatches;
             return dispatches;
           },
@@ -79,13 +80,8 @@ async function render(
             doubles.compared.push([date, from, to]);
             return DIFF;
           },
-        },
-      },
-      {
-        provide: DossierPrintService,
-        useValue: {
-          frozenPdf: async (date: string) => {
-            doubles.pdfs.push(date);
+          paper: async (date: string, n: number, kind: string) => {
+            doubles.pdfs.push([date, n, kind]);
             return new Blob(['%PDF']);
           },
         },
@@ -113,6 +109,15 @@ describe('defaultRange', () => {
   it('une seule version se compare à elle-même, aucune ne se compare pas', () => {
     expect(defaultRange([{ version: 1 }])).toEqual({ from: 1, to: 1 });
     expect(defaultRange([])).toBeNull();
+  });
+});
+
+describe('openablePaper', () => {
+  it('ouvre le papier rangé, jamais un papier non rangé ou inconnu', () => {
+    expect(openablePaper({ version: 2, dossier: true, count: false }, 'dossier')).toBe(2);
+    expect(openablePaper({ version: 2, dossier: true, count: false }, 'count')).toBeNull();
+    expect(openablePaper({ version: 2, dossier: null, count: null }, 'dossier')).toBeNull();
+    expect(openablePaper({ version: null, dossier: null, count: null }, 'dossier')).toBeNull();
   });
 });
 
@@ -148,43 +153,36 @@ describe('PlanVersionsSection', () => {
     expect(doubles.compared).toEqual([['2026-11-27', 1, 2]]);
   });
 
-  it('n’offre le lien du papier que pour la version courante rangée, et l’ouvre', async () => {
+  it('ouvre le papier rangé de chaque version, et celui dont un retrait tient lieu', async () => {
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
-    const { fixture, doubles } = await render([version(1, 'closed'), version(2, 'retaken')]);
-    const buttons = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
-      'button.pvs-open-paper',
-    );
-    expect(buttons).toHaveLength(1);
-    buttons[0]?.click();
+    const { fixture, doubles } = await render([
+      version(1, 'closed'),
+      version(2, 'order_withdrawn', { version: 1, dossier: true, count: true }),
+      version(3, 'retaken', { version: 3, dossier: false, count: false }),
+    ]);
+    const el = fixture.nativeElement as HTMLElement;
+    const rows = [...el.querySelectorAll('[data-version-row]')];
+    expect(rows[0]?.querySelector('button.pvs-open-paper')).toBeNull();
+    expect(rows[0]?.textContent).toContain('Papier non rangé');
+    rows[1]?.querySelector<HTMLButtonElement>('button.pvs-open-paper')?.click();
     await fixture.whenStable();
-    expect(doubles.pdfs).toEqual(['2026-11-27']);
+    rows[2]?.querySelector<HTMLButtonElement>('button.pvs-open-count')?.click();
+    await fixture.whenStable();
+    expect(doubles.pdfs).toEqual([
+      ['2026-11-27', 1, 'dossier'],
+      ['2026-11-27', 1, 'count'],
+    ]);
     expect(open).toHaveBeenCalledWith('blob:papier', '_blank');
   });
 
-  it('signale les destinataires qui n’ont pas la version courante', async () => {
-    const { fixture } = await render(
-      [version(1, 'closed'), version(2, 'retaken')],
-      [
-        {
-          recipientId: 'r1',
-          name: 'Fournil',
-          lastReceived: { at: '2026-11-27T16:01:00.000Z', planVersion: 1 },
-          lastAttempt: { at: '2026-11-27T16:01:00.000Z', planVersion: 1, outcome: 'sent' },
-        },
-        {
-          recipientId: 'r2',
-          name: 'Labo',
-          lastReceived: { at: '2026-11-27T18:11:00.000Z', planVersion: 2 },
-          lastAttempt: { at: '2026-11-27T18:11:00.000Z', planVersion: 2, outcome: 'sent' },
-        },
-      ],
-    );
-    const rows = [
-      ...(fixture.nativeElement as HTMLElement).querySelectorAll('[data-dispatch-row]'),
-    ];
-    expect(rows[0]?.textContent).toContain('A reçu la version 1 — dépassée');
-    expect(rows[0]?.querySelector('fold-badge')).not.toBeNull();
-    expect(rows[1]?.querySelector('fold-badge')).toBeNull();
+  it('relit les envois quand un renvoi a été demandé', async () => {
+    const { fixture, doubles } = await render([version(1, 'closed')], []);
+    expect(doubles.dispatchReads).toBe(1);
+    fixture.debugElement
+      .query((node) => node.name === 'app-plan-version-dispatches')
+      .triggerEventHandler('resent');
+    await fixture.whenStable();
+    expect(doubles.dispatchReads).toBe(2);
   });
 
   it('dit la journée sans version', async () => {

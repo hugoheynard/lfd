@@ -2,14 +2,29 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { DossierDispatchView, PlanVersionDiffView, PlanVersionView } from '@lfd/contracts';
+import type {
+  DossierDispatchView,
+  PlanVersionDiffView,
+  PlanVersionDossierResendPayload,
+  PlanVersionView,
+} from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import { intentOptions } from '../../shared/gesture-intents';
+
+/** Les deux papiers rangés d'une version. */
+export type PlanVersionPaperKind = 'dossier' | 'count';
+
+const PAPER_FILES: Readonly<Record<PlanVersionPaperKind, string>> = {
+  dossier: 'dossier.pdf',
+  count: 'compte-a-produire.pdf',
+};
 
 /**
  * **Les versions du plan d'une journée** (`documentation/fournil/plan-historique-des-tirages.md`) :
  * la liste, la comparaison de deux versions et ce que chaque destinataire du
- * dossier a reçu. Des lectures seulement.
+ * dossier a reçu ; le papier rangé de chaque version ; et le renvoi de la
+ * version courante.
  */
 @Injectable({ providedIn: 'root' })
 export class PlanVersionsService {
@@ -36,6 +51,29 @@ export class PlanVersionsService {
   async dispatches(date: string): Promise<readonly DossierDispatchView[]> {
     return firstValueFrom(
       this.http.get<readonly DossierDispatchView[]>(`${this.versionsUrl(date)}/dispatches`),
+    );
+  }
+
+  /** Le papier RANGÉ d'une version ; 404 s'il ne l'est pas ou si la version est inconnue. */
+  async paper(date: string, version: number, kind: PlanVersionPaperKind): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`${this.versionsUrl(date)}/${version}/${PAPER_FILES[kind]}`, {
+        responseType: 'blob',
+      }),
+    );
+  }
+
+  /**
+   * Renvoie le dossier de la version courante (204). La clé d'intention vient
+   * d'une `GestureIntents` de l'écran : un double clic ne renvoie pas deux e-mails.
+   */
+  async resend(
+    date: string,
+    payload: PlanVersionDossierResendPayload,
+    intentKey: string,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.versionsUrl(date)}/resend`, payload, intentOptions(intentKey)),
     );
   }
 }

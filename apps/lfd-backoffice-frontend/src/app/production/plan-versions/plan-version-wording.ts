@@ -236,6 +236,7 @@ export function withAuthor(sentence: string, author: string): string {
 /** Ce qu'un destinataire a reçu, au regard de la version courante. */
 export type DispatchStanding =
   | { readonly kind: 'current'; readonly version: number }
+  | { readonly kind: 'requested'; readonly version: number }
   | { readonly kind: 'outdated'; readonly version: number }
   | { readonly kind: 'unversioned' }
   | { readonly kind: 'nothing' };
@@ -252,8 +253,13 @@ export function dispatchStandingOf(
   if (received.planVersion === null) {
     return { kind: 'unversioned' };
   }
-  return latest !== null && received.planVersion < latest
-    ? { kind: 'outdated', version: received.planVersion }
+  if (latest !== null && received.planVersion < latest) {
+    return { kind: 'outdated', version: received.planVersion };
+  }
+  // Un renvoi demandé compte comme reçu (le serveur le range en `lastReceived`),
+  // mais l'écran ne dit pas « a reçu » : l'e-mail est confié à la boîte d'envoi.
+  return dispatch.lastAttempt?.outcome === 'requested' && dispatch.lastAttempt.at === received.at
+    ? { kind: 'requested', version: received.planVersion }
     : { kind: 'current', version: received.planVersion };
 }
 
@@ -262,6 +268,8 @@ export function dispatchStandingLabel(standing: DispatchStanding): string {
   switch (standing.kind) {
     case 'current':
       return `A reçu la version ${standing.version}, la courante`;
+    case 'requested':
+      return `Version ${standing.version} demandée — l’e-mail part par la boîte d’envoi`;
     case 'outdated':
       return `A reçu la version ${standing.version} — dépassée`;
     case 'unversioned':
@@ -271,7 +279,18 @@ export function dispatchStandingLabel(standing: DispatchStanding): string {
   }
 }
 
-/** Faut-il le signaler ? Tout ce qui n'est pas la version courante. */
+/** Faut-il le signaler ? Tout ce qui n'est pas la version courante, reçue ou demandée. */
 export function dispatchNeedsAttention(standing: DispatchStanding): boolean {
-  return standing.kind !== 'current';
+  return standing.kind !== 'current' && standing.kind !== 'requested';
+}
+
+/** La question avant de renvoyer la courante à une personne. */
+export function resendOneQuestion(version: number, name: string): string {
+  return `Renvoyer le dossier version ${version} à ${name} ?`;
+}
+
+/** La question avant de renvoyer la courante à tous ceux qui ne l'ont pas. */
+export function resendOutdatedQuestion(version: number, count: number): string {
+  const whom = count === 1 ? '1 destinataire pas à jour' : `${count} destinataires pas à jour`;
+  return `Renvoyer le dossier version ${version} à ${whom} ?`;
 }

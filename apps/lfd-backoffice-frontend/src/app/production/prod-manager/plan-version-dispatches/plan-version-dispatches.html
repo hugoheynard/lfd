@@ -1,0 +1,66 @@
+@if (canResend() && outdatedCount() > 0) {
+  <div class="pvd-action" data-resend-outdated>
+    <fold-inline-confirm
+      intent="primary"
+      [message]="outdatedQuestion()"
+      [labels]="{ confirm: 'Renvoyer', cancel: 'Annuler' }"
+      [loading]="sending() === 'outdated'"
+      (confirmed)="resendOutdated()"
+    >
+      <button foldButton size="sm" emphasis="outline" intent="primary" icon="mail">
+        Renvoyer à tous ceux qui ne sont pas à jour
+      </button>
+    </fold-inline-confirm>
+    @if (error(); as failure) {
+      @if (failure.subject === 'outdated') {
+        <fold-callout appearance="inset" variant="alert" announce data-resend-error>{{
+          failure.message
+        }}</fold-callout>
+      }
+    }
+  </div>
+}
+
+@if (rows().length === 0) {
+  <p class="pvd-quiet">Aucun destinataire du dossier pour cette journée.</p>
+} @else {
+  <ul class="pvd-list">
+    @for (row of rows(); track row.recipientId) {
+      <li class="pvd-row" data-dispatch-row>
+        <div class="pvd-line">
+          <strong>{{ row.name }}</strong>
+          <span>{{ row.standing }}</span>
+          @if (row.requested) {
+            <fold-badge variant="info" content="Demandé" />
+          }
+          @if (row.needsAttention) {
+            <fold-badge variant="warning" content="Pas à jour" />
+          }
+          @if (row.lastFailed) {
+            <fold-badge variant="alert" content="Dernier envoi en échec" />
+          }
+          @if (canResend() && row.needsAttention) {
+            <fold-inline-confirm
+              intent="primary"
+              [message]="row.question"
+              [labels]="{ confirm: 'Renvoyer', cancel: 'Annuler' }"
+              [loading]="sending() === subjectOf(row.recipientId)"
+              (confirmed)="resendOne(row.recipientId)"
+            >
+              <button foldButton size="sm" emphasis="outline" intent="neutral" data-resend-one>
+                Renvoyer la version courante
+              </button>
+            </fold-inline-confirm>
+          }
+        </div>
+        @if (error(); as failure) {
+          @if (failure.subject === subjectOf(row.recipientId)) {
+            <fold-callout appearance="inset" variant="alert" announce data-resend-error>{{
+              failure.message
+            }}</fold-callout>
+          }
+        }
+      </li>
+    }
+  </ul>
+}

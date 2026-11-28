@@ -31,7 +31,8 @@
                 <strong>{{ row.title }}</strong>
                 <span>{{ row.cause }}</span>
                 <span class="pvs-quiet">{{ row.moment }} · {{ row.author }}</span>
-                @if (row.canOpenPaper) {
+                <span class="pvs-quiet" data-paper>{{ row.paper }}</span>
+                @if (row.dossierVersion; as paperVersion) {
                   <button
                     foldButton
                     emphasis="outline"
@@ -39,12 +40,23 @@
                     size="sm"
                     icon="print"
                     class="pvs-open-paper"
-                    (click)="openPaper()"
+                    (click)="openPaper(paperVersion, 'dossier')"
                   >
-                    Ouvrir le papier
+                    Dossier
                   </button>
-                } @else {
-                  <span class="pvs-quiet" data-paper>{{ row.paper }}</span>
+                }
+                @if (row.countVersion; as paperVersion) {
+                  <button
+                    foldButton
+                    emphasis="outline"
+                    intent="neutral"
+                    size="sm"
+                    icon="print"
+                    class="pvs-open-count"
+                    (click)="openPaper(paperVersion, 'count')"
+                  >
+                    Compte à produire
+                  </button>
                 }
               </li>
             }
@@ -52,8 +64,8 @@
 
           @if (paperFailed()) {
             <fold-callout variant="alert">
-              Le papier n’a pas pu être ouvert — la journée est peut-être rouverte. Réessayez après
-              son nouvel arrêt.
+              Le papier n’a pas pu être ouvert — il n’est peut-être plus rangé. Réessayez, ou
+              rouvrez le dossier du jour.
             </fold-callout>
           }
 
@@ -97,31 +109,18 @@
           </section>
 
           <section class="pvs-block" aria-label="Les destinataires du dossier">
-            <!-- H6 posera ici le réenvoi de la version courante (à un, ou à tous les dépassés). -->
             <fold-element-title variant="bar" title="Destinataires du dossier" />
             @if (dispatchesFailed()) {
               <fold-callout variant="alert">
                 Les envois du dossier n’ont pas pu être lus — les versions, elles, sont à jour.
               </fold-callout>
-            } @else if (dispatches(); as recipients) {
-              @if (recipients.length === 0) {
-                <p class="pvs-quiet">Aucun destinataire du dossier pour cette journée.</p>
-              } @else {
-                <ul class="pvs-list">
-                  @for (recipient of recipients; track recipient.recipientId) {
-                    <li class="pvs-row" data-dispatch-row>
-                      <strong>{{ recipient.name }}</strong>
-                      <span>{{ recipient.standing }}</span>
-                      @if (recipient.needsAttention) {
-                        <fold-badge variant="warning" content="Pas à jour" />
-                      }
-                      @if (recipient.lastFailed) {
-                        <fold-badge variant="alert" content="Dernier envoi en échec" />
-                      }
-                    </li>
-                  }
-                </ul>
-              }
+            } @else if (dispatchList(); as recipients) {
+              <app-plan-version-dispatches
+                [date]="date()"
+                [dispatches]="recipients"
+                [latest]="latest()"
+                (resent)="reloadDispatches()"
+              />
             }
           </section>
         </div>

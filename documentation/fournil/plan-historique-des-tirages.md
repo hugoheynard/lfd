@@ -623,9 +623,18 @@ Décidé au bâti de H5 (2026-11-28), là où le plan ne tranchait pas :
   envoi d'avant les versions, ou rien reçu. Un dernier envoi en échec est
   signalé à part. La place du réenvoi (H6) est marquée dans le gabarit.
 
-**H6 — le réenvoi.** Sur l'écran des versions : la liste des destinataires
+**H6 — le réenvoi.** ~~Sur l'écran des versions : la liste des destinataires
 avec la dernière version reçue, et le geste « renvoyer la version courante »
-— à un destinataire ou à tous ceux qui ont une version dépassée. ~~Un e-mail
+— à un destinataire ou à tous ceux qui ont une version dépassée.~~ — 2026-11-28,
+**écran bâti**, non commité : `prod-manager/plan-version-dispatches/` (posé
+par `plan-versions-section` à la place marquée), `PlanVersionsService.resend`
+et `.paper`, les mots `resendOneQuestion`, `resendOutdatedQuestion` et l'état
+`requested` (« Version n demandée — l'e-mail part par la boîte d'envoi »,
+badge « Demandé ») dans `plan-version-wording.ts`. Le geste est caché sans
+`production_count_stop:write` ; une `GestureIntents` par écran, un sujet par
+ligne et un pour « tous ». Chaque version dont le papier est rangé ouvre son
+dossier et son compte à produire (`…/:version/…pdf`), un retrait celui de la
+version qui en tient lieu. ~~Un e-mail
 « dossier mis à jour » (texte au dictionnaire des e-mails, manifeste
 régénéré), le papier de la version courante joint, une trace par envoi
 comme aujourd'hui (clé `(journée, instant du réenvoi, destinataire)`), la
@@ -641,7 +650,7 @@ ligne chacun (entrées, dont hors plan ; révisées ; annulées — toujours
 produites), plafonnés avec « et N autres », puis les sorties dont la raison
 est au commerce, dites comme à l'écran. Un destinataire sans trace de version
 (envoi d'avant H2b) reçoit le résumé contre la première version de la journée.~~
-— 2026-11-28, **partie API bâtie**, non commitée ; **reste le bouton** (l'écran).
+— 2026-11-28, **partie API bâtie** (`98f9f8d16`).
 Migration `20261128002000_le_renvoi_du_dossier_est_une_demande` (retour
 arrière dans `prisma/rollback/`). Noyau : lecture publiée
 `PlanVersionSummaries` (`day/domain/ports/plan-version-summaries.ts`,

@@ -14,6 +14,8 @@ import {
   dispatchNeedsAttention,
   dispatchStandingLabel,
   dispatchStandingOf,
+  resendOneQuestion,
+  resendOutdatedQuestion,
   markAuthor,
   paperLabel,
   paperStateOf,
@@ -291,5 +293,39 @@ describe('ce qu’a reçu un destinataire', () => {
     const nothing = dispatchStandingOf(dispatch('none'), 4);
     expect(dispatchStandingLabel(nothing)).toBe('N’a encore rien reçu de cette journée');
     expect(dispatchNeedsAttention(nothing)).toBe(true);
+  });
+
+  it('un renvoi demandé dit « demandée », pas « a reçu », et ne se signale plus', () => {
+    const requested = dispatchStandingOf(
+      { ...dispatch(4), lastAttempt: { at: RETAKEN_AT, planVersion: 4, outcome: 'requested' } },
+      4,
+    );
+    expect(requested).toEqual({ kind: 'requested', version: 4 });
+    expect(dispatchStandingLabel(requested)).toBe(
+      'Version 4 demandée — l’e-mail part par la boîte d’envoi',
+    );
+    expect(dispatchNeedsAttention(requested)).toBe(false);
+  });
+
+  it('un renvoi demandé d’une version dépassée reste dépassé', () => {
+    const standing = dispatchStandingOf(
+      { ...dispatch(2), lastAttempt: { at: RETAKEN_AT, planVersion: 2, outcome: 'requested' } },
+      4,
+    );
+    expect(standing.kind).toBe('outdated');
+  });
+});
+
+describe('les questions du renvoi', () => {
+  it('nomme la version et la personne, ou le nombre', () => {
+    expect(resendOneQuestion(4, 'Jeanne Roux')).toBe(
+      'Renvoyer le dossier version 4 à Jeanne Roux ?',
+    );
+    expect(resendOutdatedQuestion(4, 3)).toBe(
+      'Renvoyer le dossier version 4 à 3 destinataires pas à jour ?',
+    );
+    expect(resendOutdatedQuestion(4, 1)).toBe(
+      'Renvoyer le dossier version 4 à 1 destinataire pas à jour ?',
+    );
   });
 });

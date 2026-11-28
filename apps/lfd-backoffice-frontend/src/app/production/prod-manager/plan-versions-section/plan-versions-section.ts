@@ -11,7 +11,6 @@ import {
 } from '@angular/core';
 import type { DossierDispatchView, PlanVersionDiffView, PlanVersionView } from '@lfd/contracts';
 import {
-  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
@@ -22,20 +21,20 @@ import {
   FoldLoadingStateComponent,
 } from 'fold-ng';
 
-import { DossierPrintService } from '../../dossier-print.service';
 import {
   authorLabel,
   causeLabel,
-  dispatchNeedsAttention,
-  dispatchStandingLabel,
-  dispatchStandingOf,
   paperLabel,
   paperStateOf,
   parisMoment,
   versionTitle,
 } from '../../plan-versions/plan-version-wording';
-import { PlanVersionsService } from '../../plan-versions/plan-versions.service';
+import {
+  type PlanVersionPaperKind,
+  PlanVersionsService,
+} from '../../plan-versions/plan-versions.service';
 import { PlanVersionDiff } from '../plan-version-diff/plan-version-diff';
+import { PlanVersionDispatches } from '../plan-version-dispatches/plan-version-dispatches';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -46,18 +45,22 @@ interface VersionRow {
   readonly cause: string;
   readonly moment: string;
   readonly author: string;
-  /** Le papier s'ouvre d'un lien : seul celui de la version courante est servi. */
-  readonly canOpenPaper: boolean;
+  /**
+   * La version dont le papier rangé s'ouvre — elle-même, ou pour un retrait
+   * celle qui en tient lieu ; `null` : pas de lien pour ce papier.
+   */
+  readonly dossierVersion: number | null;
+  readonly countVersion: number | null;
   readonly paper: string;
 }
 
-/** Un destinataire du dossier, déjà dit. */
-interface DispatchRow {
-  readonly recipientId: string;
-  readonly name: string;
-  readonly standing: string;
-  readonly needsAttention: boolean;
-  readonly lastFailed: boolean;
+/** La version dont un papier rangé s'ouvre, `null` s'il n'est pas rangé (ou inconnu). */
+export function openablePaper(
+  paper: PlanVersionView['paper'],
+  kind: PlanVersionPaperKind,
+): number | null {
+  const stored = kind === 'dossier' ? paper.dossier : paper.count;
+  return paper.version !== null && stored === true ? paper.version : null;
 }
 
 /** La comparaison par défaut : la courante contre la précédente. */
@@ -79,15 +82,15 @@ export function defaultRange(
  * par défaut la courante contre la précédente — et ce que chaque destinataire
  * du dossier a reçu.
  *
- * Le papier d'une version ancienne ne s'ouvre pas d'ici : la route du dossier
- * sert le papier de la version COURANTE seulement. La liste dit donc s'il est
- * rangé, et n'offre le lien que sur la dernière.
+ * Chaque version dont le papier est rangé l'ouvre d'un lien (dossier et
+ * compte à produire) ; un retrait ouvre celui de la version qui en tient lieu.
+ * Les destinataires et le renvoi de la courante (H6) vivent dans
+ * `app-plan-version-dispatches`.
  */
 @Component({
   selector: 'app-plan-versions-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
@@ -97,13 +100,13 @@ export function defaultRange(
     FoldListboxComponent,
     FoldLoadingStateComponent,
     PlanVersionDiff,
+    PlanVersionDispatches,
   ],
   templateUrl: './plan-versions-section.html',
   styleUrl: './plan-versions-section.scss',
 })
 export class PlanVersionsSection {
   private readonly planVersions = inject(PlanVersionsService);
-  private readonly dossier = inject(DossierPrintService);
 
   /** La journée de service, `AAAA-MM-JJ`. */
   readonly date = input.required<string>();
@@ -111,7 +114,7 @@ export class PlanVersionsSection {
   protected readonly state = signal<LoadState>('loading');
   protected readonly versions = signal<readonly PlanVersionView[]>([]);
   /** `null` : pas lus (échec dit à part, la liste reste). */
-  private readonly dispatchList = signal<readonly DossierDispatchView[] | null>(null);
+  protected readonly dispatchList = signal<readonly DossierDispatchView[] | null>(null);
   protected readonly dispatchesFailed = signal(false);
 
   protected readonly from = signal<number | null>(null);
@@ -135,7 +138,6 @@ export class PlanVersionsSection {
   );
 
   protected readonly rows = computed<readonly VersionRow[]>(() => {
-    const latest = this.latest();
     return this.versions()
       .map((entry) => {
         const paper = paperStateOf(entry);
@@ -145,28 +147,12 @@ export class PlanVersionsSection {
           cause: causeLabel(entry.cause),
           moment: parisMoment(entry.recordedAt),
           author: authorLabel(entry.author),
-          canOpenPaper: entry.version === latest && paper.kind === 'stored',
+          dossierVersion: openablePaper(entry.paper, 'dossier'),
+          countVersion: openablePaper(entry.paper, 'count'),
           paper: paperLabel(paper),
         };
       })
       .reverse();
-  });
-
-  protected readonly dispatches = computed<readonly DispatchRow[] | null>(() => {
-    const list = this.dispatchList();
-    if (list === null) {
-      return null;
-    }
-    return list.map((dispatch) => {
-      const standing = dispatchStandingOf(dispatch, this.latest());
-      return {
-        recipientId: dispatch.recipientId,
-        name: dispatch.name,
-        standing: dispatchStandingLabel(standing),
-        needsAttention: dispatchNeedsAttention(standing),
-        lastFailed: dispatch.lastAttempt?.outcome === 'failed',
-      };
-    });
   });
 
   constructor() {
@@ -235,11 +221,27 @@ export class PlanVersionsSection {
     }
   }
 
-  /** Le papier de la version courante : le dossier archivé, ouvert dans un onglet. */
-  protected async openPaper(): Promise<void> {
+  /** Après un renvoi : relit les envois seulement, les versions n'ont pas bougé. */
+  protected async reloadDispatches(): Promise<void> {
+    const token = this.listToken;
+    try {
+      const dispatches = await this.planVersions.dispatches(this.date());
+      if (token === this.listToken) {
+        this.dispatchList.set(dispatches);
+        this.dispatchesFailed.set(false);
+      }
+    } catch {
+      if (token === this.listToken) {
+        this.dispatchesFailed.set(true);
+      }
+    }
+  }
+
+  /** Le papier rangé d'une version, ouvert dans un onglet. */
+  protected async openPaper(version: number, kind: PlanVersionPaperKind): Promise<void> {
     this.paperFailed.set(false);
     try {
-      const pdf = await this.dossier.frozenPdf(this.date());
+      const pdf = await this.planVersions.paper(this.date(), version, kind);
       this.revokeOpened();
       this.openedUrl = URL.createObjectURL(pdf);
       window.open(this.openedUrl, '_blank');

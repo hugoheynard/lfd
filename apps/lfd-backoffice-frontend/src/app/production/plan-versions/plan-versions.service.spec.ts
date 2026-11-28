@@ -46,4 +46,25 @@ describe('PlanVersionsService', () => {
     http.expectOne(`${VERSIONS}/dispatches`).flush([]);
     expect(await pending).toEqual([]);
   });
+
+  it('ouvre le papier rangé d’une version, dossier ou compte', async () => {
+    const dossier = service.paper('2026-11-27', 2, 'dossier');
+    const first = http.expectOne(`${VERSIONS}/2/dossier.pdf`);
+    expect(first.request.responseType).toBe('blob');
+    first.flush(new Blob(['%PDF']));
+    await dossier;
+    const count = service.paper('2026-11-27', 3, 'count');
+    http.expectOne(`${VERSIONS}/3/compte-a-produire.pdf`).flush(new Blob(['%PDF']));
+    await count;
+  });
+
+  it('renvoie la courante avec le corps et la clé d’intention', async () => {
+    const pending = service.resend('2026-11-27', { target: 'recipient', recipientId: 'r1' }, 'k-1');
+    const request = http.expectOne(`${VERSIONS}/resend`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ target: 'recipient', recipientId: 'r1' });
+    expect(request.request.headers.get('Idempotency-Key')).toBe('k-1');
+    request.flush(null, { status: 204, statusText: 'No Content' });
+    await pending;
+  });
 });
