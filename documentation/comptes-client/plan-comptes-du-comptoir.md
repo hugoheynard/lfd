@@ -157,32 +157,14 @@ des comptes clients existant, pas celui-ci.
 
 ### 3.5 La preuve d'identité (Hugo, 2026-11-28)
 
-À l'ouverture, l'agent **photographie une pièce** avec l'appareil photo de
-l'appareil : carte d'identité, permis, carte bancaire ou carte Vitale —
-n'importe laquelle. La photo est obligatoire pour ouvrir le compte, rangée au
-stockage (comme le KBIS), visible du commerce sur la page du § 4.
+**Aucune photo.** L'agent demande à voir une pièce d'identité, et l'écran
+d'ouverture porte une case **« J'ai vu une preuve d'identité »**,
+**non bloquante** : le compte s'ouvre qu'elle soit cochée ou non.
 
-✅ **Les quatre pièces sont gardées** (Hugo, 2026-11-28), en connaissance
-des deux risques ci-dessous, écrits pour qu'ils restent visibles. K2 réduit
-ce qu'il peut : accès au seul droit du commerce, purge datée, aucune photo
-dans un journal ni un e-mail, aucune lecture du numéro (pas d'OCR).
-
-Les risques assumés :
-
-- **Carte bancaire** : une photo porte le numéro complet, la date et le nom.
-  La garder fait entrer notre stockage dans le périmètre PCI DSS, que le
-  dépôt évite entièrement (Stripe tient les cartes). L'écran invite à masquer
-  les chiffres du milieu avant la prise (non vérifiable).
-- **Carte Vitale** : elle porte le NIR (numéro de sécurité sociale), dont le
-  traitement est encadré strictement (décret « cadre NIR ») et n'est pas
-  admis pour identifier un client commercial.
-- **Carte d'identité et permis** : admissibles, mais donnée personnelle à
-  déclarer : finalité (identifier qui ouvre un crédit), durée de
-  conservation (proposée : jusqu'à la conversion + 3 mois, puis purge),
-  accès restreint (droit du commerce seulement). Une ligne au registre RGPD.
-
-Mécanisme : le même que les photos des notes du commercial
-(`shared/photo-cards/`, stockage + vignette), à vérifier en K2.
+Ce qui est gardé, sur la trace d'ouverture : la case (oui/non), **l'agent
+qui l'a cochée** (son identifiant staff, nommé à l'écran) et l'instant.
+Rien de la pièce elle-même — ni type, ni numéro, ni image. La page du § 4
+montre « pièce vue par <agent> » ou « pièce non vue ».
 
 ## 4. La page « Comptes du comptoir » (D4)
 
@@ -203,13 +185,13 @@ la page, pas une par ligne). Total du dû en pied de table.
 
 ## 5. Lots
 
-| Lot | Contenu                                                                                                                                                             |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| K1  | Statut `counter_opened`, factory, transitions, tests domaine ; revue de tous les lecteurs du statut                                                                 |
-| K2  | Photo de la pièce d'identité (§ 3.5) ; ressource `b2b_counter_accounts` ; route et écran « ouvrir un compte pro » au comptoir ; virement et `monthly` à l'ouverture |
-| K3  | Garde du crédit : `counter_opened` admis au comptoir seulement ; virement obligé ; e2e (boutique refusée, comptoir admis)                                           |
-| K4  | Réglage du plafond et refus ; lecture de l'encours                                                                                                                  |
-| K5  | Page « Comptes du comptoir » et conversion                                                                                                                          |
+| Lot | Contenu                                                                                                                                                                                    |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| K1  | Statut `counter_opened`, factory, transitions, tests domaine ; revue de tous les lecteurs du statut                                                                                        |
+| K2  | Case « j'ai vu une preuve d'identité » et son agent (§ 3.5) ; ressource `b2b_counter_accounts` ; route et écran « ouvrir un compte pro » au comptoir ; virement et `monthly` à l'ouverture |
+| K3  | Garde du crédit : `counter_opened` admis au comptoir seulement ; virement obligé ; e2e (boutique refusée, comptoir admis)                                                                  |
+| K4  | Réglage du plafond et refus ; lecture de l'encours                                                                                                                                         |
+| K5  | Page « Comptes du comptoir » et conversion                                                                                                                                                 |
 
 ## 6. À vérifier (pour `vitruve`)
 
