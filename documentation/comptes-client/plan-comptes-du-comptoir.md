@@ -163,6 +163,10 @@ d'ouverture porte une case **« J'ai vu une preuve d'identité »**,
 
 Ce qui est gardé, sur la trace d'ouverture : la case (oui/non), **l'agent
 qui l'a cochée** (son identifiant staff, nommé à l'écran) et l'instant.
+**Cocher engage la responsabilité de l'agent** (Hugo, 2026-11-28) :
+l'écran le dit en clair à côté de la case (« En cochant, vous attestez avoir
+vu une pièce d'identité de cette personne. Votre nom est enregistré. »),
+et la trace est append-only — ni décochée, ni réattribuée après coup.
 Rien de la pièce elle-même — ni type, ni numéro, ni image. La page du § 4
 montre « pièce vue par <agent> » ou « pièce non vue ».
 
@@ -174,7 +178,7 @@ Dans l'espace commerce du back-office : une table, une ligne par société
 | Colonne           | Source                                                  |
 | ----------------- | ------------------------------------------------------- |
 | Enseigne, contact | la société                                              |
-| Ouvert le, par    | la trace d'ouverture                                    |
+| Ouvert le, par    | la trace d'ouverture, et « pièce vue par <agent> »      |
 | Commandes         | nombre de commandes au compte                           |
 | **Dû**            | encours non réglé (facturé + pas encore facturé), en €  |
 | Ce qui manque     | le verdict d'activation existant (SIRET, KBIS, mandat…) |
