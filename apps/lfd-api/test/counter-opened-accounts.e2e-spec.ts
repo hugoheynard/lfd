@@ -8,11 +8,11 @@
  * jamais « au compte », même crédité.
  *
  * L'ouverture passe par sa route (`POST /admin/counter/accounts`, K2). Les
- * deux premières scènes posent encore le statut par Prisma, et c'est voulu :
- * la première a besoin d'un bon servi au compte AVANT, que la passation de la
- * boutique ne prend que d'un compte actif (le comptoir l'admettra en K3) ; la
- * seconde, d'une membership que l'agrégat refuse — le test montre que la
- * boutique tient même si elle existait.
+ * deux premières scènes posent le statut par Prisma, et c'est voulu : la
+ * première a besoin d'un bon servi et remis avant la clôture, sur une société
+ * qui a un acheteur rattaché — la vraie ouverture n'en crée pas ; la seconde,
+ * d'une membership que l'agrégat refuse — le test montre que la boutique
+ * tient même si elle existait.
  */
 import { jsonBody } from "./e2e-harness.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";

@@ -103,6 +103,17 @@ vérifier »).
 - **Audience** : pro (`audienceOf` rend `b2b`), comme un pending.
 - **Aucun membre** tant que `counter_opened` : l'invitation d'un membre est
   refusée par l'agrégat (le client n'a pas d'espace avant conversion).
+- **L'acheteur sans accès** (Hugo, 2026-11-28) : « aucun membre » veut dire
+  « personne ne se connecte ». Le contact donné à l'ouverture est rattaché au
+  compte comme acheteur **sans accès** — aucune identité Auth0, aucune
+  invitation, aucun lien de mot de passe —, pour que la passation de l'équipe
+  (`ensureOrderMember`) ait au nom de qui commander. ⚠️ **Non bâti** : un
+  rattachement (`memberships`) ouvre la société tant que son invitation vit
+  (`openingMembership`, 7 jours depuis `invited_at`), et une fiche sans `sub`
+  est reprise par la première connexion qui prouve son adresse
+  (`GuestAccountClaim`). Rattacher le contact tel quel lui ouvrirait l'espace
+  sept jours s'il se connectait à la boutique. Le geste de fermeture reste à
+  trancher (relevé le 2026-11-28).
 - **Ce que « refusé partout » demande** : le statut est recopié dans des
   types fermés qui ne dérivent pas de l'enum — `account/domain/value-objects/company-status.ts`,
   `orders/domain/ports/company-status.reader.ts`,
@@ -145,6 +156,15 @@ K4 la crée : les commandes au compte non encore facturées (propriétaire :
 `orders`) + les factures non réglées (propriétaire : `accounting`), deux
 lectures nommées par lot, composées par la page et par la garde.
 
+**Bâti (K4)** : la garde ne lit que la première — un compte du comptoir n'est
+jamais facturé avant sa conversion, donc ses commandes au compte non annulées
+sont tout son dû, et après conversion le statut n'est plus `counter_opened` et
+la garde ne s'applique plus. Le réglage vit dans `counter_account_settings`
+(une ligne `orders`, absente = aucun plafond) ; **aucun écran ne l'écrit
+encore**. Le refus vaut à la passation (409
+`orders.counter.ceiling_exceeded`) et à l'estimation (avertissement de même
+code), seulement sur un règlement au compte.
+
 ### 3.4 Le droit (D6)
 
 Une valeur `StaffResource` **`b2b_counter_accounts`** (préfixe `b2b_`
@@ -178,6 +198,18 @@ de la commande pro pour ce compte** (`/nouvelle-commande/<id>`), pas la
 fiche client : le client est en face, c'est pour commander qu'on ouvre son
 compte, et l'agent du comptoir n'a pas le droit de la fiche
 (`b2b_companies`). Un refus affiche le message du serveur tel quel.
+
+### 3.7 Ce que sert un compte du comptoir (Hugo, 2026-11-28)
+
+- **Le retrait seul** : `fulfillmentMethod = "pickup"` — le retrait en
+  boutique, et le « Retrait immédiat » (`entryShortcut = "immediate_pickup"`,
+  qui est un `pickup` sur la vitrine). Toute livraison (`"delivery"`) est
+  refusée à la passation et à l'estimation de la saisie de l'équipe
+  (`orders.counter.account_pickup_only`) : « un compte ouvert au comptoir se
+  retire en boutique ; convertir le compte pour livrer ».
+- **Pas de reliquat** : un départ incomplet d'une de ses commandes n'ouvre
+  aucun reliquat (`BackorderOpening`), et transformer ou estimer un reliquat
+  lui est refusé (`orders.counter.account_no_backorder`).
 
 ## 4. La page « Comptes du comptoir » (D4)
 

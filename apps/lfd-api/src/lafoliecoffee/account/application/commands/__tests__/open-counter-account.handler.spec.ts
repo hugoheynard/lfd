@@ -33,9 +33,12 @@ class DeclaringCompanies extends InMemoryCompanies {
   constructor(private readonly log: string[]) {
     super();
   }
-  override declareUnowned(company: Company): Promise<string> {
+  // Facultatif : le double parent se déclare sans argument, le port en prend un.
+  override declareUnowned(company?: Company): Promise<string> {
     this.log.push("company");
-    this.declared.push(company);
+    if (company !== undefined) {
+      this.declared.push(company);
+    }
     return Promise.resolve("cmp_counter");
   }
 }

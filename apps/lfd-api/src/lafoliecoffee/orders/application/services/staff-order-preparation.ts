@@ -9,6 +9,7 @@ import {
   staffEntryOriginOf,
 } from "../../domain/services/order-supply-rules.js";
 import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
+import { ensureCounterAccountFulfillment } from "./counter-account-service-guard.js";
 import type { DraftedOrder, DraftPolicy, OrderDrafting } from "./order-drafting.service.js";
 import { offerPartyOf } from "./order-offering.js";
 import { counterCompanyStatusRefusal } from "./staff-settlement-refusal.js";
@@ -63,6 +64,8 @@ export async function prepareStaffOrder(
   // L'équipe porte la commande à toute personne rattachée à la société, même
   // sans accès accepté : elle passe dans tous les cas (Hugo, 2026-11-23).
   ensureOrderMember(await ports.guard.staffEntryRoleOf(buyerUserId, companyId), companyId);
+  // Un compte ouvert au comptoir ne se sert qu'en retrait (§ 3.7).
+  await ensureCounterAccountFulfillment(ports.guard, companyId, payload.fulfillmentMethod);
   await ensureCounterLinkCause(ports.guard, payload);
   // L'équipe n'est tenue ni par la fermeture de la boutique à une clientèle,
   // ni par son premier jour commandable : ces dates ouvrent la boutique aux

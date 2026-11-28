@@ -17,6 +17,10 @@ import type { DraftedOrder, DraftPolicy, OrderDrafting } from "./order-drafting.
 import type { ShelfCircuit } from "./shelf-circuit.service.js";
 import { prepareStaffOrder } from "./staff-order-preparation.js";
 import { staffSettlementRefusal } from "./staff-settlement-refusal.js";
+import {
+  NO_COUNTER_CEILING_CHECK,
+  type CounterAccountCeilingCheck,
+} from "./counter-account-ceiling-check.js";
 
 /** Ce que l'estimation lit, et rien d'autre. */
 export interface StaffOrderEstimationPorts {
@@ -24,6 +28,8 @@ export interface StaffOrderEstimationPorts {
   readonly drafting: OrderDrafting;
   readonly shelf: ShelfCircuit;
   readonly cutoffNotice: OrderCutoffNotice;
+  /** Le plafond d'un compte du comptoir (§ 3.3) ; absent, aucun plafond n'est jugé. */
+  readonly ceiling?: Pick<CounterAccountCeilingCheck, "refusalFor">;
 }
 
 /**
@@ -110,7 +116,16 @@ export class StaffOrderEstimation {
       isCounterEntry(payload.entryOrigin, payload.entryShortcut),
       chargesCounterAccounts,
     );
-    return [short, credit].flatMap((warning) =>
+    // Le plafond ne se juge que sur un règlement admis : un refus de crédit le précède.
+    const ceiling =
+      credit === null
+        ? await (this.ports.ceiling ?? NO_COUNTER_CEILING_CHECK).refusalFor({
+            companyId: payload.companyId,
+            settlement: payload.settlement,
+            totalCents: order.totalCents,
+          })
+        : null;
+    return [short, credit, ceiling].flatMap((warning) =>
       warning === null ? [] : [{ code: warning.code, message: warning.message }],
     );
   }

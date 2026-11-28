@@ -36,6 +36,10 @@ import { publishOrderOffered } from "./order-offering.js";
 import type { ShelfCircuit } from "./shelf-circuit.service.js";
 import { prepareStaffOrder } from "./staff-order-preparation.js";
 import { staffSettlementRefusal } from "./staff-settlement-refusal.js";
+import {
+  NO_COUNTER_CEILING_CHECK,
+  type CounterAccountCeilingCheck,
+} from "./counter-account-ceiling-check.js";
 import type { AdminPlaceOrderPayload } from "@lfd/contracts";
 
 /** Ce que la passation de l'équipe lit et écrit. */
@@ -56,6 +60,8 @@ export interface StaffOrderPlacementPorts {
   readonly ids: IdGenerator;
   /** Le client de la commande, nommé chez le prestataire (le-pointage-stripe.md, § 7). */
   readonly recipients: OrderRecipientReader;
+  /** Le plafond d'un compte du comptoir (§ 3.3) ; absent, aucun plafond n'est jugé. */
+  readonly ceiling?: Pick<CounterAccountCeilingCheck, "refusalFor">;
 }
 
 /** Une saisie de l'équipe : qui saisit, ce qu'il saisit, et son droit de passer une limite. */
@@ -287,6 +293,14 @@ export class StaffOrderPlacement {
     );
     if (refusal !== null) {
       throw refusal;
+    }
+    const overCeiling = await (this.ports.ceiling ?? NO_COUNTER_CEILING_CHECK).refusalFor({
+      companyId,
+      settlement,
+      totalCents: order.totalCents,
+    });
+    if (overCeiling !== null) {
+      throw overCeiling;
     }
     if (settlement === "account" || order.totalCents <= 0) {
       // Au compte, ou rien à encaisser : un lien de règlement à 0 € enverrait

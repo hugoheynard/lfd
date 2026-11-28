@@ -2,6 +2,7 @@ import type { AdminOrderEstimateView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
+import { CounterAccountCeilingCheck } from "../services/counter-account-ceiling-check.js";
 import { OrderCutoffNotice } from "../services/order-cutoff-notice.service.js";
 import { OrderDrafting, PLACEMENT_POLICY } from "../services/order-drafting.service.js";
 import { ShelfCircuit } from "../services/shelf-circuit.service.js";
@@ -29,8 +30,16 @@ export class EstimateOrderForCustomerHandler implements IQueryHandler<
     drafting: OrderDrafting,
     shelf: ShelfCircuit,
     cutoffNotice: OrderCutoffNotice,
+    // Facultatif pour les doubles des suites ; Nest l'injecte toujours (§ 3.3).
+    ceiling?: CounterAccountCeilingCheck,
   ) {
-    this.estimation = new StaffOrderEstimation({ guard, drafting, shelf, cutoffNotice });
+    this.estimation = new StaffOrderEstimation({
+      guard,
+      drafting,
+      shelf,
+      cutoffNotice,
+      ...(ceiling === undefined ? {} : { ceiling }),
+    });
   }
 
   execute(query: EstimateOrderForCustomerQuery): Promise<AdminOrderEstimateView> {

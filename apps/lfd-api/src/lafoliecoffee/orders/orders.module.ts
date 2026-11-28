@@ -295,6 +295,11 @@ import { PrismaCompanyOrderSummaryReader } from "./infrastructure/prisma-company
 import { PrismaOrderSummaryRequesterReader } from "./infrastructure/prisma-order-summary-requester.reader.js";
 import { PrismaOrderAccessReader } from "./infrastructure/prisma-order-access.reader.js";
 import { PrismaOrderGuardReader } from "./infrastructure/prisma-order-guard.reader.js";
+import { CounterAccountCeilingCheck } from "./application/services/counter-account-ceiling-check.js";
+import { CounterAccountCeilingReader } from "./domain/ports/counter-account-ceiling.reader.js";
+import { CounterAccountOutstandingReader } from "./domain/ports/counter-account-outstanding.reader.js";
+import { PrismaCounterAccountCeilingReader } from "./infrastructure/prisma-counter-account-ceiling.reader.js";
+import { PrismaCounterAccountOutstandingReader } from "./infrastructure/prisma-counter-account-outstanding.reader.js";
 import { PrismaPreferredPickupReader } from "./infrastructure/prisma-preferred-pickup.reader.js";
 import { PrismaOrderPayerReader } from "./infrastructure/prisma-order-payer.reader.js";
 import { PrismaOrderDraftRepository } from "./infrastructure/prisma-order-draft.repository.js";
@@ -750,6 +755,10 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     SaveOrderDraftHandler,
     DiscardOrderDraftHandler,
     { provide: OrderGuardReader, useClass: PrismaOrderGuardReader },
+    // Le plafond d'un compte ouvert au comptoir et son encours (§ 3.3).
+    CounterAccountCeilingCheck,
+    { provide: CounterAccountCeilingReader, useClass: PrismaCounterAccountCeilingReader },
+    { provide: CounterAccountOutstandingReader, useClass: PrismaCounterAccountOutstandingReader },
     // Le mur des gestes sur une commande EXISTANTE, héritage du principal
     // compris (lot C1 de `plan-commandes-des-sites.md`) ; distinct de
     // `roleOf`, qui garde la passation et le devis.
