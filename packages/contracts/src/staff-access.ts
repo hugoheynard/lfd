@@ -179,6 +179,15 @@ export const staffResourceSchema = z.enum([
    */
   "b2b_counter",
   /**
+   * **Les comptes du comptoir** — ouvrir au comptoir un compte pro incomplet,
+   * sans SIRET ni RIB, et y commander au compte
+   * (`documentation/comptes-client/plan-comptes-du-comptoir.md`, § 3.4). Un
+   * crédit sans facture avant conversion : détaché de `b2b_counter`, qui ne
+   * fait que lire. Ajoutée sans être accordée : elle s'accorde à l'écran ; la
+   * graine ne la donne qu'à l'administrateur.
+   */
+  "b2b_counter_accounts",
+  /**
    * **La Supervision** — une vue du jour, en lecture seule : où en est chaque
    * commande entre la passation et le retrait, et lesquelles sont en retard
    * (`documentation/supervision/architecture-supervision-du-jour.md`).
@@ -935,6 +944,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_orders_shortfall: "Décider du départ incomplet",
   b2b_order_review: "Visa des commandes",
   b2b_counter: "Comptoir",
+  b2b_counter_accounts: "Comptes du comptoir",
   b2b_supervision: "Supervision",
   b2b_subscriptions: "Paniers récurrents",
   b2b_catalog: "Catalogue vendu (retiré)",
@@ -1096,6 +1106,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     delivery_decisions: "write",
     delivery_proofs: "write",
     b2b_counter: "write",
+    // L'administrateur seul (2026-11-28, comptes du comptoir, K2) : en
+    // production, accordée à l'écran.
+    b2b_counter_accounts: "write",
     // `write` sur une vue en lecture seule : l'administrateur couvre tout, sans
     // trou — l'invariant qu'un test du contrat exige (2026-09-25).
     b2b_supervision: "write",

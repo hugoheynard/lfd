@@ -72,6 +72,9 @@ const TERMINABLE: ReadonlySet<CompanyStatus> = new Set<CompanyStatus>([
   "counter_opened",
 ]);
 
+/** Le crédit d'un compte ouvert au comptoir : il commande au compte, réglé au mois. */
+const COUNTER_ACCOUNT_TERM: DeferredTerm = "monthly";
+
 /** Le crédit qu'un organisme public reçoit à l'activation : il règle au mois, par virement. */
 const PUBLIC_PAYER_TERM: DeferredTerm = "monthly";
 
@@ -398,7 +401,7 @@ export class Company {
   /**
    * **Ouvre un compte au comptoir** (`plan-comptes-du-comptoir.md`, § 3.1) :
    * un agent ouvre un compte pro incomplet pour y commander au compte tout de
-   * suite. Il n'exige qu'un nom d'usage et un contact joignable — ni SIRET,
+   * suite, et il naît au mensuel. Il n'exige qu'un nom d'usage et un contact joignable — ni SIRET,
    * ni adresse, ni KBIS, ni mandat : le commerce le convertit ensuite
    * ({@link convertFromCounter}, {@link activate}).
    *
@@ -427,6 +430,8 @@ export class Company {
       opening,
     );
     company.statusValue = "counter_opened";
+    // Il naît au compte, au mois (§ 3.2) : c'est la raison de l'ouvrir.
+    company.grantedTermsValue = [COUNTER_ACCOUNT_TERM];
     return company;
   }
 

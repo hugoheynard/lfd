@@ -7,11 +7,15 @@
  * il bloquerait sinon la clôture des autres ; et la boutique ne lui dit
  * jamais « au compte », même crédité.
  *
- * ⚠️ Dette de scène : aucune route n'ouvre encore un compte au comptoir. Le
- * statut est donc posé par Prisma, après la passation du bon au compte (qui
- * le demande actif) ; la membership de la deuxième scène aussi — l'agrégat la
- * refuse, et le test montre que la boutique tient même si elle existait.
+ * L'ouverture passe par sa route (`POST /admin/counter/accounts`, K2). Les
+ * deux premières scènes posent encore le statut par Prisma, et c'est voulu :
+ * la première a besoin d'un bon servi au compte AVANT, que la passation de la
+ * boutique ne prend que d'un compte actif (le comptoir l'admettra en K3) ; la
+ * seconde, d'une membership que l'agrégat refuse — le test montre que la
+ * boutique tient même si elle existait.
  */
+import { jsonBody } from "./e2e-harness.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { TermsNotGrantedError } from "../src/lafoliecoffee/orders/domain/errors/order-errors.js";
 import {
@@ -24,6 +28,18 @@ import {
 } from "./collection-returns-scene.js";
 import { attachTo, createCompany, createUser, handOver } from "./factories.js";
 import { placeServedOrder } from "./served-order.js";
+
+const OPEN_ROUTE = "/admin/counter/accounts";
+const OPEN_PAYLOAD = {
+  enseigne: "Kiosque du Quai",
+  contact: {
+    firstName: "Camille",
+    lastName: "Rousseau",
+    email: "camille@kiosque.test",
+    phone: "06 12 34 56 78",
+  },
+  identitySeen: true,
+};
 
 useCollectionReturnScene();
 
@@ -95,5 +111,95 @@ describe("la boutique et un compte ouvert au comptoir", () => {
       placeServedOrder(ctx, { buyerUserId: buyer.id, companyId: company.id, servedAt }),
     ).rejects.toBeInstanceOf(TermsNotGrantedError);
     expect(await ctx.prisma.order.count({ where: { companyId: company.id } })).toBe(0);
+  });
+});
+
+describe("ouvrir un compte au comptoir — POST /admin/counter/accounts", () => {
+  it("ouvre la société counter_opened, au mensuel, au virement, avec la trace de la case", async () => {
+    const entityId = await setUpEntity(staff);
+    const agent = await ctx.prisma.staffUser.findFirstOrThrow({ where: { auth0Id: "staff-e2e" } });
+
+    const response = await staff()
+      .post(OPEN_ROUTE)
+      .set(INTENT_KEY, freshIntent())
+      .send(OPEN_PAYLOAD)
+      .expect(201);
+    const { id } = jsonBody<{ id: string }>(response);
+
+    const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id } });
+    expect(company).toMatchObject({
+      status: "counter_opened",
+      grantedTerms: ["monthly"],
+      enseigne: "Kiosque du Quai",
+      siret: "",
+    });
+    expect(
+      await ctx.prisma.payerCollectionMeans.findMany({
+        where: { payerCompanyId: id },
+        select: { legalEntityId: true, means: true, reason: true, cancelledAt: true },
+      }),
+    ).toEqual([
+      {
+        legalEntityId: entityId,
+        means: "bank_transfer",
+        reason: "Ouvert au comptoir : règlement par virement.",
+        cancelledAt: null,
+      },
+    ]);
+    const trace = await ctx.prisma.counterOpeningAttestation.findUniqueOrThrow({
+      where: { companyId: id },
+    });
+    expect(trace).toMatchObject({ identitySeen: true, attestedByStaffId: agent.id });
+    expect(await ctx.prisma.membership.count({ where: { companyId: id } })).toBe(0);
+  });
+
+  it("la trace ne se décoche pas : la base refuse de la réécrire", async () => {
+    const response = await staff()
+      .post(OPEN_ROUTE)
+      .set(INTENT_KEY, freshIntent())
+      .send({ ...OPEN_PAYLOAD, identitySeen: false })
+      .expect(201);
+    const { id } = jsonBody<{ id: string }>(response);
+
+    await expect(
+      ctx.prisma.counterOpeningAttestation.update({
+        where: { companyId: id },
+        data: { identitySeen: true },
+      }),
+    ).rejects.toThrow(/append_only/u);
+  });
+
+  it("refuse le prélèvement sur ce compte, en disant de le convertir d'abord", async () => {
+    const entityId = await setUpEntity(staff);
+    const { id } = jsonBody<{ id: string }>(
+      await staff().post(OPEN_ROUTE).set(INTENT_KEY, freshIntent()).send(OPEN_PAYLOAD).expect(201),
+    );
+
+    const refused = await staff()
+      .put(`/admin/accounting/legal-entities/${entityId}/payers/${id}/collection-means`)
+      .send({ means: "sepa_debit", reason: "Le client a signé un mandat." })
+      .expect(409);
+    expect(JSON.stringify(refused.body)).toContain("Convertissez d'abord le compte");
+  });
+
+  it("refuse à qui n'a pas le droit des comptes du comptoir (403), sans rien ouvrir", async () => {
+    await ctx.prisma.staffUser.create({
+      data: {
+        firstName: "Test",
+        lastName: "comptoir",
+        email: "counter-agent@lfc.test",
+        role: "comptoir",
+        status: "active",
+        auth0Id: "staff-counter-agent",
+      },
+    });
+
+    await ctx
+      .asSub("staff-counter-agent")
+      .post(OPEN_ROUTE)
+      .set(INTENT_KEY, freshIntent())
+      .send(OPEN_PAYLOAD)
+      .expect(403);
+    expect(await ctx.prisma.company.count({ where: { status: "counter_opened" } })).toBe(0);
   });
 });

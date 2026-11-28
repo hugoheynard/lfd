@@ -8,6 +8,11 @@ export interface PayerStanding {
   readonly active: boolean;
   /** Sa forme juridique est celle d'un organisme public : il règle par virement. */
   readonly public: boolean;
+  /**
+   * Ouvert au comptoir et pas encore converti : le prélèvement lui est refusé
+   * (`plan-comptes-du-comptoir.md`, § 3.2). Absent = non.
+   */
+  readonly counterOpened?: boolean;
   /** Les périodes `billing` où ce compte est le SITE, qui couvrent l'instant. */
   readonly follows: readonly BillingFollow[];
 }

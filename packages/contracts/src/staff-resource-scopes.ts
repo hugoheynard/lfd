@@ -97,6 +97,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "N'ajoute rien : le comptoir ne fait que lire ; la vente demande « Passer une commande pro ».",
   },
+  b2b_counter_accounts: {
+    read: "N'ouvre rien aujourd'hui : la liste des comptes du comptoir demande Comptes clients.",
+    write:
+      "Ouvrir au comptoir un compte pro sans SIRET ni RIB, réglé par virement, et y commander au compte avant que le commerce l'ait converti. Un crédit sans facture : l'agent atteste à l'ouverture avoir vu, ou non, une pièce d'identité.",
+  },
   b2b_supervision: {
     read: "Suivre la journée de toutes les commandes, de la passation au retrait — préparation, colisage, retards, qualité — avec le nom des clients, particuliers compris, sans montant ni contact.",
     write: "Enregistrer un contrôle qualité et ses photos, et consulter les contrôles passés.",

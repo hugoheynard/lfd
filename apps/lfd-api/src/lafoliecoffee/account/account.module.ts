@@ -90,6 +90,10 @@ import { CounterCustomerReader } from "./domain/ports/counter-customer.reader.js
 import { PrismaCounterCustomerReader } from "./infrastructure/prisma-counter-customer.reader.js";
 import { AdminCounterCustomersController } from "./http/admin-counter-customers.controller.js";
 import { AdminCounterParticularsController } from "./http/admin-counter-particulars.controller.js";
+import { AdminCounterAccountsController } from "./http/admin-counter-accounts.controller.js";
+import { OpenCounterAccountHandler } from "./application/commands/open-counter-account.handler.js";
+import { CounterOpeningAttestations } from "./domain/ports/counter-opening-attestations.js";
+import { PrismaCounterOpeningAttestations } from "./infrastructure/prisma-counter-opening-attestations.js";
 import { SearchCounterParticularsHandler } from "./application/queries/search-counter-particulars.handler.js";
 import { RegisterCounterParticularHandler } from "./application/commands/register-counter-particular.handler.js";
 import { ParticularFinder } from "./domain/ports/particular-finder.js";
@@ -349,6 +353,7 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     AdminDirectDebitBlocksController,
     AdminCounterCustomersController,
     AdminCounterParticularsController,
+    AdminCounterAccountsController,
     AdminCompanyMembersController,
     AdminCompanyContactsController,
     AdminCompanyNotedContactsController,
@@ -501,6 +506,7 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     ListCounterCustomersHandler,
     SearchCounterParticularsHandler,
     RegisterCounterParticularHandler,
+    OpenCounterAccountHandler,
     GetCounterCustomerHandler,
     GetCustomerPortfolioHandler,
     ExportCustomersCsvHandler,
@@ -515,6 +521,7 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     { provide: ParticularStandingReader, useClass: PrismaParticularStandingReader },
     { provide: PendingAccessReader, useClass: PrismaPendingAccessReader },
     { provide: InvitationRenewal, useClass: PrismaInvitationRenewal },
+    { provide: CounterOpeningAttestations, useClass: PrismaCounterOpeningAttestations },
     ListPendingAccessHandler,
     { provide: CustomerAccessOverviewReader, useClass: PrismaCustomerAccessOverviewReader },
     ListCustomerAccessHandler,

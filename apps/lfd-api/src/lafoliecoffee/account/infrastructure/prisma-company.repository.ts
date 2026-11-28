@@ -192,6 +192,8 @@ export class PrismaCompanyRepository extends CompanyRepository {
           // déclaration, `counter_opened` pour un compte ouvert au comptoir.
           // L'activation reste commerciale.
           status: company.status,
+          // Vide à la déclaration ; le mensuel d'un compte ouvert au comptoir.
+          grantedTerms: [...company.grantedTerms],
         },
         select: { id: true },
       });

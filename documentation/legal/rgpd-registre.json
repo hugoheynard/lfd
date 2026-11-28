@@ -6,6 +6,15 @@
   },
   "entrees": [
     {
+      "colonne": "public.counter_opening_attestations.attested_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel agent du comptoir a ouvert un compte et attesté avoir vu, ou non, une pièce d'identité — cocher engage sa responsabilité (`counter_opening_attestations`, plan-comptes-du-comptoir § 3.5).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "delivery.delivery_address_suggestion_decision.decided_by",
       "personne": "staff",
       "categorie": "auteur-geste",

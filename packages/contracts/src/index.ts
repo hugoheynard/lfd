@@ -3771,3 +3771,5 @@ export {
   type PlannerView,
   type PutPlannedColumnPayload,
 } from "./planner.js";
+export { openCounterAccountPayloadSchema } from "./counter-account.js";
+export type { OpenCounterAccountPayload } from "./counter-account.js";
