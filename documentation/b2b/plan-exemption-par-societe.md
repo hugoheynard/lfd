@@ -101,12 +101,10 @@ exempté. Il ne sert donc plus à ouvrir le planificateur.
 
 ## 5. Données existantes
 
-La clé `orderPlanner` n'est jamais allée en production (poussée sur dev le
-2026-11-27, pas sur main) : aucune exemption par adresse ne s'y trouve. Sur
-dev déployé et en local, les lignes `orderPlanner` par adresse deviennent
-sans effet ; l'écran les montre comme « ignorées, sorte retirée », comme une
-clé retirée, et le staff les supprime. Dans la base locale de Hugo, elles sont
-remplacées par l'exemption de La Folie Douce Val d'Isère.
+La production n'a jamais porté d'exemption `orderPlanner` par adresse : la clé
+y est arrivée avec l'exemption par société (déployée le 2026-11-28). Ailleurs,
+une ligne `orderPlanner` par adresse est sans effet ; l'écran la montre comme
+« ignorée, sorte retirée », et le staff la supprime.
 
 ## 6. La contradiction (`vitruve`, 2026-11-27)
 
