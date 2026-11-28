@@ -3,6 +3,7 @@ import {
   RecordingMail,
 } from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { InMemoryGestureIntentLedger } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { OncePerIntent } from "../../../../../platform/intent/once-per-intent.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { FixedEventFunctionSheets } from "../../../../channels/events/__tests__/event-function-sheets-doubles.js";
@@ -115,6 +116,7 @@ export function resendScene(
   const summaries = new SummariesBySince();
   const ledger = new InMemoryGestureIntentLedger();
   const clock = new FixedClock(now);
+  const events = new RecordingPublisher();
   const renderer = new ProductionPaperRenderer(
     new GroupingSourceReading(...placementPorts(DOSSIER_ARTICLES)),
     new OrderSheetPaper(new NoAdminOrigin(), new FixedOrderPrintColors(), new FixedPaperLogo()),
@@ -137,6 +139,7 @@ export function resendScene(
     uow,
     clock,
     new OncePerIntent(ledger, clock),
+    events,
   );
-  return { handler, mail, log, store, summaries, ledger };
+  return { handler, mail, log, store, summaries, ledger, events };
 }

@@ -33,3 +33,37 @@ export class DossierSentJournalEvent implements JournaledEvent {
     };
   }
 }
+
+/**
+ * **Le dossier de la version courante a été renvoyé** par le staff
+ * (`documentation/fournil/plan-historique-des-tirages.md`) — un fait par
+ * geste qui a demandé au moins un e-mail ; un renvoi où tout le monde était à
+ * jour n'en écrit pas.
+ *
+ * Des comptes seulement, comme l'envoi à l'arrêt : ni adresse ni nom de
+ * destinataire. `requested` compte les demandes passées à la boîte d'envoi,
+ * pas les e-mails remis.
+ */
+export class DossierResentJournalEvent implements JournaledEvent {
+  constructor(
+    /** `AAAA-MM-JJ`. */
+    readonly serviceDay: string,
+    /** La version du plan renvoyée. */
+    readonly version: number,
+    readonly requested: number,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: "production_day.dossier_resent",
+      subjectType: "production_day",
+      subjectId: this.serviceDay,
+      payload: {
+        subjectLabel: this.serviceDay,
+        serviceDay: this.serviceDay,
+        version: this.version,
+        requested: this.requested,
+      },
+    };
+  }
+}

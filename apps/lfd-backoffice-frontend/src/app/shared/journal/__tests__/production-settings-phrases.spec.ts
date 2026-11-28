@@ -86,6 +86,21 @@ describe('le dossier envoyé (production_day.dossier_sent)', () => {
   });
 });
 
+describe('le dossier renvoyé (production_day.dossier_resent)', () => {
+  it('dit qui, le jour, la version et le nombre de destinataires, sans détail', () => {
+    const resent = fact('production_day.dossier_resent', {
+      subjectLabel: '2026-12-24',
+      serviceDay: '2026-12-24',
+      version: 3,
+      requested: 2,
+    });
+    expect(sentence(resent)).toMatch(
+      /^Colette Martin a renvoyé le dossier du .*24.* \(version 3\) à 2 destinataires$/u,
+    );
+    expect(renderFact(resent).detail).toEqual([]);
+  });
+});
+
 describe('les raccourcis du fournil (production_batch_shortcut.*)', () => {
   const payload = {
     subjectLabel: '1 plaque (VIE-001)',

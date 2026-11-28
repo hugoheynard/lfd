@@ -89,6 +89,27 @@ const closedDay =
     );
 
 /**
+ * « a renvoyé le dossier du mardi 24 décembre (version 3) à 2 destinataires »
+ * (`plan-historique-des-tirages.md`). Des comptes seulement, comme l'envoi.
+ */
+const dossierResent: Phrase = (fact) => {
+  const day = inUnit('day', fact.payload['serviceDay']).text;
+  const requested = countOf(fact.payload['requested'], 'destinataire', 'destinataires');
+  const version = fact.payload['version'];
+  return byActor(
+    fact,
+    [
+      text('a renvoyé le dossier du '),
+      subject(fact, day),
+      ...(typeof version === 'number' ? [text(` (version ${String(version)})`)] : []),
+      text(' à '),
+      ...(requested === null ? [text('ses destinataires')] : [requested]),
+    ],
+    ['subjectLabel', 'serviceDay', 'version', 'requested'],
+  );
+};
+
+/**
  * « a ajouté Jeanne Martin aux destinataires du dossier du jour » (plan
  * `dossier-prod-du-jour.md`, E2). Le fait ne porte pas l'adresse : le journal
  * n'écrit aucun e-mail.
@@ -244,4 +265,5 @@ export const PRODUCTION_SETTINGS_PHRASES = {
     ' des destinataires du dossier du jour',
   ),
   'production_day.dossier_sent': dossierSent,
+  'production_day.dossier_resent': dossierResent,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

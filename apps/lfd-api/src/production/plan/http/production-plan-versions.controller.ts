@@ -60,7 +60,7 @@ export class ProductionPlanVersionsController {
   ) {}
 
   /** Les versions, de la première à la dernière ; vide pour une journée jamais versionnée. */
-  @Get("batch/:date/plan-versions")
+  @Get("batch/:date/plan-history")
   list(@Param("date", DAY) date: string): Promise<readonly PlanVersionView[]> {
     return this.queries.execute<ListPlanVersionsQuery, readonly PlanVersionView[]>(
       new ListPlanVersionsQuery(date),
@@ -71,7 +71,7 @@ export class ProductionPlanVersionsController {
    * Ce qui a changé de `from` à `to`. 400 sur une forme invalide ou un ordre
    * inversé, 404 sur une version que la journée n'a pas.
    */
-  @Get("batch/:date/plan-versions/compare")
+  @Get("batch/:date/plan-history/compare")
   compare(
     @Param("date", DAY) date: string,
     @Query(new ZodQuery(planVersionRangeQuerySchema)) range: PlanVersionRangeQuery,
@@ -82,7 +82,7 @@ export class ProductionPlanVersionsController {
   }
 
   /** Les destinataires du dossier, et la dernière version que chacun a reçue de la journée. */
-  @Get("batch/:date/plan-versions/dispatches")
+  @Get("batch/:date/plan-history/dispatches")
   dispatches(@Param("date", DAY) date: string): Promise<readonly DossierDispatchView[]> {
     return this.queries.execute<ListDossierDispatchesQuery, readonly DossierDispatchView[]>(
       new ListDossierDispatchesQuery(date),
@@ -95,7 +95,7 @@ export class ProductionPlanVersionsController {
    * depuis SA version. 204 : l'écran relit `…/dispatches`. Une fois par
    * intention : un double clic ne renvoie pas deux fois.
    */
-  @Post("batch/:date/plan-versions/resend")
+  @Post("batch/:date/plan-history/resend")
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission("production_count_stop:write")
   async resend(
@@ -115,7 +115,7 @@ export class ProductionPlanVersionsController {
   }
 
   /** Le dossier RANGÉ de cette version ; 404 s'il ne l'est pas — jamais refait. */
-  @Get("batch/:date/plan-versions/:version/dossier.pdf")
+  @Get("batch/:date/plan-history/:version/dossier.pdf")
   dossier(
     @Param("date", DAY) date: string,
     @Param("version", VERSION) version: number,
@@ -125,7 +125,7 @@ export class ProductionPlanVersionsController {
   }
 
   /** Le compte à produire RANGÉ de cette version ; 404 s'il ne l'est pas. */
-  @Get("batch/:date/plan-versions/:version/compte-a-produire.pdf")
+  @Get("batch/:date/plan-history/:version/compte-a-produire.pdf")
   count(
     @Param("date", DAY) date: string,
     @Param("version", VERSION) version: number,

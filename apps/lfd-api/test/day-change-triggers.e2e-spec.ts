@@ -89,6 +89,11 @@ const UNWATCHED: Readonly<Record<string, string>> = {
     "la trace d'envoi du dossier : aucun écran de la journée ne la lit, l'envoi ne change ni le plan ni la fiche",
   "production.provisional_print":
     "le registre des tirages provisoires du dossier : relu à l'ouverture de la fenêtre d'impression, il ne change ni le plan ni la fiche, et un tirage ne fait bouger aucun écran de la journée",
+  // Vérifié le 2026-11-28 dans `ledger-plan-version-recorder.ts` : une version
+  // n'est ajoutée qu'après `days.save(day)`, qui écrit `production_day.plan_version`
+  // dans la même transaction, et le déclencheur de `production_day` marque la journée.
+  "production.plan_versions":
+    "les versions du plan, en ajout seul : chacune naît avec le numéro que la journée porte (`production_day.plan_version`), écrit par le même geste, dont le déclencheur fait déjà bouger la journée",
   "production.production_quality_upload":
     "un dépôt de photo en attente, sans journée — il n'y entre qu'en devenant une photo, surveillée",
   // Les bases de la livraison (lot 2, 2026-09-29) n'appartiennent à aucune

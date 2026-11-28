@@ -8,7 +8,7 @@ import { PlanVersionsService } from './plan-versions.service';
 
 /** Les trois routes des versions du plan : forme des URL et des paramètres. */
 
-const VERSIONS = `${B2B_API_BASE}/admin/production/batch/2026-11-27/plan-versions`;
+const VERSIONS = `${B2B_API_BASE}/admin/production/batch/2026-11-27/plan-history`;
 
 describe('PlanVersionsService', () => {
   let service: PlanVersionsService;

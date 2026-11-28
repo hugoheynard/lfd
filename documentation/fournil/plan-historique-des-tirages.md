@@ -541,11 +541,11 @@ Tests : `plan-version-entries.spec.ts`, `chain-plan-version-readings.spec.ts`,
 
 Les routes (surface `production_plan`, lecture — celle du dossier) :
 
-| route                                            | réponse                                                                  |
-| ------------------------------------------------ | ------------------------------------------------------------------------ |
-| `GET admin/production/batch/:date/plan-versions` | `PlanVersionView[]`, de la 1 à la dernière, `[]` sans version            |
-| `GET …/plan-versions/compare?from=&to=`          | `PlanVersionDiffView` ; 400 forme ou ordre inversé, 404 version inconnue |
-| `GET …/plan-versions/dispatches`                 | `DossierDispatchView[]`                                                  |
+| route                                           | réponse                                                                  |
+| ----------------------------------------------- | ------------------------------------------------------------------------ |
+| `GET admin/production/batch/:date/plan-history` | `PlanVersionView[]`, de la 1 à la dernière, `[]` sans version            |
+| `GET …/plan-history/compare?from=&to=`          | `PlanVersionDiffView` ; 400 forme ou ordre inversé, 404 version inconnue |
+| `GET …/plan-history/dispatches`                 | `DossierDispatchView[]`                                                  |
 
 Pour l'écran (H5) :
 
@@ -614,7 +614,7 @@ Décidé au bâti de H5 (2026-11-28), là où le plan ne tranchait pas :
   courante ; aucune route ne sert celui d'une version passée. La liste dit
   « Papier rangé » / « non rangé » / « même papier que la version n » pour les
   autres. Tranché le 2026-11-28 : une route par version
-  (`…/plan-versions/:version/dossier.pdf`, H6), qui sert le papier rangé ou 404.
+  (`…/plan-history/:version/dossier.pdf`, H6), qui sert le papier rangé ou 404.
 - **L'ordre de la comparaison est celui du plan** : l'effet par produit, puis
   « à vérifier » en orange, puis les changements expliqués.
 - **Les bornes se lisent dans l'ordre** : choisir « de 4 à 2 » compare 2 à 4.
@@ -667,11 +667,11 @@ handler, `VersionDossierPaper`, `dossier-update-mail-data.ts`,
 
 Les routes, pour l'écran (types au paquet, `production-plan-versions.ts`) :
 
-| route                                                    | corps / réponse                                                                                                                                                                                         |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POST admin/production/batch/:date/plan-versions/resend` | en-tête `Idempotency-Key` obligatoire (400 sans) ; corps `PlanVersionDossierResendPayload` : `{ target: "recipient", recipientId }` ou `{ target: "outdated" }` ; **204**, l'écran relit `…/dispatches` |
-| `GET …/plan-versions/:version/dossier.pdf`               | le dossier RANGÉ de la version ; 404 non rangé ou version inconnue                                                                                                                                      |
-| `GET …/plan-versions/:version/compte-a-produire.pdf`     | de même pour le compte à produire                                                                                                                                                                       |
+| route                                                   | corps / réponse                                                                                                                                                                                         |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST admin/production/batch/:date/plan-history/resend` | en-tête `Idempotency-Key` obligatoire (400 sans) ; corps `PlanVersionDossierResendPayload` : `{ target: "recipient", recipientId }` ou `{ target: "outdated" }` ; **204**, l'écran relit `…/dispatches` |
+| `GET …/plan-history/:version/dossier.pdf`               | le dossier RANGÉ de la version ; 404 non rangé ou version inconnue                                                                                                                                      |
+| `GET …/plan-history/:version/compte-a-produire.pdf`     | de même pour le compte à produire                                                                                                                                                                       |
 
 Refus du renvoi : 409 `production.dossier_resend.no_plan_version` (journée
 sans version), 409 `ProductionDayNotClosedError` (journée rouverte), 404
@@ -708,9 +708,19 @@ Décidé au bâti de H6 (2026-11-28), là où le plan ne tranchait pas :
 - **`day/index.ts` passe de 81 à 82** (`$h6` de
   `production-subcontexts-debt.json`, **à relire**) : une lecture publiée
   plutôt que d'exporter le diff.
-- **Aucun fait de journal** pour le renvoi : un fait neuf demanderait sa
-  phrase au journal du back-office. L'auteur est tenu par l'intention
-  (`actorId`) ; la trace n'a pas de colonne d'auteur.
+- **Un fait de journal par renvoi** (2026-11-28) :
+  `production_day.dossier_resent` (`DossierResentJournalEvent`, dans la
+  transaction des demandes), des comptes seulement — jour, version,
+  `requested` (le nombre de demandes) —, aucun quand tout le monde était à
+  jour. Phrase au journal du back-office : « a renvoyé le dossier du … (version
+  n) à k destinataires ».
+- **Les routes disent `plan-history`**, pas `plan-versions` : un mot
+  `version(s)` dans un chemin est refusé par `lint:day-version-door` (la seule
+  porte de version est `admin/versions`).
+- **`production.plan_versions` n'a pas de déclencheur `day_change`** (raison
+  dans `test/day-change-triggers.e2e-spec.ts`) : une version n'est ajoutée
+  qu'avec la journée qui prend son numéro (`production_day.plan_version`),
+  dans la même transaction, et le déclencheur de la journée la marque.
 
 ## 4. Ce que ce plan ne fait pas
 

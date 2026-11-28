@@ -28,7 +28,7 @@ import { placeLateByStaff } from "./staff-late-order.js";
 
 const ACCOUNT_BUYER = "auth0|plan-versions-read-pro";
 const RECIPIENTS = "/admin/production/settings/dossier-recipients";
-const VERSIONS = `/admin/production/batch/${SERVICE_DAY}/plan-versions`;
+const VERSIONS = `/admin/production/batch/${SERVICE_DAY}/plan-history`;
 
 const recordingMailer = {
   enabled: true,

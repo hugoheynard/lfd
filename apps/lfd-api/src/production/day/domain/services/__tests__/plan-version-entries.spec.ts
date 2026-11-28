@@ -18,7 +18,7 @@ describe("planVersionEntriesOf", () => {
   it("dit pour chaque version sa cause, son auteur, son tirage et son nombre d'envois", () => {
     const played = new PlayedDay()
       .close([order("o1", { lines: [orderLine("croissant", 10)] })])
-      .retake([order("o2", { lines: [orderLine("pain", 2)] })], NIGHT);
+      .retake([order("o2", { lines: [orderLine("BAG", 2)] })], NIGHT);
 
     const entries = planVersionEntriesOf(played.versions);
 

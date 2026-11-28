@@ -31,7 +31,7 @@ import {
 
 const ACCOUNT_BUYER = "auth0|plan-version-resend-pro";
 const RECIPIENTS = "/admin/production/settings/dossier-recipients";
-const VERSIONS = `/admin/production/batch/${SERVICE_DAY}/plan-versions`;
+const VERSIONS = `/admin/production/batch/${SERVICE_DAY}/plan-history`;
 
 interface SentMail {
   readonly to: string;

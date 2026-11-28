@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { weekdayLongDate } from "../../../../platform/pdf/paper-pdf-kit.js";
@@ -18,6 +19,7 @@ import {
   NoPlanVersionToResendError,
   PlanVersionSummaryMissingError,
 } from "../../domain/errors/dossier-resend-errors.js";
+import { DossierResentJournalEvent } from "../../domain/events/dossier-dispatch.events.js";
 import { DossierDispatchLog } from "../../domain/ports/dossier-dispatch.log.js";
 import { DossierDispatchesReader } from "../../domain/ports/dossier-dispatches.reader.js";
 import { DossierRecipientsReader } from "../../domain/ports/dossier-recipients.reader.js";
@@ -57,7 +59,8 @@ interface ResendBatch {
  * appel réseau), puis les résumés. Dans UNE transaction : pour chacun, la
  * trace (clé `(journée, instant du renvoi, ligne)`, version courante), la
  * demande d'e-mail (`mail.send`, la boîte d'envoi), la trace réglée
- * `requested`, et l'intention scellée. Une écriture annulée n'envoie rien ;
+ * `requested`, le fait du journal (le nombre de demandes) et l'intention
+ * scellée. Une écriture annulée n'envoie rien ;
  * un rejeu de la même clé ne renvoie rien.
  *
  * Chacun lit ce qui a changé depuis SON papier : le résumé part de sa
@@ -89,6 +92,7 @@ export class ResendPlanVersionDossierHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
     private readonly clock: Clock,
     private readonly intents: OncePerIntent,
+    private readonly events: DomainEventPublisher,
   ) {}
 
   execute(command: ResendPlanVersionDossierCommand): Promise<void> {
@@ -132,8 +136,16 @@ export class ResendPlanVersionDossierHandler implements ICommandHandler<
       at: this.clock.now(),
     };
     await this.uow.run(async () => {
+      let requested = 0;
       for (const resend of batch.resends) {
-        await this.request(batch, resend, command);
+        if (await this.request(batch, resend, command)) {
+          requested += 1;
+        }
+      }
+      if (requested > 0) {
+        await this.events.publishTraced(
+          new DossierResentJournalEvent(day.day.value, version, requested),
+        );
       }
       await seal();
     });
@@ -157,17 +169,20 @@ export class ResendPlanVersionDossierHandler implements ICommandHandler<
     );
   }
 
-  /** Un destinataire : pris, demandé, réglé `requested` — ou sauté s'il était déjà pris. */
+  /**
+   * Un destinataire : pris, demandé, réglé `requested` — ou sauté s'il était
+   * déjà pris. Rend `true` si une demande est partie.
+   */
   private async request(
     batch: ResendBatch,
     resend: DossierResend,
     command: ResendPlanVersionDossierCommand,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const { addressee } = resend;
     const serviceDay = batch.day.day.value;
     const slot = { serviceDay, occasionAt: batch.at, recipientId: addressee.recipientId };
     if (!(await this.log.claim(slot, addressee.name, batch.at, batch.version))) {
-      return;
+      return false;
     }
     const summary = batch.summaries.get(resend.sinceVersion);
     if (summary === undefined) {
@@ -192,5 +207,6 @@ export class ResendPlanVersionDossierHandler implements ICommandHandler<
       idempotencyKey: `production-dossier-updated:${command.serviceDay}:${command.intentKey}:${resend.addressee.recipientId}`,
     });
     await this.log.settle(slot, { kind: "requested" }, batch.at);
+    return true;
   }
 }

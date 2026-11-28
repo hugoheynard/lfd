@@ -31,7 +31,7 @@ export class PlanVersionsService {
   private readonly http = inject(HttpClient);
 
   private versionsUrl(date: string): string {
-    return `${B2B_API_BASE}/admin/production/batch/${encodeURIComponent(date)}/plan-versions`;
+    return `${B2B_API_BASE}/admin/production/batch/${encodeURIComponent(date)}/plan-history`;
   }
 
   /** Les versions de la journée (`AAAA-MM-JJ`), de la première à la dernière ; vide sans version. */

@@ -3,9 +3,9 @@ import { z } from "zod";
 /**
  * **Les versions du plan d'une journée, telles que le back-office les lit**
  * (`documentation/fournil/plan-historique-des-tirages.md`) — la liste
- * (`GET admin/production/batch/:date/plan-versions`), la comparaison de deux
- * versions (`…/plan-versions/compare?from=&to=`) et les envois du dossier
- * (`…/plan-versions/dispatches`). Des structures, jamais du texte : l'écran
+ * (`GET admin/production/batch/:date/plan-history`), la comparaison de deux
+ * versions (`…/plan-history/compare?from=&to=`) et les envois du dossier
+ * (`…/plan-history/dispatches`). Des structures, jamais du texte : l'écran
  * les met en mots. Les instants sont des chaînes ISO.
  */
 
@@ -238,12 +238,12 @@ export const planVersionRangeQuerySchema = z.object({
 
 export type PlanVersionRangeQuery = z.infer<typeof planVersionRangeQuerySchema>;
 
-/** Un numéro de version lu dans le chemin (`…/plan-versions/:version/dossier.pdf`). */
+/** Un numéro de version lu dans le chemin (`…/plan-history/:version/dossier.pdf`). */
 export const planVersionParamSchema = versionNumber;
 
 /**
  * **Le corps du renvoi du dossier de la version courante**
- * (`POST admin/production/batch/:date/plan-versions/resend`, en-tête
+ * (`POST admin/production/batch/:date/plan-history/resend`, en-tête
  * `Idempotency-Key` obligatoire) : à une ligne de la liste des
  * destinataires (`recipientId`, celui de `DossierDispatchView`), ou à tous
  * ceux qui ne sont pas à jour (`outdated` : version reçue dépassée, envoi

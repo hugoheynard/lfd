@@ -99,6 +99,15 @@ describe("ResendPlanVersionDossierHandler — renvoyer le dossier de la version 
       "jeanne@imprimerie.fr",
       "lea@fournil.fr",
     ]);
+    // Le journal compte les demandes, sans nommer personne.
+    expect(scene.events.traced.map((event) => event.journalFact())).toEqual([
+      {
+        type: "production_day.dossier_resent",
+        subjectType: "production_day",
+        subjectId: DAY,
+        payload: { subjectLabel: DAY, serviceDay: DAY, version: 3, requested: 2 },
+      },
+    ]);
   });
 
   it("chaque destinataire lit ce qui a changé depuis SA version ; sans version reçue, depuis la première", async () => {
@@ -125,6 +134,7 @@ describe("ResendPlanVersionDossierHandler — renvoyer le dossier de la version 
     expect(scene.mail.queued).toEqual([]);
     expect(scene.log.rows.size).toBe(0);
     expect(scene.summaries.asked).toEqual([]);
+    expect(scene.events.traced).toEqual([]);
   });
 
   it("un destinataire déjà à jour : refusé en le nommant, rien n'est envoyé", async () => {
