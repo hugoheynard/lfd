@@ -411,6 +411,7 @@
   "test/order-exact-ht.e2e-spec.ts": 3914,
   "test/order-guest-cancel.e2e-spec.ts": 7054,
   "test/order-handover-proof.e2e-spec.ts": 6124,
+  "test/order-item-limit-override-reserved.e2e-spec.ts": 8000,
   "test/order-item-limit-override-revision.e2e-spec.ts": 6000,
   "test/order-item-limit-override.e2e-spec.ts": 5400,
   "test/order-line-options.e2e-spec.ts": 8000,
