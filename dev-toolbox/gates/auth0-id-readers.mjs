@@ -94,6 +94,10 @@ const ADMITTED = new Map([
     "`auth0_sub IS NULL` est ce qui FAIT l'invité sans compte",
   ],
   [
+    `${ACCOUNT_DIR}infrastructure/counter-buyer-guest-file.ts`,
+    "`auth0_sub IS NULL` est ce qui FAIT l'acheteur sans accès d'un compte du comptoir",
+  ],
+  [
     "apps/lfd-api/src/lafoliecoffee/orders/infrastructure/prisma-guest-order-notice.reader.ts",
     "distingue l'invité (sans `sub`) de la personne qui a un compte",
   ],

@@ -31,6 +31,10 @@ const COUNTER_OPENED = "counter_opened";
  * Le moyen d'encaissement n'est pas touché : il reste le virement posé à
  * l'ouverture (§ 3.2).
  *
+ * @sans-journal la branche `pending` ne décide rien : elle rend le compte au
+ * parcours d'activation, dont l'activation publie son fait ; la branche
+ * `active` passe par `ActivateCompanyByStaffCommand`, qui journalise.
+ *
  * @throws {CompanyNotFoundError} aucune société pour cet id.
  * @throws {CompanyStatusTransitionError} le compte n'est pas ouvert au comptoir.
  * @throws {CounterAccountConversionBlockedError} SIRET ou adresse de facturation manquants.
