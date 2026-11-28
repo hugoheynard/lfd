@@ -41,22 +41,32 @@ export class ClientPlanner {
   }
 
   /** Ouvre la colonne d'un jour sur un créneau ; redemander la même rend celle qui existe. */
-  async open(payload: OpenPlannedColumnPayload): Promise<PlannedColumnOpened> {
+  async open(payload: OpenPlannedColumnPayload, keepalive = false): Promise<PlannedColumnOpened> {
     const subject = `${payload.day}|${payload.routing.window.start ?? ''}-${payload.routing.window.end}`;
     const key = this.intents.keyFor(subject);
     const opened = await this.call((headers) =>
       this.http.post<PlannedColumnOpened>(this.url('/columns'), payload, {
         headers: withIntent(headers, key),
+        keepalive,
       }),
     );
     this.intents.done(subject);
     return opened;
   }
 
-  write(id: string, payload: PutPlannedColumnPayload): Promise<PlannedColumnWritten> {
+  /**
+   * `keepalive` : à la fermeture de l'onglet, le navigateur mène la requête à
+   * son terme même si la page disparaît.
+   */
+  write(
+    id: string,
+    payload: PutPlannedColumnPayload,
+    keepalive = false,
+  ): Promise<PlannedColumnWritten> {
     return this.call((headers) =>
       this.http.put<PlannedColumnWritten>(this.url(`/columns/${encodeURIComponent(id)}`), payload, {
         headers,
+        keepalive,
       }),
     );
   }

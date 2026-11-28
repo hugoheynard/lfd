@@ -68,6 +68,7 @@ export class PlannerBoard {
   private readonly extraWindows = signal<readonly FulfillmentWindow[]>([]);
   private readonly dirty = new Set<string>();
   private timer: ReturnType<typeof setTimeout> | null = null;
+  private inFlight = 0;
 
   /**
    * L'acheminement : celui des colonnes enregistrées, sinon le mode de service
@@ -163,13 +164,21 @@ export class PlannerBoard {
     this.edit(key, (lines) => withQuantity(lines, sku, quantity));
   }
 
-  /** Écrit tout de suite ce qui attend — à la sortie de la page. */
-  flushNow(): Promise<void> {
+  /**
+   * Écrit tout de suite ce qui attend — à la sortie de la page, ou quand
+   * l'onglet se cache ou se ferme (`keepalive` : la requête survit à la page).
+   */
+  flushNow(keepalive = false): Promise<void> {
     if (this.timer !== null) {
       clearTimeout(this.timer);
       this.timer = null;
     }
-    return this.flush();
+    return this.flush(keepalive);
+  }
+
+  /** Un geste n'est pas encore enregistré : en attente, ou en route. */
+  hasUnsavedWrites(): boolean {
+    return this.dirty.size > 0 || this.inFlight > 0;
   }
 
   private edit(key: string, change: (lines: PlannerCell['lines']) => PlannerCell['lines']): void {
@@ -193,30 +202,35 @@ export class PlannerBoard {
     }, WRITE_DELAY_MS);
   }
 
-  private async flush(): Promise<void> {
+  private async flush(keepalive = false): Promise<void> {
     const keys = [...this.dirty];
     this.dirty.clear();
     if (keys.length === 0) {
       return;
     }
     let conflict = false;
-    for (const key of keys) {
-      try {
-        await this.writeCell(key);
-      } catch (error) {
-        if (error instanceof HttpErrorResponse && error.status === 409) {
-          conflict = true;
-        } else {
-          this.writeError.set(httpErrorMessage(error));
+    this.inFlight += 1;
+    try {
+      for (const key of keys) {
+        try {
+          await this.writeCell(key, keepalive);
+        } catch (error) {
+          if (error instanceof HttpErrorResponse && error.status === 409) {
+            conflict = true;
+          } else {
+            this.writeError.set(httpErrorMessage(error));
+          }
         }
       }
+    } finally {
+      this.inFlight -= 1;
     }
     this.reloadedAfterConflict.set(conflict);
     await this.refresh();
     void this.quote(keys);
   }
 
-  private async writeCell(key: string): Promise<void> {
+  private async writeCell(key: string, keepalive: boolean): Promise<void> {
     const cell = this.cells().get(key);
     const routing = this.routing();
     if (cell === undefined || routing === null) {
@@ -229,15 +243,19 @@ export class PlannerBoard {
       if (cell.lines.length === 0) {
         return;
       }
-      const opened = await this.planner.open({ day: cell.day, routing: full });
+      const opened = await this.planner.open({ day: cell.day, routing: full }, keepalive);
       columnId = opened.id;
       version = opened.version;
     }
-    const written = await this.planner.write(columnId, {
-      version,
-      routing: full,
-      lines: cell.lines.map((line) => ({ sku: line.sku, quantity: line.quantity })),
-    });
+    const written = await this.planner.write(
+      columnId,
+      {
+        version,
+        routing: full,
+        lines: cell.lines.map((line) => ({ sku: line.sku, quantity: line.quantity })),
+      },
+      keepalive,
+    );
     const latest = this.cells().get(key) ?? cell;
     const next = new Map(this.cells());
     next.set(key, { ...latest, columnId, version: written.version });

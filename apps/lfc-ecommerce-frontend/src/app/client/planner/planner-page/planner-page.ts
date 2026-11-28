@@ -196,6 +196,7 @@ export class PlannerPage {
       }
     });
     recheckAtNearestClose(this.board, destroyRef);
+    flushWhenLeaving(this.board, destroyRef);
   }
 
   protected retry(): void {
@@ -299,4 +300,35 @@ export class PlannerPage {
   protected cellKeyOf(day: string, window: FulfillmentWindow): string {
     return cellKey(day, window);
   }
+}
+
+/**
+ * Quitter l'onglet ne perd pas le dernier geste : un onglet qui se cache
+ * (changement d'onglet, mise en veille du téléphone) ou se ferme écrit tout
+ * de suite ce qui attend, en `keepalive`. Si un geste n'est pas encore
+ * enregistré, le navigateur demande confirmation avant de fermer.
+ */
+function flushWhenLeaving(board: PlannerBoard, destroyRef: DestroyRef): void {
+  const onHidden = (): void => {
+    if (document.visibilityState === 'hidden') {
+      void board.flushNow(true);
+    }
+  };
+  const onPageHide = (): void => {
+    void board.flushNow(true);
+  };
+  const onBeforeUnload = (event: BeforeUnloadEvent): void => {
+    if (board.hasUnsavedWrites()) {
+      void board.flushNow(true);
+      event.preventDefault();
+    }
+  };
+  document.addEventListener('visibilitychange', onHidden);
+  window.addEventListener('pagehide', onPageHide);
+  window.addEventListener('beforeunload', onBeforeUnload);
+  destroyRef.onDestroy(() => {
+    document.removeEventListener('visibilitychange', onHidden);
+    window.removeEventListener('pagehide', onPageHide);
+    window.removeEventListener('beforeunload', onBeforeUnload);
+  });
 }

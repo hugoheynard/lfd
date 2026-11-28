@@ -37,7 +37,7 @@ const ITEMS: Readonly<Record<string, Partial<ShopItemView>>> = {
 
 let views: PlannerView[];
 let opened: OpenPlannedColumnPayload[];
-let written: { id: string; payload: PutPlannedColumnPayload }[];
+let written: { id: string; payload: PutPlannedColumnPayload; keepalive: boolean }[];
 let quoted: ShopQuotePayload[];
 let writeFails: unknown;
 const choice = signal<ServiceChoice | null>(PICKUP);
@@ -66,8 +66,8 @@ function boardWith(first: PlannerView): PlannerBoard {
             opened.push(payload);
             return Promise.resolve({ id: 'col_new', version: 1 });
           },
-          write: (id: string, payload: PutPlannedColumnPayload) => {
-            written.push({ id, payload });
+          write: (id: string, payload: PutPlannedColumnPayload, keepalive = false) => {
+            written.push({ id, payload, keepalive });
             return writeFails === null
               ? Promise.resolve({ version: payload.version + 1 })
               : Promise.reject(writeFails);
@@ -125,6 +125,20 @@ describe('PlannerBoard', () => {
     ]);
     expect(written[0]?.id).toBe('col_new');
     expect(written[0]?.payload.lines).toEqual([{ sku: 'VIE-001', quantity: 6 }]);
+  });
+
+  it('à la fermeture de l’onglet, l’écriture part en keepalive', async () => {
+    const board = boardWith(plannerView());
+    await board.load(PLANNER_DAY);
+    const key = cellKey(PLANNER_DAY, SLOT);
+
+    board.setQuantity(key, 'VIE-001', 12);
+    expect(board.hasUnsavedWrites()).toBe(true);
+    await board.flushNow(true);
+
+    expect(written).toHaveLength(1);
+    expect(written[0]?.keepalive).toBe(true);
+    expect(board.hasUnsavedWrites()).toBe(false);
   });
 
   it('plusieurs gestes sur une case partent en UNE écriture de la case entière', async () => {
