@@ -8,6 +8,7 @@ import type {
   PublicStorefrontPageView,
   PublishedLegalDocumentView,
   PublishedShopCopyView,
+  PlannerAccessView,
   ShopCartResponse,
   ShopCartView,
   ShopOptionGroupsView,
@@ -220,6 +221,12 @@ export const DEMO_ROUTES: readonly DemoRoute[] = [
     pattern: /^\/me\/favorites$/u,
     serves: 'aucun favori : le rayon des favoris reste caché',
     answer: () => ok(NO_FAVORITES),
+  },
+  {
+    method: 'GET',
+    pattern: /^\/planner\/access$/u,
+    serves: 'planificateur fermé : le menu ne le montre pas',
+    answer: () => ok({ open: false } satisfies PlannerAccessView),
   },
   {
     method: 'GET',
