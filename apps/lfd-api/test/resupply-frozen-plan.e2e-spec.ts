@@ -42,6 +42,7 @@ import {
   twoHours,
 } from "./resupply-frozen-plan-scene.js";
 import { counterSends } from "./site-resupply-scene.js";
+import { switchResupplyOn } from "./resupply-switch.js";
 
 const clock = new FixedClock(new Date());
 let ctx: E2eContext;
@@ -57,6 +58,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await switchResupplyOn(ctx);
   clock.set(eveAt("12:00"));
 });
 

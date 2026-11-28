@@ -3771,3 +3771,5 @@ export {
   type PlannerView,
   type PutPlannedColumnPayload,
 } from "./planner.js";
+export { resupplySwitchSchema } from "./resupply-switch.js";
+export type { ResupplySwitchPayload, ResupplySwitchView } from "./resupply-switch.js";

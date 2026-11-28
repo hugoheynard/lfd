@@ -1008,6 +1008,24 @@
       "information": false
     },
     {
+      "colonne": "public.resupply_switch.updated_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de qui a allumé ou éteint en dernier le réassort des boutiques (`resupply_switch`), lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.resupply_switch.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a allumé ou éteint en dernier le réassort des boutiques (`updated_by_staff_id`) sur `resupply_switch`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.sub_account_notice_rules.updated_by",
       "personne": "staff",
       "categorie": "auteur-geste",

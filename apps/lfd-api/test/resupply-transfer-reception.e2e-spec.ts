@@ -28,6 +28,7 @@ import {
   STAFF,
 } from "./production-day-fixture.js";
 import { counterSent } from "./site-resupply-scene.js";
+import { switchResupplyOn } from "./resupply-switch.js";
 
 const EVE = addDays(SERVICE_DAY, -1);
 const clock = new FixedClock(new Date());
@@ -46,6 +47,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await switchResupplyOn(ctx);
   const eve = localToInstant(EVE, "12:00");
   if (eve === null) {
     throw new TypeError(`heure locale inexistante : ${EVE} 12:00`);

@@ -26,6 +26,7 @@ import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-ha
 import { pieces, scene, type Scene, sell } from "./shelf-stock-scene.js";
 import { counterSends } from "./site-resupply-scene.js";
 import { seedWeighedArticles } from "./weighed-catalog-scene.js";
+import { switchResupplyOn } from "./resupply-switch.js";
 
 /** Midi aujourd'hui à Paris : la saisie sans commande vaut pour sa journée. */
 function todayAtNoon(): Date {
@@ -52,6 +53,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await switchResupplyOn(ctx);
   clock.set(todayAtNoon());
   await seedWeighedArticles(ctx);
 });

@@ -24,6 +24,7 @@ import { MEASURED, seedDeparture } from "./delivery-routing-scene.js";
 import { declareTransferBins, FixedRoad, seedVillage } from "./internal-transfer-scene.js";
 import { bootstrapProductionDay, CROISSANT, SERVICE_DAY, STAFF } from "./production-day-fixture.js";
 import { counterSent } from "./site-resupply-scene.js";
+import { switchResupplyOn } from "./resupply-switch.js";
 
 const clock = new FixedClock(new Date());
 let ctx: E2eContext;
@@ -41,6 +42,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await switchResupplyOn(ctx);
   clock.set(local("08:00"));
 });
 

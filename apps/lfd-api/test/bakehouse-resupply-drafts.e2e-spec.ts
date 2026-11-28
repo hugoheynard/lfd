@@ -25,6 +25,7 @@ import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
 import { bootstrapProductionDay, CROISSANT, SERVICE_DAY, STAFF } from "./production-day-fixture.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
+import { switchResupplyOn } from "./resupply-switch.js";
 
 const EVE = addDays(SERVICE_DAY, -1);
 const clock = new FixedClock(new Date());
@@ -40,6 +41,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await switchResupplyOn(ctx);
   clock.set(at("12:00"));
 });
 

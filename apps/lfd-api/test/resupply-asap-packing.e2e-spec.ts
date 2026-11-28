@@ -37,6 +37,7 @@ import {
 } from "./production-day-fixture.js";
 import { FixedRoad, seedVillage } from "./internal-transfer-scene.js";
 import { counterSent } from "./site-resupply-scene.js";
+import { switchResupplyOn } from "./resupply-switch.js";
 
 const EVE = addDays(SERVICE_DAY, -1);
 const FIRST_BATCH = "01K6A0000000000000000000R4";
@@ -58,6 +59,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await switchResupplyOn(ctx);
   clock.set(local(EVE, "12:00"));
 });
 

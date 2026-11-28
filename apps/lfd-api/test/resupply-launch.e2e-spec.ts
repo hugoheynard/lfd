@@ -33,6 +33,7 @@ import {
 } from "./production-day-fixture.js";
 import { seedLabo } from "./site-resupply-scene.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
+import { switchResupplyOn } from "./resupply-switch.js";
 
 const clock = new FixedClock(new Date());
 let ctx: E2eContext;
@@ -44,6 +45,7 @@ beforeAll(async () => {
   ]));
   // Une journée vierge : les suites voisines laissent la leur arrêtée.
   await ctx.reset();
+  await switchResupplyOn(ctx);
   const morning = localToInstant(SERVICE_DAY, "08:00");
   if (morning === null) {
     throw new TypeError(`heure locale inexistante : ${SERVICE_DAY} 08:00`);

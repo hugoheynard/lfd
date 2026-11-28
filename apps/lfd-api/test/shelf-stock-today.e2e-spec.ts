@@ -19,6 +19,7 @@ import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-ha
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { seedWeighedArticles } from "./weighed-catalog-scene.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
+import { switchResupplyOn } from "./resupply-switch.js";
 
 const CROISSANT = "VIE-001-1";
 const BREAD = "PAI-001-1";
@@ -51,6 +52,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await switchResupplyOn(ctx);
   clock.set(todayAt("12:00"));
   day = instantToLocal(clock.now()).day;
   await seedWeighedArticles(ctx);

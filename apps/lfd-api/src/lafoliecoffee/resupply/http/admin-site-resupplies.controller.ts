@@ -27,10 +27,12 @@ import {
   Patch,
   Post,
   Put,
+  UseGuards,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { z } from "zod";
 
+import { ResupplyEnabledGuard } from "./resupply-enabled.guard.js";
 import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
@@ -69,6 +71,7 @@ const targetParamSchema = z.enum(RESUPPLY_TARGETS);
  */
 @Controller("admin/site-resupplies/sites")
 @AdminSurface("handover_counter")
+@UseGuards(ResupplyEnabledGuard)
 export class AdminSiteResuppliesController {
   constructor(
     private readonly commands: CommandBus,

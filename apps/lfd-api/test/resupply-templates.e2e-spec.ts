@@ -17,6 +17,7 @@ import type request from "supertest";
 
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { switchResupplyOn } from "./resupply-switch.js";
 
 let ctx: E2eContext;
 
@@ -30,6 +31,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await switchResupplyOn(ctx);
 });
 
 const admin = () => ctx.asSub(E2E_STAFF_SUB);

@@ -39,6 +39,7 @@ import {
   type Scene,
   sell as sellLine,
 } from "./shelf-stock-scene.js";
+import { switchResupplyOn } from "./resupply-switch.js";
 
 function scene(): Promise<Scene> {
   return stockScene(ctx, clock);
@@ -68,6 +69,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await switchResupplyOn(ctx);
   clock.set(todayAtNoon());
 });
 

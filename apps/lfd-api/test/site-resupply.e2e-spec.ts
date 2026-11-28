@@ -27,6 +27,7 @@ import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { counterSends, counterSent } from "./site-resupply-scene.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
+import { switchResupplyOn } from "./resupply-switch.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -56,6 +57,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await switchResupplyOn(ctx);
   clock.set(EVENING);
 });
 

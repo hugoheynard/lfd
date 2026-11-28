@@ -26,6 +26,7 @@ import {
 } from "./production-day-fixture.js";
 import { counterSends, counterSent, seedLabo } from "./site-resupply-scene.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
+import { switchResupplyOn } from "./resupply-switch.js";
 
 const EVE = addDays(SERVICE_DAY, -1);
 const clock = new FixedClock(new Date());
@@ -45,6 +46,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await switchResupplyOn(ctx);
   clock.set(local(EVE, "12:00"));
 });
 

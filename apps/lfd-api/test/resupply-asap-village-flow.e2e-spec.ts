@@ -42,6 +42,7 @@ import {
   STAFF,
 } from "./production-day-fixture.js";
 import { counterSent } from "./site-resupply-scene.js";
+import { switchResupplyOn } from "./resupply-switch.js";
 
 const ASKED = 8;
 const PACKED = 7;
@@ -253,6 +254,7 @@ async function stepReception(flow: Flow): Promise<void> {
 describe("le parcours « au plus tôt » du Village, du lancement à la réception", () => {
   it("le réassort du jour même d'un point servi par transfert s'enchaîne de bout en bout", async () => {
     await ctx.reset();
+    await switchResupplyOn(ctx);
     // 1. J 07:00 — le Village envoie « au plus tôt ».
     const flow = await stepCounterSends();
     // 2. J 07:05 — « Lancer » : journée ouverte, fiche au colisage, transfert placé.

@@ -4,9 +4,10 @@ import {
   type SendReserveToShopPayload,
   sendReserveToShopSchema,
 } from "@lfd/contracts";
-import { Body, Controller, Param, Post } from "@nestjs/common";
+import { Body, Controller, Param, Post, UseGuards } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
+import { ResupplyEnabledGuard } from "./resupply-enabled.guard.js";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
@@ -25,6 +26,7 @@ import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.j
  */
 @Controller("admin/reserve-shop-releases")
 @AdminSurface("production_resupply")
+@UseGuards(ResupplyEnabledGuard)
 export class AdminReserveShopReleasesController {
   constructor(private readonly commands: CommandBus) {}
 

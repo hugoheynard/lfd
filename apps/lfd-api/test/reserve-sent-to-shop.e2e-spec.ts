@@ -35,6 +35,7 @@ import {
   setStage,
   staffCancel,
 } from "./order-cancel-after-plan-scene.js";
+import { switchResupplyOn } from "./resupply-switch.js";
 
 let ctx: E2eContext;
 let issued: string[];
@@ -66,6 +67,7 @@ beforeEach(async () => {
   clock.set(new Date());
   relayGate.open = true;
   await ctx.reset();
+  await switchResupplyOn(ctx);
 });
 
 /** Une commande de retrait inscrite, trois pièces au sac, puis annulée : rendues à la réserve. */

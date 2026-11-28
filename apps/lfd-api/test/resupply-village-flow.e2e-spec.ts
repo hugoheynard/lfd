@@ -67,6 +67,7 @@ import {
   stepEveStop,
   type VillageScene,
 } from "./resupply-village-scene.js";
+import { switchResupplyOn } from "./resupply-switch.js";
 
 const clock = new FixedClock(new Date());
 let ctx: E2eContext;
@@ -264,6 +265,7 @@ async function stepReception(flow: Flow): Promise<void> {
 describe("le parcours du Village, de l'envoi au stock du jour", () => {
   it("le réassort « pour demain » d'un point servi par transfert s'enchaîne de bout en bout", async () => {
     await ctx.reset();
+    await switchResupplyOn(ctx);
     // 1. J-1 15:00 — le comptoir envoie « Vitrine du matin », un client commande au Village.
     const flow = await stepEveAfternoon(scene());
     // 2. J-1 20:01 — le tour d'arrêt automatique fige le plan à la plus tardive des heures.

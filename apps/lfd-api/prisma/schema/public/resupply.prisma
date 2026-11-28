@@ -311,3 +311,21 @@ model CounterStockSetting {
   @@map("counter_stock_settings")
   @@schema("public")
 }
+
+/// **L'interrupteur du réassort** (Réglages › Production › Fournil, décidé
+/// par Hugo le 2026-11-28). Un réglage global : une ligne au plus, à clé
+/// fixe, réécrite, jamais supprimée. L'absence de ligne vaut « éteint ».
+model ResupplySwitch {
+  /// Toujours `resupply` : la clé fixe tient « une ligne au plus » (CHECK).
+  id      String  @id @default("resupply")
+  enabled Boolean @default(false)
+
+  /// La dernière modification : instant du `Clock`, auteur figé.
+  updatedAt        DateTime @map("updated_at")
+  updatedByStaffId String   @map("updated_by_staff_id")
+  updatedByName    String   @map("updated_by_name")
+  updatedByRole    String   @map("updated_by_role")
+
+  @@map("resupply_switch")
+  @@schema("public")
+}

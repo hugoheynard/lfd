@@ -17,6 +17,7 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
@@ -25,6 +26,7 @@ import {
   RequireAnyPermission,
   RequirePermission,
 } from "../../../platform/auth/admin-surface.decorator.js";
+import { ResupplyEnabledGuard } from "./resupply-enabled.guard.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CorrectReceivedResupplyLineCommand } from "../application/correct-received-resupply-line.command.js";
@@ -51,6 +53,7 @@ import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.j
  */
 @Controller("admin/resupply-receipts")
 @AdminSurface("handover_counter")
+@UseGuards(ResupplyEnabledGuard)
 export class AdminResupplyReceiptsController {
   constructor(
     private readonly commands: CommandBus,

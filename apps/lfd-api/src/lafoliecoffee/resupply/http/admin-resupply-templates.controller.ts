@@ -7,13 +7,24 @@ import {
   type ResupplyTemplateView,
   type SavedResupplyTemplateResponse,
 } from "@lfd/contracts";
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  UseGuards,
+} from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import {
   AdminSurface,
   RequireAnyPermission,
 } from "../../../platform/auth/admin-surface.decorator.js";
+import { ResupplyEnabledGuard } from "./resupply-enabled.guard.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
@@ -34,6 +45,7 @@ import type { ResupplyTemplateContent } from "../domain/resupply-template.js";
  */
 @Controller("admin/resupply-templates")
 @AdminSurface("resupply_templates")
+@UseGuards(ResupplyEnabledGuard)
 export class AdminResupplyTemplatesController {
   constructor(
     private readonly commands: CommandBus,

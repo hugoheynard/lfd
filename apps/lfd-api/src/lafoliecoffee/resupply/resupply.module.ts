@@ -110,6 +110,14 @@ import { CounterStockSettingsWriter } from "./domain/counter-stock-settings.writ
 import { CounterImmediateWithoutStock } from "./domain/counter-immediate-without-stock.js";
 import { CounterStockTracking } from "./domain/counter-stock-tracking.js";
 import { AdminCounterSettingsController } from "./http/admin-counter-settings.controller.js";
+import { GetResupplySwitchHandler } from "./application/get-resupply-switch.handler.js";
+import { SetResupplySwitchHandler } from "./application/set-resupply-switch.handler.js";
+import { ResupplySwitchReader } from "./domain/resupply-switch.reader.js";
+import { ResupplySwitchWriter } from "./domain/resupply-switch.writer.js";
+import { AdminResupplySwitchController } from "./http/admin-resupply-switch.controller.js";
+import { ResupplyEnabledGuard } from "./http/resupply-enabled.guard.js";
+import { PrismaResupplySwitchReader } from "./infrastructure/prisma-resupply-switch.reader.js";
+import { PrismaResupplySwitchWriter } from "./infrastructure/prisma-resupply-switch.writer.js";
 import { PrismaCounterSites } from "./infrastructure/prisma-counter-sites.js";
 import { PrismaCounterStockSettingsReader } from "./infrastructure/prisma-counter-stock-settings.reader.js";
 import { PrismaCounterStockSettingsWriter } from "./infrastructure/prisma-counter-stock-settings.writer.js";
@@ -166,6 +174,7 @@ import { PrismaCounterStockTracking } from "./infrastructure/prisma-counter-stoc
     AdminReserveShopReleasesController,
     AdminResupplyTemplatesController,
     AdminCounterSettingsController,
+    AdminResupplySwitchController,
   ],
   providers: [
     { provide: ResupplyReceiptRepository, useClass: PrismaResupplyReceiptRepository },
@@ -251,6 +260,12 @@ import { PrismaCounterStockTracking } from "./infrastructure/prisma-counter-stoc
     { provide: CounterSites, useClass: PrismaCounterSites },
     GetCounterSettingsHandler,
     SetCounterSettingsHandler,
+    // L'interrupteur du réassort, global, éteint par défaut (2026-11-28).
+    { provide: ResupplySwitchReader, useClass: PrismaResupplySwitchReader },
+    { provide: ResupplySwitchWriter, useClass: PrismaResupplySwitchWriter },
+    ResupplyEnabledGuard,
+    GetResupplySwitchHandler,
+    SetResupplySwitchHandler,
   ],
   // Le reste du jour et son verrou, que la passation sur stock lit (plan du
   // jour J, lot L4) — même bloc `b2b`, sans frontière franchie.

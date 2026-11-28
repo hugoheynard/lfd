@@ -28,6 +28,7 @@ import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-ha
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
+import { switchResupplyOn } from "./resupply-switch.js";
 
 const fakeGateway = cardGatewayDouble("pi_counter");
 
@@ -61,6 +62,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await switchResupplyOn(ctx);
   clock.set(todayAt("12:00"));
   day = instantToLocal(clock.now()).day;
   siteId = await seedShop();

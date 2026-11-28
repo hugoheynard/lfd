@@ -39,6 +39,7 @@ import { attachTo, createCompany, createUser } from "./factories.js";
 import { poseSiteDiscount } from "./promotion-fixtures.js";
 import { cardProvidersOverride } from "./card-payments.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
+import { switchResupplyOn } from "./resupply-switch.js";
 
 const MINUTE_MS = 60_000;
 const CROISSANT = "VIE-001-1";
@@ -84,6 +85,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await switchResupplyOn(ctx);
   clock.set(todayAt("12:00"));
   siteId = await seedShop();
   await ctx.prisma.deliveryZone.create({

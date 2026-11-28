@@ -14,9 +14,20 @@ import {
   type ResupplyArticleView,
   type ResupplyUsedNamesView,
 } from "@lfd/contracts";
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  UseGuards,
+} from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
+import { ResupplyEnabledGuard } from "./resupply-enabled.guard.js";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
@@ -44,6 +55,7 @@ import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.j
  */
 @Controller("admin/bakehouse-resupplies")
 @AdminSurface("production_resupply")
+@UseGuards(ResupplyEnabledGuard)
 export class AdminBakehouseResuppliesController {
   constructor(
     private readonly commands: CommandBus,

@@ -44,6 +44,7 @@ import {
 } from "./production-day-fixture.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
+import { switchResupplyOn } from "./resupply-switch.js";
 
 const EVE = addDays(SERVICE_DAY, -1);
 const NAME = "Vitrine du matin";
@@ -323,6 +324,7 @@ async function stepReception(flow: Flow): Promise<void> {
 describe("le parcours du Labo, de l'envoi au stock du jour", () => {
   it("le réassort « pour demain » d'un point servi sur place s'enchaîne de bout en bout", async () => {
     await ctx.reset();
+    await switchResupplyOn(ctx);
     // 1. J-1 15:00 — le comptoir envoie « Vitrine du matin », un client commande au Labo.
     const flow = await stepEveAfternoon();
     // 2. J-1 20:01 — l'arrêt automatique fige le plan ; bon « Servi sur place » au dossier.
