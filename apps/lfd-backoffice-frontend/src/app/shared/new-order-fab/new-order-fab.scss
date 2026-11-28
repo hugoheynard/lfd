@@ -1,0 +1,142 @@
+/* Des boutons NATIFS et non `foldButton` : la forme (un rond de 56 px, une
+   étiquette collée à sa pastille) n'est pas celle d'un bouton fold, et la
+   forcer par-dessus ses règles serait plus fragile que de la poser ici. */
+
+/* En bas à droite ; les deux cas montent au-dessus, alignés sur l'axe du rond. */
+.nof {
+  --nof-size: 3.5rem; // 56 px : la cible d'un bouton d'action flottant
+  --nof-chip: 2.5rem;
+
+  position: fixed;
+  inset-inline-end: var(--fold-page-gutter);
+  bottom: max(var(--fold-space-lg), env(safe-area-inset-bottom));
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--fold-space-md);
+}
+
+.nof-main {
+  display: grid;
+  place-items: center;
+  width: var(--nof-size);
+  height: var(--nof-size);
+  padding: 0;
+  border: 0;
+  border-radius: var(--fold-radius-round);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  box-shadow: var(--fold-shadow-lg);
+  cursor: pointer;
+  transition:
+    background var(--fold-motion-fast),
+    transform var(--fold-motion-fast);
+}
+
+.nof-main:active {
+  transform: scale(0.94);
+}
+
+.nof-main:focus-visible,
+.nof-action:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 2px;
+}
+
+/* Le « + » tourne en croix : un seul signe, deux états. */
+.nof-plus {
+  transition: transform var(--fold-motion-base);
+}
+
+.is-open .nof-main {
+  background: var(--fold-color-primary-strong);
+}
+
+.is-open .nof-plus {
+  transform: rotate(135deg);
+}
+
+.nof-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+  /* Les pastilles centrées sur l'axe du rond. */
+  padding-inline-end: calc((var(--nof-size) - var(--nof-chip)) / 2);
+}
+
+.nof-action {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  animation: nof-rise var(--fold-motion-base) both;
+}
+
+/* Le plus loin du pouce monte le dernier. */
+.nof-action:first-child {
+  animation-delay: 50ms;
+}
+
+.nof-label {
+  padding: var(--fold-space-xs) var(--fold-space-md);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-medium);
+  box-shadow: var(--fold-shadow-md);
+  white-space: nowrap;
+}
+
+.nof-chip {
+  display: grid;
+  place-items: center;
+  width: var(--nof-chip);
+  height: var(--nof-chip);
+  border-radius: var(--fold-radius-round);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-primary);
+  box-shadow: var(--fold-shadow-md);
+}
+
+/* Le voile : il assombrit et floute la page, et la referme au toucher. */
+.nof-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--fold-color-bg-header) 40%, transparent);
+  backdrop-filter: blur(3px);
+  animation: nof-fade var(--fold-motion-fast) both;
+}
+
+@keyframes nof-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--fold-space-md)) scale(0.96);
+  }
+}
+
+@keyframes nof-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nof-main,
+  .nof-plus {
+    transition: none;
+  }
+
+  .nof-action,
+  .nof-scrim {
+    animation: none;
+  }
+}

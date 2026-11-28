@@ -70,6 +70,7 @@ import {
   OrdersStatsPanel,
   type OrdersStatsPanelData,
 } from '../orders-stats-panel/orders-stats-panel';
+import { NewOrderFab } from '../../shared/new-order-fab/new-order-fab';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -216,6 +217,7 @@ function sameFilters(left: OrderListFilters, right: OrderListFilters): boolean {
   selector: 'app-orders-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    NewOrderFab,
     NgTemplateOutlet,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -314,9 +316,8 @@ export class OrdersListPage {
 
   /** Le choix pro ou particulier, en dialogue centré : la liste reste derrière. */
   protected openNewOrder(): void {
-    // Au téléphone, un tiroir qui monte du bas, sous le pouce ; au bureau, centré.
     this.panels.open(NewOrderDialog, {
-      side: this.narrow() ? 'bottom' : 'center',
+      side: 'center',
       width: 'sm',
       data: { origin: '/commandes', point: null },
     });

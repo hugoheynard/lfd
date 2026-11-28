@@ -1,0 +1,39 @@
+@if (open()) {
+  <!-- Le voile : toucher à côté referme, comme sur un téléphone. -->
+  <div class="nof-scrim" (click)="open.set(false)" aria-hidden="true"></div>
+}
+
+<div class="nof" [class.is-open]="open()" data-new-order-fab>
+  @if (open()) {
+    <div class="nof-actions" id="nof-actions" role="menu" aria-label="Nouvelle commande">
+      <!-- Une étiquette et sa pastille, d'un seul tenant : le doigt peut
+           toucher le mot comme l'icône. -->
+      <button type="button" role="menuitem" class="nof-action" (click)="go(pro)" data-new-order-pro>
+        <span class="nof-label">Commande pro</span>
+        <span class="nof-chip"><fold-icon name="customer-account" size="sm" /></span>
+      </button>
+      <button
+        type="button"
+        role="menuitem"
+        class="nof-action"
+        (click)="go(particular)"
+        data-new-order-particular
+      >
+        <span class="nof-label">Commande particulier</span>
+        <span class="nof-chip"><fold-icon name="shopping-cart" size="sm" /></span>
+      </button>
+    </div>
+  }
+
+  <button
+    type="button"
+    class="nof-main"
+    [attr.aria-label]="open() ? 'Fermer' : 'Nouvelle commande'"
+    [attr.aria-expanded]="open()"
+    aria-controls="nof-actions"
+    (click)="toggle()"
+    data-new-order
+  >
+    <fold-icon name="plus" size="md" class="nof-plus" />
+  </button>
+</div>

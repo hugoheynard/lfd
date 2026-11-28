@@ -155,18 +155,7 @@
 <!-- Au téléphone, l'action principale flotte en bas à droite, sous le pouce,
      et le tiroir qu'elle ouvre monte du même côté (Hugo, 2026-11-28). -->
 @if (canPlace() && narrow()) {
-  <button
-    foldButton
-    intent="primary"
-    size="lg"
-    shape="pill"
-    icon="plus"
-    class="ol-fab"
-    (click)="openNewOrder()"
-    data-new-order
-  >
-    Nouvelle commande
-  </button>
+  <app-new-order-fab origin="/commandes" />
 }
 
 <ng-template #filterToggle>

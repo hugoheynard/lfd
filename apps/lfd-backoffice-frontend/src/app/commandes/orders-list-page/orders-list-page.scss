@@ -153,12 +153,3 @@
 .ol-more-count {
   color: var(--fold-color-text-muted);
 }
-
-/* « Nouvelle commande » au téléphone : en bas à droite, au-dessus de la liste. */
-.ol-fab {
-  position: fixed;
-  inset-inline-end: var(--fold-page-gutter);
-  bottom: max(var(--fold-space-lg), env(safe-area-inset-bottom));
-  z-index: 10;
-  box-shadow: var(--fold-shadow-lg);
-}
