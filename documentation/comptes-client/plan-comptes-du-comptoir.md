@@ -82,7 +82,10 @@ vérifier »).
   « plafond seul »).
 - **Les lignes au prix pro** (Hugo, 2026-11-28) : une commande d'un compte
   du comptoir fige ses lignes avec la réduction de l'audience pro, comme
-  toute commande pro (snapshot inchangé à la conversion).
+  toute commande pro, **de manière optimiste** (Hugo, 2026-11-28) : on
+  suppose le compte pro avant que le commerce l'ait vu. Le snapshot ne
+  change pas à la conversion ; un compte refusé ensuite garde ses lignes au
+  prix pro (aucun re-tarif — lecture du mot « optimiste » à confirmer).
 - **Pas facturable avant conversion** : sans SIREN ni adresse, l'émission
   du mois le bloque (§ 2). L'encours s'accumule sans facture ni échéance ;
   **le plafond (§ 3.3) est le seul frein**, et il est vide par défaut — un
