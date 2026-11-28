@@ -108,6 +108,7 @@ export const GLOSSARY_C: Readonly<Record<string, string>> = {
   corrects: 'Facture corrigée',
   count: 'Nombre',
   countOne: 'Nombre — un seul',
+  counter_opened: 'Compte ouvert au comptoir',
   country: 'Pays',
   countryPlaceholder: 'Pays — exemple',
   courier: 'Livraison',

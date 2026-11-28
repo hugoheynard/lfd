@@ -152,8 +152,9 @@ describe('grantGroups', () => {
    * `pay_link_test`, le lien de paiement d'essai (payment/les-liens-de-paiement.md, § 4 bis).
    * 82 le même jour : `events`, les événements (evenements/plan-evenements.md).
    * 83 : `b2b_in_house_payers`, les restaurants maison (restaurants-maison.md).
+   * 84 : `b2b_counter_accounts`, les comptes du comptoir (plan-comptes-du-comptoir.md).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(83);
+    expect(RESOURCE_COUNT).toBe(84);
   });
 });
