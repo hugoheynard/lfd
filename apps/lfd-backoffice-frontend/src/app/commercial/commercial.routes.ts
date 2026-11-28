@@ -56,6 +56,17 @@ export const commercialRoutes: Routes = [
           import('./acces-clients/acces-clients-page').then((m) => m.AccesClientsPage),
       },
       {
+        // Les comptes pro ouverts au comptoir, leur dû et leur conversion
+        // (`plan-comptes-du-comptoir.md`, § 4). Même droit que la route serveur.
+        path: 'comptes-du-comptoir',
+        canActivate: [permissionGuard('b2b_companies:read')],
+        title: 'Comptes du comptoir — LFC B2B admin',
+        loadComponent: () =>
+          import('./comptes-du-comptoir/counter-accounts-page/counter-accounts-page').then(
+            (m) => m.CounterAccountsPage,
+          ),
+      },
+      {
         // La page de la cheffe des commerciaux : un tableau de toutes les
         // fiches principales, par niveau de travail. Même droit que la route
         // serveur (`b2b_sales_oversight`).

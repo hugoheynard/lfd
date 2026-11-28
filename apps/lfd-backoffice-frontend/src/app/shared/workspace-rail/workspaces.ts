@@ -90,6 +90,16 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
       "Sur tous les comptes, qui a un détenteur et qui s'est déjà connecté. On relance d'ici l'e-mail d'accès d'un invité.",
   },
   {
+    // Les comptes pro ouverts au comptoir, à convertir (`plan-comptes-du-comptoir.md`, § 4).
+    key: 'comptes-du-comptoir',
+    label: 'Comptes du comptoir',
+    link: '/commercial/comptes-du-comptoir',
+    icon: 'store',
+    needs: 'b2b_companies:read',
+    description:
+      'Les comptes pro ouverts au comptoir : ce qu’ils doivent, ce qui manque, et leur conversion.',
+  },
+  {
     key: 'suivi',
     label: 'Suivi commercial',
     link: '/commercial/suivi',

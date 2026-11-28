@@ -1,0 +1,86 @@
+<section class="page">
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des comptes du comptoir…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de lire les comptes du comptoir">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (rows().length === 0) {
+        <fold-empty-state
+          title="Aucun compte ouvert au comptoir"
+          subtitle="Les comptes pro ouverts au comptoir apparaissent ici jusqu'à leur conversion."
+        >
+          <fold-icon empty-icon name="customer-account" />
+        </fold-empty-state>
+      } @else {
+        <div class="table">
+          <fold-data-table
+            caption="Comptes ouverts au comptoir"
+            narrowLayout="cards"
+            [columns]="columns"
+            [rows]="rows()"
+            [rowKey]="rowKey"
+          >
+            <fold-element-title foldToolbar variant="bar" [title]="tableTitle()" />
+
+            <ng-template foldCell="company" let-row>
+              <a class="primary" [routerLink]="['/comptes-clients', of(row).companyId]">
+                {{ of(row).enseigne }}
+              </a>
+              <span class="secondary">{{ of(row).reference }}</span>
+            </ng-template>
+
+            <ng-template foldCell="contact" let-row>
+              <span class="primary"
+                >{{ of(row).contact.firstName }} {{ of(row).contact.lastName }}</span
+              >
+              <span class="secondary">{{ of(row).contact.email }}</span>
+              <span class="secondary">{{ of(row).contact.phone }}</span>
+            </ng-template>
+
+            <ng-template foldCell="opened" let-row>
+              <span class="primary">{{ openedLabel(of(row)) }}</span>
+              <span class="secondary" data-identity-check>{{ identityLabel(of(row)) }}</span>
+            </ng-template>
+
+            <ng-template foldCell="orders" let-row>{{ of(row).onAccountOrders }}</ng-template>
+
+            <ng-template foldCell="due" let-row>{{ euros(of(row).outstandingCents) }}</ng-template>
+
+            <ng-template foldCell="missing" let-row>
+              <span class="secondary">{{ missingLabel(of(row)) }}</span>
+            </ng-template>
+
+            <ng-template foldCell="action" let-row>
+              @if (canWrite()) {
+                <fold-inline-confirm
+                  intent="primary"
+                  [message]="convertQuestion(of(row))"
+                  [labels]="{ confirm: convertLabel(of(row)) }"
+                  [loading]="pending() === of(row).companyId"
+                  (confirmed)="convert(of(row))"
+                >
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="soft"
+                    [disabled]="pending() !== null"
+                    [attr.data-convert]="of(row).companyId"
+                  >
+                    {{ convertLabel(of(row)) }}
+                  </button>
+                </fold-inline-confirm>
+              }
+            </ng-template>
+          </fold-data-table>
+
+          <p class="total" data-total-due>Total dû : {{ euros(totalCents()) }}</p>
+        </div>
+      }
+    }
+  }
+</section>

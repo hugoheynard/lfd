@@ -18,6 +18,7 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
+import { CounterAccountCeilingCard } from '../counter-account-ceiling-card/counter-account-ceiling-card';
 import { CounterSettingsService } from '../counter-settings.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -41,6 +42,7 @@ const MODIFIED_AT = new Intl.DateTimeFormat('fr-FR', {
   selector: 'app-counter-settings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    CounterAccountCeilingCard,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
