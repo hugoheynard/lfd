@@ -1,0 +1,82 @@
+<fold-panel-header
+  title="Ouvrir un compte pro"
+  subtitle="Au compte, sans SIRET : le commerce complétera la fiche"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  <div class="cap-fields">
+    <fold-input
+      label="Enseigne"
+      required
+      [value]="enseigne()"
+      (valueChange)="enseigne.set($event)"
+      data-enseigne
+    />
+    <fold-input
+      label="Prénom du contact"
+      required
+      [value]="firstName()"
+      (valueChange)="firstName.set($event)"
+      data-first-name
+    />
+    <fold-input
+      label="Nom du contact"
+      required
+      [value]="lastName()"
+      (valueChange)="lastName.set($event)"
+      data-last-name
+    />
+    <fold-input
+      label="Fonction"
+      [value]="fonction()"
+      (valueChange)="fonction.set($event)"
+      data-fonction
+    />
+    <fold-input
+      label="E-mail du contact"
+      type="email"
+      required
+      [value]="email()"
+      (valueChange)="email.set($event)"
+      data-email
+    />
+    <fold-input
+      label="Téléphone du contact"
+      type="tel"
+      required
+      [value]="phone()"
+      (valueChange)="phone.set($event)"
+      data-phone
+    />
+    <fold-checkbox
+      label="J’ai vu une preuve d’identité"
+      [hint]="identityHint"
+      [(checked)]="identitySeen"
+      data-identity-seen
+    />
+    @if (!pristine() && issue() !== '') {
+      <fold-callout variant="warning" data-issue>{{ issue() }}</fold-callout>
+    }
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-refusal>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="close()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    intent="primary"
+    type="button"
+    [disabled]="issue() !== ''"
+    [loading]="saving()"
+    (click)="submit()"
+    data-submit
+  >
+    Ouvrir et saisir la commande
+  </button>
+</fold-panel-footer>

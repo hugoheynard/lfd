@@ -170,6 +170,15 @@ et la trace est append-only — ni décochée, ni réattribuée après coup.
 Rien de la pièce elle-même — ni type, ni numéro, ni image. La page du § 4
 montre « pièce vue par <agent> » ou « pièce non vue ».
 
+**L'écran** (K2, front) : le bouton « Ouvrir un compte pro » de la page
+« Nouvelle commande pro » du comptoir, sous `b2b_counter_accounts:write`,
+ouvre un panneau (enseigne, prénom, nom, fonction facultative, e-mail,
+téléphone, la case et son texte). **Après le `201`, l'écran ouvre la saisie
+de la commande pro pour ce compte** (`/nouvelle-commande/<id>`), pas la
+fiche client : le client est en face, c'est pour commander qu'on ouvre son
+compte, et l'agent du comptoir n'a pas le droit de la fiche
+(`b2b_companies`). Un refus affiche le message du serveur tel quel.
+
 ## 4. La page « Comptes du comptoir » (D4)
 
 Dans l'espace commerce du back-office : une table, une ligne par société

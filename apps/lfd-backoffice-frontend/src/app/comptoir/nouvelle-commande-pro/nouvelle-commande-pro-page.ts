@@ -34,6 +34,7 @@ import { CounterCustomersService } from '../counter-customers.service';
 import { CounterDeliveryNoteService } from '../counter-delivery-note.service';
 import { matchesCounterSearch } from '../counter-customer-search';
 import { draftBadgeLabel } from './draft-badge-label';
+import { CounterAccountPanel } from './counter-account-panel/counter-account-panel';
 import { ProspectPanel } from './prospect-panel/prospect-panel';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -102,6 +103,12 @@ export class NouvelleCommandeProPage {
    */
   protected readonly canOpenProspect =
     this.permissions.can('b2b_companies:write') && this.permissions.can('b2b_place_order:write');
+  /**
+   * « Ouvrir un compte pro » : un compte au comptoir, sans SIRET
+   * (`plan-comptes-du-comptoir.md`, § 3.4) — le droit qui couvre l'ouverture
+   * ET la commande au compte pour lui.
+   */
+  protected readonly canOpenCounterAccount = this.permissions.can('b2b_counter_accounts:write');
   /** D'où l'on vient (`?retour=`) : « Terminer » y ramène. */
   readonly retour = input<string>();
   /** Le bon se réimprime-t-il en ce moment ? */
@@ -178,6 +185,15 @@ export class NouvelleCommandeProPage {
     const ref = this.panels.open(ProspectPanel, {});
     const companyId = await ref.closed;
     // Le panneau rend l'id du compte créé, rien s'il est fermé sans créer.
+    if (typeof companyId === 'string') {
+      this.choose(companyId);
+    }
+  }
+
+  /** Ouvre un compte pro au comptoir, puis sa saisie : le client est en face. */
+  protected async openCounterAccount(): Promise<void> {
+    const ref = this.panels.open(CounterAccountPanel, {});
+    const companyId = await ref.closed;
     if (typeof companyId === 'string') {
       this.choose(companyId);
     }
