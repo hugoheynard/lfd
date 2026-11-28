@@ -61,6 +61,22 @@ export const COUNTER_SCENARIOS: ScenarioSet = {
         body: { firstName: "Léa", email: "lea.replay@test.fr", phone: "0611223344" },
       }),
 
+  [routeKey("lafoliecoffee/account/http/admin-counter-accounts.controller.ts", "open")]: () =>
+    Promise.resolve({
+      sub: STAFF,
+      path: "/admin/counter/accounts",
+      body: {
+        enseigne: "Le Bistrot du rejeu",
+        contact: {
+          firstName: "Paul",
+          lastName: "Rejeu",
+          email: "paul.rejeu@test.fr",
+          phone: "0611223355",
+        },
+        identitySeen: true,
+      },
+    }),
+
   [routeKey("lafoliecoffee/orders/http/admin-counter-particular-orders.controller.ts", "place")]:
     async (world) => ({ sub: STAFF, path: ORDERS, body: await particularBasket(world) }),
 

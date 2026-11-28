@@ -297,6 +297,8 @@ export class StaffOrderPlacement {
     const overCeiling = await (this.ports.ceiling ?? NO_COUNTER_CEILING_CHECK).refusalFor({
       companyId,
       settlement,
+      counterAccountPath:
+        isCounterEntry(payload.entryOrigin, payload.entryShortcut) && chargesCounterAccounts,
       totalCents: order.totalCents,
     });
     if (overCeiling !== null) {

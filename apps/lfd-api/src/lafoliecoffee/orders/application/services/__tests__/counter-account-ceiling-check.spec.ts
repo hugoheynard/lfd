@@ -49,7 +49,12 @@ function check(status: OrderCompanyStatus, ceiling: number | null, owed = 0) {
   };
 }
 
-const ON_ACCOUNT = { companyId: "co_1", settlement: "account", totalCents: 20_000 } as const;
+const ON_ACCOUNT = {
+  companyId: "co_1",
+  settlement: "account",
+  totalCents: 20_000,
+  counterAccountPath: true,
+} as const;
 
 describe("CounterAccountCeilingCheck", () => {
   it("refuse quand encours + commande passe le plafond, et nomme les montants", async () => {
@@ -87,6 +92,16 @@ describe("CounterAccountCeilingCheck", () => {
         settlement: "link",
       }),
     ).toBeNull();
+  });
+
+  /**
+   * Régression : la garde relisait le statut sur toute saisie au compte, et
+   * l'estimation de la saisie a coûté une lecture de plus que son budget.
+   */
+  it("ne lit rien hors du chemin du comptoir", async () => {
+    const world = check("counter_opened", 0, 1_000_000);
+    expect(await world.check.refusalFor({ ...ON_ACCOUNT, counterAccountPath: false })).toBeNull();
+    expect(world.outstanding.asked).toEqual([]);
   });
 
   it("lit l'encours d'un compte sans commande comme nul", async () => {

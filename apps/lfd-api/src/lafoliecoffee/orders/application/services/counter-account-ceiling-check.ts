@@ -12,6 +12,13 @@ export interface CounterCeilingCase {
   readonly companyId: string;
   readonly settlement: StaffSettlement;
   readonly totalCents: number;
+  /**
+   * Saisie du comptoir par un agent qui a le droit des comptes du comptoir :
+   * le seul chemin où un compte ouvert au comptoir règle au compte (§ 3.2).
+   * Ailleurs, la garde ne lit rien — le budget de lectures de la saisie ne
+   * bouge pas.
+   */
+  readonly counterAccountPath: boolean;
 }
 
 /**
@@ -31,7 +38,7 @@ export class CounterAccountCeilingCheck {
   async refusalFor(
     candidate: CounterCeilingCase,
   ): Promise<CounterAccountCeilingExceededError | null> {
-    if (candidate.settlement !== "account") {
+    if (candidate.settlement !== "account" || !candidate.counterAccountPath) {
       return null;
     }
     if ((await this.statuses.companyStatusOf(candidate.companyId)) !== "counter_opened") {

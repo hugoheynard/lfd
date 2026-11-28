@@ -122,6 +122,8 @@ export class StaffOrderEstimation {
         ? await (this.ports.ceiling ?? NO_COUNTER_CEILING_CHECK).refusalFor({
             companyId: payload.companyId,
             settlement: payload.settlement,
+            counterAccountPath:
+              isCounterEntry(payload.entryOrigin, payload.entryShortcut) && chargesCounterAccounts,
             totalCents: order.totalCents,
           })
         : null;
