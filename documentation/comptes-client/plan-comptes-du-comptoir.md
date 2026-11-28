@@ -162,17 +162,20 @@ l'appareil : carte d'identité, permis, carte bancaire ou carte Vitale —
 n'importe laquelle. La photo est obligatoire pour ouvrir le compte, rangée au
 stockage (comme le KBIS), visible du commerce sur la page du § 4.
 
-🔴 **À trancher par Hugo avant K2 — deux des quatre pièces posent un problème
-légal :**
+✅ **Les quatre pièces sont gardées** (Hugo, 2026-11-28), en connaissance
+des deux risques ci-dessous, écrits pour qu'ils restent visibles. K2 réduit
+ce qu'il peut : accès au seul droit du commerce, purge datée, aucune photo
+dans un journal ni un e-mail, aucune lecture du numéro (pas d'OCR).
+
+Les risques assumés :
 
 - **Carte bancaire** : une photo porte le numéro complet, la date et le nom.
   La garder fait entrer notre stockage dans le périmètre PCI DSS, que le
-  dépôt évite entièrement (Stripe tient les cartes). Proposition : la retirer
-  de la liste, ou exiger qu'on masque le numéro avant la prise (non
-  vérifiable par nous).
+  dépôt évite entièrement (Stripe tient les cartes). L'écran invite à masquer
+  les chiffres du milieu avant la prise (non vérifiable).
 - **Carte Vitale** : elle porte le NIR (numéro de sécurité sociale), dont le
   traitement est encadré strictement (décret « cadre NIR ») et n'est pas
-  admis pour identifier un client commercial. Proposition : la retirer.
+  admis pour identifier un client commercial.
 - **Carte d'identité et permis** : admissibles, mais donnée personnelle à
   déclarer : finalité (identifier qui ouvre un crédit), durée de
   conservation (proposée : jusqu'à la conversion + 3 mois, puis purge),
