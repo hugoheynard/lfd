@@ -120,6 +120,8 @@
           (saved)="retry()"
         />
 
+        <app-resupply-switch-card [canWrite]="canWrite()" />
+
         <app-dossier-recipients-card [canWrite]="canWrite()" />
       </div>
     }

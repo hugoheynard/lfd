@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { routes } from '../app.routes';
 import type { AnyPermissionGuard, PermissionGuard } from '../auth/permission.guard';
 import { PermissionsStore } from '../auth/permissions.store';
+import { ResupplySwitchStore } from '../shared/resupply-switch/resupply-switch.store';
 import { WorkspaceCatalogue } from '../shared/workspace-rail/workspaces';
 
 /**
@@ -24,6 +25,11 @@ function configure(role: StaffRole): void {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
+      // Le réassort allumé : ces onglets le montrent (plan-interrupteur-du-reassort.md).
+      {
+        provide: ResupplySwitchStore,
+        useValue: { ensureLoaded: () => Promise.resolve(), enabled: () => true },
+      },
       {
         provide: PermissionsStore,
         useValue: {

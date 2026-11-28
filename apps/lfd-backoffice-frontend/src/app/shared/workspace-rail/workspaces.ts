@@ -7,6 +7,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { CustomerRequestsInbox } from '../../b2b/demandes/customer-requests-inbox.store';
 import { legalMentionLink, legalMentionMenuLabel } from '../../reglages/legal-mention-slugs';
 import { BRAND_PINK_TINT } from '../menu-tints';
+import { ResupplySwitchStore } from '../resupply-switch/resupply-switch.store';
 import type { WorkspaceRail, WorkspaceRailItem } from './workspace-rail.store';
 
 /** Une vue d'espace de travail, et le droit qui l'ouvre s'il lui est propre. */
@@ -23,6 +24,12 @@ export interface WorkspaceView extends WorkspaceRailItem {
    * relie le nom au store qui compte.
    */
   readonly counter?: WorkspaceCounter;
+  /**
+   * La vue n'existe que réassort allumé (Réglages › Production › Fournil) :
+   * éteint, son onglet et sa tuile disparaissent, et son garde renvoie à
+   * l'atterrissage de l'espace.
+   */
+  readonly requiresResupply?: true;
 }
 
 /** Les comptes qu'une entrée de menu peut porter. */
@@ -556,6 +563,7 @@ export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
     link: '/comptoir/reassort',
     icon: 'croissant',
     needs: 'handover_counter:read',
+    requiresResupply: true,
   },
   // La bibliothèque des modèles de réassort n'est plus un onglet (Hugo,
   // 2026-11-20) : elle s'ouvre depuis la page Réassort, sous son droit.
@@ -1060,13 +1068,20 @@ export type WorkspaceKey = keyof typeof WORKSPACES;
 export class WorkspaceCatalogue {
   private readonly permissions = inject(PermissionsStore);
   private readonly requestsInbox = inject(CustomerRequestsInbox);
+  private readonly resupply = inject(ResupplySwitchStore);
+
+  constructor() {
+    // Éteint tant que non lu : le lire tôt évite qu'un onglet n'apparaisse tard.
+    void this.resupply.ensureLoaded();
+  }
 
   /** Les vues d'un espace que la route laissera ouvrir. */
   views(key: WorkspaceKey): Signal<WorkspaceRailItem[]> {
     return computed(() =>
       WORKSPACES[key].views
         .filter((view) => this.grants(view.needs))
-        .map(({ needs, counter, ...view }) => {
+        .filter((view) => view.requiresResupply !== true || this.resupply.enabled())
+        .map(({ needs, counter, requiresResupply, ...view }) => {
           const count = counter === undefined ? null : this.count(counter);
           return count === null || count <= 0 ? view : { ...view, badge: count };
         }),

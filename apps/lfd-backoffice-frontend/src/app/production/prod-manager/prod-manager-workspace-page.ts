@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { FoldSurfaceDirective, FoldViewNavComponent } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { ResupplySwitchStore } from '../../shared/resupply-switch/resupply-switch.store';
 import { WorkshopClock } from '../fiche-atelier/state/workshop-clock';
 import { WorkshopWallClock } from '../fiche-atelier/workshop-wall-clock/workshop-wall-clock';
 import { permittedProdManagerViews } from './prod-manager-views';
@@ -36,9 +37,17 @@ import { UnplacedProductsAlert } from './unplaced-products-alert/unplaced-produc
 })
 export class ProdManagerWorkspacePage {
   private readonly permissions = inject(PermissionsStore);
+  private readonly resupply = inject(ResupplySwitchStore);
 
   /** Les onglets permis : un onglet sans droit mènerait à un refus du garde. */
   protected readonly views = computed(() =>
-    permittedProdManagerViews((permission) => this.permissions.can(permission)),
+    permittedProdManagerViews(
+      (permission) => this.permissions.can(permission),
+      this.resupply.enabled(),
+    ),
   );
+
+  constructor() {
+    void this.resupply.ensureLoaded();
+  }
 }

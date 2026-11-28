@@ -21,6 +21,7 @@ import { DossierRecipientsCard } from '../dossier-recipients-card/dossier-recipi
 import { ProductionSettingsService } from '../production-settings.service';
 import { ProductionDisplayCard } from '../production-display-card/production-display-card';
 import { ProductionTranchesCard } from '../production-tranches-card/production-tranches-card';
+import { ResupplySwitchCard } from '../resupply-switch-card/resupply-switch-card';
 import { dayLabelOf } from '../worksheet-day';
 
 type LoadState =
@@ -84,6 +85,7 @@ export function automaticCloseLabel(close: ProductionAutomaticCloseView): string
     FoldPageLayoutComponent,
     ProductionDisplayCard,
     ProductionTranchesCard,
+    ResupplySwitchCard,
     RouterLink,
   ],
   templateUrl: './production-settings-page.html',

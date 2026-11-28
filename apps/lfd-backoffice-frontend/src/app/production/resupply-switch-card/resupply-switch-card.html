@@ -1,0 +1,32 @@
+<fold-card data-resupply-switch>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Réassort des boutiques"
+    subtitle="Éteint, le comptoir et le Prod manager ne montrent plus le réassort, et rien ne peut en être envoyé. Ce qui est déjà parti reste lisible."
+  />
+
+  @if (loadFailed()) {
+    <fold-callout variant="alert" data-resupply-switch-failed>
+      L’interrupteur du réassort n’a pas pu être lu : il est tenu pour éteint.
+      <button foldButton emphasis="outline" size="sm" (click)="retry()" data-retry-switch>
+        Réessayer
+      </button>
+    </fold-callout>
+  } @else {
+    @for (state of shown(); track state) {
+      <fold-checkbox
+        label="Allumer le réassort"
+        [hint]="lastChange()"
+        [checked]="state.enabled"
+        (checkedChange)="set($event)"
+        [disabled]="!canWrite() || busy()"
+        data-resupply-enabled
+      />
+    }
+  }
+
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce data-resupply-switch-refusal>{{ message }}</fold-callout>
+  }
+</fold-card>

@@ -5,6 +5,7 @@ import type { StaffPermission } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { permissionGuard } from '../permission.guard';
+import { ResupplySwitchStore } from '../../shared/resupply-switch/resupply-switch.store';
 import { PermissionsStore } from '../permissions.store';
 
 /**
@@ -98,5 +99,59 @@ describe('permissionGuard — le cas qui fige un navigateur', () => {
     const result = await guardWith([]);
 
     expect(result).toBe(true);
+  });
+});
+
+/**
+ * Les réassorts ne sont une porte que réassort allumé : éteint, qui ne tient
+ * que leur droit y serait renvoyé, puis renvoyé au Prod manager, puis au
+ * prévisionnel… en rond.
+ */
+describe('permissionGuard — la porte des réassorts suit l’interrupteur', () => {
+  function guardWithSwitch(
+    permissions: readonly StaffPermission[],
+    enabled: boolean,
+  ): Promise<boolean | UrlTree> {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: PermissionsStore,
+          useValue: {
+            ensureLoaded: (): Promise<void> => Promise.resolve(),
+            can: (permission: StaffPermission): boolean => permissions.includes(permission),
+          } satisfies Pick<PermissionsStore, 'ensureLoaded' | 'can'>,
+        },
+        {
+          provide: ResupplySwitchStore,
+          useValue: {
+            ensureLoaded: (): Promise<void> => Promise.resolve(),
+            enabled: (): boolean => enabled,
+          } satisfies Pick<ResupplySwitchStore, 'ensureLoaded'> & { enabled: () => boolean },
+        },
+      ],
+    });
+    const guard = permissionGuard('b2b_growth:read');
+    return runInInjectionContext(TestBed.inject(Injector), () =>
+      Promise.resolve(guard(null as never, null as never)),
+    ) as Promise<boolean | UrlTree>;
+  }
+
+  it('allumé, renvoie qui ne tient que les réassorts vers eux', async () => {
+    expect(redirectPath(await guardWithSwitch(['production_resupply:read'], true))).toBe(
+      '/prod-manager/reassorts',
+    );
+  });
+
+  it('éteint, passe à la porte suivante', async () => {
+    const result = await guardWithSwitch(
+      ['production_resupply:read', 'production_packing:read'],
+      false,
+    );
+    expect(redirectPath(result)).toBe('/colisage');
+  });
+
+  it('éteint et sans autre porte, laisse passer plutôt que de tourner en rond', async () => {
+    expect(await guardWithSwitch(['production_resupply:read'], false)).toBe(true);
   });
 });

@@ -4,12 +4,15 @@ import type { StaffPermission } from '@lfd/contracts';
 import type { FoldViewNavItem } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { ResupplySwitchStore } from '../../shared/resupply-switch/resupply-switch.store';
 
 /** Un onglet de Prod manager, et le droit de sa route. */
 export interface ProdManagerView extends FoldViewNavItem {
   readonly link: string;
   /** Un seul de ces droits suffit. */
   readonly needsAnyOf: readonly StaffPermission[];
+  /** L'onglet n'existe que réassort allumé (Réglages › Production › Fournil). */
+  readonly requiresResupply?: true;
 }
 
 /**
@@ -35,14 +38,21 @@ export const PROD_MANAGER_VIEWS: readonly ProdManagerView[] = [
     // Un droit à part (Hugo, 2026-10-28) : ni la fiche d'atelier ni le
     // prévisionnel ne l'ouvrent.
     needsAnyOf: ['production_resupply:read'],
+    requiresResupply: true,
   },
 ];
 
-/** Les onglets que ces droits ouvrent, dans l'ordre. */
+/**
+ * Les onglets que ces droits ouvrent, dans l'ordre — sans « Réassorts » quand
+ * l'interrupteur est éteint.
+ */
 export function permittedProdManagerViews(
   can: (permission: StaffPermission) => boolean,
+  resupplyEnabled = true,
 ): readonly ProdManagerView[] {
-  return PROD_MANAGER_VIEWS.filter((view) => view.needsAnyOf.some(can));
+  return PROD_MANAGER_VIEWS.filter(
+    (view) => view.needsAnyOf.some(can) && (view.requiresResupply !== true || resupplyEnabled),
+  );
 }
 
 /** Le repli quand aucun onglet n'est permis : son garde redirige ailleurs. */
@@ -55,8 +65,10 @@ const FALLBACK = '/prod-manager/previsionnel';
  */
 export const prodManagerLanding: RedirectFunction = async () => {
   const permissions = inject(PermissionsStore);
-  await permissions.ensureLoaded();
+  const resupply = inject(ResupplySwitchStore);
+  await Promise.all([permissions.ensureLoaded(), resupply.ensureLoaded()]);
   return (
-    permittedProdManagerViews((permission) => permissions.can(permission))[0]?.link ?? FALLBACK
+    permittedProdManagerViews((permission) => permissions.can(permission), resupply.enabled())[0]
+      ?.link ?? FALLBACK
   );
 };

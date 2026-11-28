@@ -6,6 +6,7 @@ import { anyPermissionGuard, permissionGuard } from './auth/permission.guard';
 import { comptoirLanding } from './comptoir/comptoir-landing';
 import { orderEntryParams } from './commandes/nouvelle-commande/order-entry-return';
 import { toRoundsTab } from './livraison/tour-manager/tour-manager-views';
+import { resupplyEnabledGuard } from './shared/resupply-switch/resupply-enabled.guard';
 import { prodManagerLanding } from './production/prod-manager/prod-manager-views';
 import { pendingChangesGuard } from './pim/catalogue/product-form/pending-changes.guard';
 import { DEV_TOOLS_ROUTES } from './dev/dev-tools';
@@ -17,6 +18,10 @@ import { comptabiliteRoutes } from './comptabilite/comptabilite.routes';
 import { pimRoutes } from './pim/pim.routes';
 import { reglagesRoutes } from './reglages/reglages.routes';
 import { HEADER_SECTION } from './page-name';
+
+/** Les écrans du réassort, fermés interrupteur éteint : retour à l'atterrissage de l'espace. */
+const RESUPPLY_COMPTOIR = resupplyEnabledGuard('/comptoir');
+const RESUPPLY_PROD_MANAGER = resupplyEnabledGuard('/prod-manager');
 
 /**
  * **L'assemblage des routes** — et, surtout, leur ORDRE.
@@ -858,7 +863,7 @@ export const routes: Routes = [
         // L'ancien écran « Réassorts à produire » (lot R1), en table : la
         // fournée OU le prévisionnel, le droit de sa route serveur.
         path: 'reassorts',
-        canActivate: [permissionGuard('production_resupply:read')],
+        canActivate: [permissionGuard('production_resupply:read'), RESUPPLY_PROD_MANAGER],
         title: 'Réassorts — Prod manager — LFC B2B admin',
         loadComponent: () =>
           import('./production/reassorts-a-produire/resupply-production-tab/resupply-production-tab').then(
@@ -869,7 +874,7 @@ export const routes: Routes = [
         // Composer un réassort du fournil, sur sa propre page (Hugo,
         // 2026-10-28) : neuf, ou un brouillon repris par son id.
         path: 'reassorts/nouveau',
-        canActivate: [permissionGuard('production_resupply:write')],
+        canActivate: [permissionGuard('production_resupply:write'), RESUPPLY_PROD_MANAGER],
         title: 'Nouveau réassort — Prod manager — LFC B2B admin',
         loadComponent: () =>
           import('./production/reassorts-a-produire/bakehouse-resupply-page/bakehouse-resupply-page').then(
@@ -884,7 +889,7 @@ export const routes: Routes = [
       },
       {
         path: 'reassorts/brouillon/:draftId',
-        canActivate: [permissionGuard('production_resupply:write')],
+        canActivate: [permissionGuard('production_resupply:write'), RESUPPLY_PROD_MANAGER],
         title: 'Brouillon de réassort — Prod manager — LFC B2B admin',
         loadComponent: () =>
           import('./production/reassorts-a-produire/bakehouse-resupply-page/bakehouse-resupply-page').then(
@@ -1185,7 +1190,7 @@ export const routes: Routes = [
         // `reassort-boutiques/commander.md § 6`, § 6). Lire sous
         // `resupply_templates:read` ; composer sous l'écriture.
         path: 'modeles-reassort',
-        canActivate: [permissionGuard('resupply_templates:read')],
+        canActivate: [permissionGuard('resupply_templates:read'), RESUPPLY_COMPTOIR],
         title: 'Modèles de réassort — LFC B2B admin',
         loadComponent: () =>
           import('./comptoir/resupply-templates/resupply-templates-page/resupply-templates-page').then(
@@ -1194,7 +1199,7 @@ export const routes: Routes = [
       },
       {
         path: 'modeles-reassort/:siteId/nouveau',
-        canActivate: [permissionGuard('resupply_templates:write')],
+        canActivate: [permissionGuard('resupply_templates:write'), RESUPPLY_COMPTOIR],
         title: 'Nouveau modèle de réassort — LFC B2B admin',
         loadComponent: () =>
           import('./comptoir/resupply-templates/resupply-template-page/resupply-template-page').then(
@@ -1203,7 +1208,7 @@ export const routes: Routes = [
       },
       {
         path: 'modeles-reassort/:siteId/:templateId',
-        canActivate: [permissionGuard('resupply_templates:write')],
+        canActivate: [permissionGuard('resupply_templates:write'), RESUPPLY_COMPTOIR],
         title: 'Modèle de réassort — LFC B2B admin',
         loadComponent: () =>
           import('./comptoir/resupply-templates/resupply-template-page/resupply-template-page').then(
@@ -1215,7 +1220,7 @@ export const routes: Routes = [
         // jour-meme-sur-stock.md J1). Le droit du retrait : le comptoir
         // déclare le stock (Q1, Hugo) ; les routes serveur le tiennent aussi.
         path: 'reassort',
-        canActivate: [permissionGuard('handover_counter:read')],
+        canActivate: [permissionGuard('handover_counter:read'), RESUPPLY_COMPTOIR],
         title: 'Réassort boutique — LFC B2B admin',
         loadComponent: () =>
           import('./comptoir/reassort-boutique-page/reassort-boutique-page').then(

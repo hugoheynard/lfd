@@ -1,7 +1,8 @@
-import { inject } from '@angular/core';
+import { inject, Injector } from '@angular/core';
 import { Router, type CanActivateFn, type UrlTree } from '@angular/router';
 import type { StaffPermission } from '@lfd/contracts';
 
+import { ResupplySwitchStore } from '../shared/resupply-switch/resupply-switch.store';
 import { PermissionsStore } from './permissions.store';
 
 /**
@@ -9,7 +10,12 @@ import { PermissionsStore } from './permissions.store';
  * qui arrive sur une page qui lui est fermée. L'ordre est celui du menu : on
  * renvoie vers la première porte ouverte, pas vers une page d'erreur.
  */
-const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: string }[] = [
+const LANDINGS: readonly {
+  readonly permission: StaffPermission;
+  readonly path: string;
+  /** Une porte qui n'existe que réassort allumé : éteint, elle renverrait en rond. */
+  readonly requiresResupply?: true;
+}[] = [
   // EN TÊTE (plan-ma-tournee.md, MT-D7 v2) : le livreur n'a que ce droit, et
   // sans cette entrée le garde le laisserait passer partout, de 403 en 403.
   // Seuls le livreur et l'admin le tiennent ; l'admin, qui a tout, n'est
@@ -24,7 +30,11 @@ const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: 
   { permission: 'production_worksheet:read', path: '/fournil' },
   { permission: 'production_plan:read', path: '/prod-manager' },
   // Les réassorts, droit à part (2026-10-28) : qui ne tient que lui y atterrit.
-  { permission: 'production_resupply:read', path: '/prod-manager/reassorts' },
+  {
+    permission: 'production_resupply:read',
+    path: '/prod-manager/reassorts',
+    requiresResupply: true,
+  },
   // `/production` redirige vers Prod manager (2026-10-10) : sans cette ligne,
   // qui ne tient que les réglages du fournil serait laissé sur un 403.
   { permission: 'production_settings:read', path: '/reglages/production/fournil' },
@@ -109,12 +119,21 @@ export function anyPermissionGuard(
 async function admitOrRedirect(anyOf: readonly StaffPermission[]): Promise<boolean | UrlTree> {
   const permissions = inject(PermissionsStore);
   const router = inject(Router);
+  const injector = inject(Injector);
 
   await permissions.ensureLoaded();
   if (anyOf.some((permission) => permissions.can(permission))) {
     return true;
   }
-  const fallback = LANDINGS.find((landing) => permissions.can(landing.permission));
+  const open = LANDINGS.filter((landing) => permissions.can(landing.permission));
+  // L'interrupteur n'est lu que si une porte en dépend : la plupart des refus n'en ont pas besoin.
+  const resupply = open.some((landing) => landing.requiresResupply === true)
+    ? injector.get(ResupplySwitchStore)
+    : null;
+  await resupply?.ensureLoaded();
+  const fallback = open.find(
+    (landing) => landing.requiresResupply !== true || resupply?.enabled() === true,
+  );
   // Aucune porte ouverte : on laisse passer et la racine dira ce qu'il en est.
   // Rediriger en rond serait pire qu'une page qui explique.
   return fallback === undefined ? true : router.parseUrl(fallback.path);

@@ -8,6 +8,7 @@ import { FoldPanelHostService } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { ResupplySwitchStore } from '../../shared/resupply-switch/resupply-switch.store';
 import { NewOrderDialog } from '../../commandes/new-order-dialog/new-order-dialog';
 import { VersionWatcher } from '../../shared/version/version-watcher';
 import { HandoverQueueService } from '../../handover-shop/handover-queue.service';
@@ -73,6 +74,11 @@ async function open(
   queue = new FakeQueue();
   TestBed.configureTestingModule({
     providers: [
+      // Le réassort allumé : ces onglets le montrent (plan-interrupteur-du-reassort.md).
+      {
+        provide: ResupplySwitchStore,
+        useValue: { ensureLoaded: () => Promise.resolve(), enabled: () => true },
+      },
       provideRouter([
         {
           path: 'comptoir',

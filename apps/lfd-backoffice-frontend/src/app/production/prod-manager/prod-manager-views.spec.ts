@@ -37,3 +37,14 @@ describe('les onglets de Prod manager', () => {
     expect(keys(['handover_counter:read'])).toEqual([]);
   });
 });
+
+/** L'interrupteur du réassort (plan-interrupteur-du-reassort.md) : éteint, l'onglet disparaît. */
+describe('les onglets de Prod manager, réassort éteint', () => {
+  it('retire « Réassorts » et garde le prévisionnel', () => {
+    const views = permittedProdManagerViews(
+      (permission) => ['production_plan:read', 'production_resupply:read'].includes(permission),
+      false,
+    );
+    expect(views.map((view) => view.key)).toEqual(['previsionnel']);
+  });
+});

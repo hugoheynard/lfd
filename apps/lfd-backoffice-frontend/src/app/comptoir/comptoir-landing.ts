@@ -2,6 +2,7 @@ import { inject } from '@angular/core';
 import type { RedirectFunction } from '@angular/router';
 
 import { PermissionsStore } from '../auth/permissions.store';
+import { ResupplySwitchStore } from '../shared/resupply-switch/resupply-switch.store';
 import { WorkspaceCatalogue } from '../shared/workspace-rail/workspaces';
 
 /** Le repli quand aucun onglet n'est permis : son garde redirige ailleurs. */
@@ -20,7 +21,8 @@ const ORDER_ENTRY_RELAY = '/comptoir/nouvelle-commande';
 export const comptoirLanding: RedirectFunction = async () => {
   const permissions = inject(PermissionsStore);
   const views = inject(WorkspaceCatalogue).views('comptoir');
-  await permissions.ensureLoaded();
+  // L'onglet du réassort n'existe qu'allumé : sans cette attente, il manquerait.
+  await Promise.all([permissions.ensureLoaded(), inject(ResupplySwitchStore).ensureLoaded()]);
   // Un poste qui ne tient que la commande n'a aucune vue : il part saisir.
   const canPlace = permissions.can('b2b_counter:read') && permissions.can('b2b_place_order:write');
   return views()[0]?.link ?? (canPlace ? ORDER_ENTRY_RELAY : FALLBACK);

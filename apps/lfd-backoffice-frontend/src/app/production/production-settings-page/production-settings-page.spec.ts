@@ -6,6 +6,7 @@ import type { ProductionSettingsView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { ResupplySwitchService } from '../../shared/resupply-switch/resupply-switch.service';
 import { ProductionSettingsService } from '../production-settings.service';
 import { automaticCloseLabel, ProductionSettingsPage } from './production-settings-page';
 
@@ -58,6 +59,13 @@ async function boot(canWrite = true): Promise<ComponentFixture<ProductionSetting
         } satisfies Partial<Record<keyof ProductionSettingsService, unknown>>,
       },
       provideRouter([]),
+      {
+        provide: ResupplySwitchService,
+        useValue: {
+          read: () => Promise.resolve({ enabled: false, updatedAt: null, updatedBy: null }),
+          set: () => Promise.resolve(),
+        } satisfies Record<keyof ResupplySwitchService, unknown>,
+      },
       {
         provide: PermissionsStore,
         useValue: {
