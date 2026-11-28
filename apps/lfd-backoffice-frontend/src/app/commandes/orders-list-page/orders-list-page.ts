@@ -83,8 +83,8 @@ export const ORDER_LIST_PAGE_SIZE = 50;
  */
 let savedListScroll: number | null = null;
 
-/** Combien d'images on attend, au plus, que la liste ait sa hauteur au retour. */
-const SCROLL_RESTORE_FRAMES = 30;
+/** Combien de temps on attend, au plus, que la liste ait sa hauteur au retour. */
+const SCROLL_RESTORE_TIMEOUT_MS = 3000;
 
 /** Le paginator parle anglais par défaut ; cet écran, non. */
 const PAGINATOR_LABELS: FoldPaginatorLabels = {
@@ -675,24 +675,33 @@ export class OrdersListPage {
   /** Remet le corps où on l'avait laissé en ouvrant une fiche, une fois. */
   private restoreScroll(): void {
     const top = savedListScroll;
-    if (top === null) {
+    const body = this.body()?.nativeElement;
+    if (top === null || body === undefined) {
       return;
     }
-    savedListScroll = null;
-    // Les cartes se dessinent après la mesure de leur largeur : on attend que
-    // le corps soit assez haut pour y redescendre, quelques images au plus.
-    const settle = (frames: number): void => {
-      const body = this.body()?.nativeElement;
-      if (body === undefined) {
-        return;
-      }
-      if (body.scrollHeight - body.clientHeight >= top || frames === 0) {
+    const content = body.firstElementChild;
+    if (content === null || typeof ResizeObserver === 'undefined') {
+      savedListScroll = null;
+      body.scrollTop = top;
+      return;
+    }
+    // Les cartes se dessinent après la mesure de leur largeur, quand elles
+    // veulent : on attend que la liste soit assez haute pour y redescendre,
+    // et on renonce au bout d'un délai plutôt que de sauter plus tard.
+    const settle = (): void => {
+      if (body.scrollHeight - body.clientHeight >= top) {
         body.scrollTop = top;
-        return;
+        done();
       }
-      requestAnimationFrame(() => settle(frames - 1));
     };
-    requestAnimationFrame(() => settle(SCROLL_RESTORE_FRAMES));
+    const observer = new ResizeObserver(settle);
+    const timer = setTimeout(() => done(), SCROLL_RESTORE_TIMEOUT_MS);
+    const done = (): void => {
+      observer.disconnect();
+      clearTimeout(timer);
+      savedListScroll = null;
+    };
+    observer.observe(content);
   }
 
   /** Écrit la page dans l'adresse, filtres conservés ; la page 1 n'y figure pas. */
