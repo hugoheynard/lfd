@@ -100,13 +100,13 @@ export class NouvelleCommandeProPage {
   private readonly panels = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
   /**
-   * « Créer un compte pro » : ouvrir un compte ET y commander — les deux droits.
+   * « Nouveau prospect » : ouvrir un compte ET y commander — les deux droits.
    * Le vendeur du comptoir, qui n'a pas la fiche client, ne le voit pas.
    */
   protected readonly canOpenProspect =
     this.permissions.can('b2b_companies:write') && this.permissions.can('b2b_place_order:write');
   /**
-   * « Ouvrir un compte pro » : un compte au comptoir, sans SIRET
+   * « Compte au comptoir » : un compte au comptoir, sans SIRET
    * (`plan-comptes-du-comptoir.md`, § 3.4) — le droit qui couvre l'ouverture
    * ET la commande au compte pour lui.
    */
@@ -185,7 +185,7 @@ export class NouvelleCommandeProPage {
   }
 
   /** Ouvre le compte d'une enseigne démarchée, puis sa saisie. */
-  /** Au téléphone : la recherche soulignée, et « Créer un compte pro » qui flotte en bas. */
+  /** Au téléphone : la recherche soulignée, et « Nouveau prospect » qui flotte en bas. */
   protected readonly narrow = narrowViewport();
 
   protected async openProspect(): Promise<void> {
