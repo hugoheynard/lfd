@@ -10,6 +10,10 @@
 >
 > **État : implémenté.** Ce qui reste est dans
 > [`reste-a-faire.md`](reste-a-faire.md), et nulle part ailleurs.
+>
+> 🔴 **Éteint par défaut** depuis le 2026-11-28 : un interrupteur global
+> l'allume dans Réglages › Production › Fournil — voir
+> [`plan-interrupteur-du-reassort.md`](plan-interrupteur-du-reassort.md).
 
 Le réassort, c'est ce qu'une **vitrine** — un point de retrait approvisionné
 (le Labo, le Village…) — reçoit du fournil pour vendre au comptoir. Ce qu'il

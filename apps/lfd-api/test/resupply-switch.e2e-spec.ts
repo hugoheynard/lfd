@@ -97,6 +97,22 @@ describe("l'interrupteur du réassort", () => {
     await admin().get(`/admin/site-resupplies/sites/${siteId}`).expect(200);
   });
 
+  it("éteint : finir un réassort déjà envoyé passe le garde (recevoir, monté, annuler)", async () => {
+    const siteId = await seedSite();
+    const unknown = "resupply_inconnu";
+
+    // Le garde laisse passer : la réponse est celle du cas, jamais le 409 de l'interrupteur.
+    const finishing = [
+      admin().post(`/admin/resupply-receipts/${siteId}/resupplies/${unknown}/receive`).send({}),
+      admin().post(`/admin/bakehouse-resupplies/sites/${siteId}/${unknown}/mounted`).send({}),
+      admin().post(`/admin/site-resupplies/sites/${siteId}/${unknown}/cancel`).send({}),
+    ];
+    for (const call of finishing) {
+      const response = await call;
+      expect(response.body).not.toMatchObject({ code: "resupply.disabled" });
+    }
+  });
+
   it("allumé : l'écriture passe le garde ; réécrit, il reste une seule ligne", async () => {
     const siteId = await seedSite();
 

@@ -32,7 +32,7 @@ import {
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { z } from "zod";
 
-import { ResupplyEnabledGuard } from "./resupply-enabled.guard.js";
+import { PassesWhenResupplyOff, ResupplyEnabledGuard } from "./resupply-enabled.guard.js";
 import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
@@ -87,6 +87,9 @@ export class AdminSiteResuppliesController {
   }
 
   @Post(":siteId/:resupplyId/cancel")
+  @PassesWhenResupplyOff(
+    "annuler un réassort déjà envoyé : éteindre n'arrête pas ce qui est en route",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission("handover_counter:write")
   @Idempotent(

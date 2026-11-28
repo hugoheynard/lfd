@@ -1,8 +1,9 @@
-# Plan — l'interrupteur du réassort
+# L'interrupteur du réassort
 
-> **Plan** (2026-11-28, décidé par Hugo) : un réglage **global**, **éteint par
-> défaut**, dans Réglages › Production › Fournil. Éteint, les écrans de
-> réassort se masquent **et** l'API refuse d'en écrire un.
+> **Doc d'état** (bâti le 2026-11-28, décidé par Hugo) : un réglage
+> **global**, **éteint par défaut**, dans Réglages › Production › Fournil.
+> Éteint, les écrans de réassort se masquent **et** l'API refuse d'en
+> envoyer un — mais un réassort déjà envoyé se finit toujours.
 
 ## 1. En clair
 
@@ -27,6 +28,10 @@ flowchart LR
 - **Allumé** : tout est comme avant, droits compris.
 - Ce qui a déjà été envoyé reste **lisible** (les lectures ne sont pas
   gardées) : éteindre ne fait rien disparaître du fournil ni du colisage.
+- Et il **se finit** (décidé par Hugo le 2026-11-28) : recevoir un réassort
+  au comptoir et corriger la réception (lignes hors commande comprises), le
+  dire « Monté » au fournil, l'annuler. Éteindre empêche d'en envoyer un
+  neuf, jamais de terminer ceux qui sont en route.
 
 ## 2. Technique
 
@@ -59,13 +64,38 @@ propriétaire — aucun port ne traverse de bloc.
   `admin-resupply-templates`, `admin-resupply-receipts`,
   `admin-reserve-shop-releases`. Un garde plutôt qu'un test dans chaque
   handler : une vingtaine de cas d'écriture, et un oubli serait silencieux.
+- **Les gestes qui finissent** portent `@PassesWhenResupplyOff(raison)`
+  (`resupply-enabled.guard.ts`) : les cinq routes de
+  `admin-resupply-receipts`, `mounted` d'`admin-bakehouse-resupplies` et
+  `cancel` d'`admin-site-resupplies`. Une route neuve est refusée tant qu'on
+  ne la marque pas : l'oubli refuse, il n'ouvre pas.
+- **Hors du garde**, parce que ce n'est pas envoyer un réassort : déclarer
+  une rupture (`admin-site-stock-alerts`) et les réglages du comptoir
+  (`admin-counter-settings`).
+- **Tests** : `http/__tests__/resupply-enabled.guard.spec.ts`,
+  `application/__tests__/resupply-switch-handlers.spec.ts`,
+  `test/resupply-switch.e2e-spec.ts` (défaut, refus, gestes qui finissent,
+  lecture sous les quatre droits). Les e2e du réassort allument
+  l'interrupteur par `test/resupply-switch.ts`.
 - **Front** : `ResupplySwitchStore` (racine, lu une fois, relu après la
   pose) ; la carte « Réassort des boutiques » sur la page des réglages du
   fournil ; filtre des onglets `reassort` (comptoir) et `reassorts` (Prod
   manager) ; un garde de route sur les routes du réassort et des modèles.
 
-## 3. Lots
+## 3. Ce qui est bâti
 
-1. **API** — table, migration, ports, cas, route, garde, tests (domaine,
-   handler, e2e du refus et de la lecture sous chaque droit).
-2. **Écran** — store, carte, onglets, gardes de route, specs.
+- **API** (`6fa914da2`) : table `resupply_switch` (migration
+  `20261128003000_l_interrupteur_du_reassort`, additive, une ligne au plus
+  par CHECK), ports, cas, route, garde ; registre RGPD tenu.
+- **Écran** (`b22ca5b4f`) : `shared/resupply-switch/` (store, service, garde
+  de route), la carte `production/resupply-switch-card/`, le filtre
+  `requiresResupply` des vues du comptoir et du Prod manager (onglets et
+  tuiles du lanceur), et `permission.guard.ts` qui saute l'atterrissage
+  `/prod-manager/reassorts` quand c'est éteint (sinon, qui ne tient que ce
+  droit tournait en rond).
+- **Les gestes qui finissent** : le commit qui suit.
+
+## 4. Reste à faire
+
+- Le lien « renvoi » de `supervision/stock-board/stock-board.html` mène
+  encore à `/prod-manager/reassorts` ; éteint, il atterrit au Prod manager.

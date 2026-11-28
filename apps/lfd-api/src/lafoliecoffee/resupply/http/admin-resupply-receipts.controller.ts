@@ -26,7 +26,7 @@ import {
   RequireAnyPermission,
   RequirePermission,
 } from "../../../platform/auth/admin-surface.decorator.js";
-import { ResupplyEnabledGuard } from "./resupply-enabled.guard.js";
+import { PassesWhenResupplyOff, ResupplyEnabledGuard } from "./resupply-enabled.guard.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CorrectReceivedResupplyLineCommand } from "../application/correct-received-resupply-line.command.js";
@@ -86,6 +86,9 @@ export class AdminResupplyReceiptsController {
 
   /** « Réceptionner » : l'attendu devient le reçu, d'un geste. */
   @Post(":siteId/resupplies/:resupplyId/receive")
+  @PassesWhenResupplyOff(
+    "recevoir ce qui est arrivé, et le corriger : éteindre n'arrête pas ce qui est en route",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission("handover_counter:write")
   @Idempotent(
@@ -103,6 +106,9 @@ export class AdminResupplyReceiptsController {
 
   /** Un écart, après « Réceptionner » : le reçu d'une ligne corrigé. */
   @Patch(":siteId/resupplies/:resupplyId/lines/:sku")
+  @PassesWhenResupplyOff(
+    "recevoir ce qui est arrivé, et le corriger : éteindre n'arrête pas ce qui est en route",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission("handover_counter:write")
   @Idempotent(
@@ -121,6 +127,9 @@ export class AdminResupplyReceiptsController {
   }
 
   @Post(":siteId/:day/lines")
+  @PassesWhenResupplyOff(
+    "recevoir ce qui est arrivé, et le corriger : éteindre n'arrête pas ce qui est en route",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission("handover_counter:write")
   @Idempotent(
@@ -138,6 +147,9 @@ export class AdminResupplyReceiptsController {
   }
 
   @Patch(":siteId/:day/lines/:sku")
+  @PassesWhenResupplyOff(
+    "recevoir ce qui est arrivé, et le corriger : éteindre n'arrête pas ce qui est en route",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission("handover_counter:write")
   @Idempotent(
@@ -156,6 +168,9 @@ export class AdminResupplyReceiptsController {
   }
 
   @Delete(":siteId/:day/lines/:sku")
+  @PassesWhenResupplyOff(
+    "recevoir ce qui est arrivé, et le corriger : éteindre n'arrête pas ce qui est en route",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission("handover_counter:write")
   @Idempotent(

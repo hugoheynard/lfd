@@ -27,7 +27,7 @@ import {
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { ResupplyEnabledGuard } from "./resupply-enabled.guard.js";
+import { PassesWhenResupplyOff, ResupplyEnabledGuard } from "./resupply-enabled.guard.js";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
@@ -108,6 +108,9 @@ export class AdminBakehouseResuppliesController {
    * changer.
    */
   @Post("sites/:siteId/:resupplyId/mounted")
+  @PassesWhenResupplyOff(
+    "dire monté un réassort déjà envoyé : éteindre n'arrête pas ce qui est en route",
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   @Idempotent(
     "transition : rejouée sur un réassort déjà arrivé, l'agrégat rend faux et ni l'écriture ni la cloche ne partent",
