@@ -1,8 +1,10 @@
 import { Injectable } from "@nestjs/common";
 
+import type { PlanVersion as PlanVersionRow } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { CorruptedRecordError } from "../../../platform/database/json-columns.js";
 import { PlanVersion, type PlanVersionCause } from "../domain/entities/plan-version.js";
+import { PlanVersionChainReader } from "../domain/ports/plan-version-chain.reader.js";
 import { PlanVersionLedger } from "../domain/ports/plan-version.ledger.js";
 import { PlanVersionsReader } from "../domain/ports/plan-versions.reader.js";
 import type { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
@@ -72,23 +74,41 @@ export class PrismaPlanVersionsReader extends PlanVersionsReader {
       where: { serviceDay: day.value },
       orderBy: { version: "desc" },
     });
-    if (row === null) {
-      return null;
-    }
-    if (!isCause(row.cause)) {
-      throw new CorruptedRecordError("production.plan_versions.cause");
-    }
-    return PlanVersion.restore({
-      id: row.id,
-      serviceDay: row.serviceDay,
-      version: row.version,
-      cause: row.cause,
-      recordedAt: row.recordedAt,
-      recordedBy: authorOfColumns(row.recordedByKind, row.recordedById, row.recordedByName),
-      closedAt: row.closedAt,
-      printRun: row.printRun,
-      contentVersion: row.contentVersion,
-      content: contentOfColumn(row.content),
-    });
+    return row === null ? null : versionOfRow(row);
   }
+}
+
+/** Toutes les versions d'une journée, dans l'ordre, par le même index. */
+@Injectable()
+export class PrismaPlanVersionChainReader extends PlanVersionChainReader {
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
+
+  async allOf(day: ServiceDay): Promise<readonly PlanVersion[]> {
+    const rows = await this.prisma.planVersion.findMany({
+      where: { serviceDay: day.value },
+      orderBy: { version: "asc" },
+    });
+    return rows.map(versionOfRow);
+  }
+}
+
+/** Une ligne relue, ses colonnes revalidées. */
+function versionOfRow(row: PlanVersionRow): PlanVersion {
+  if (!isCause(row.cause)) {
+    throw new CorruptedRecordError("production.plan_versions.cause");
+  }
+  return PlanVersion.restore({
+    id: row.id,
+    serviceDay: row.serviceDay,
+    version: row.version,
+    cause: row.cause,
+    recordedAt: row.recordedAt,
+    recordedBy: authorOfColumns(row.recordedByKind, row.recordedById, row.recordedByName),
+    closedAt: row.closedAt,
+    printRun: row.printRun,
+    contentVersion: row.contentVersion,
+    content: contentOfColumn(row.content),
+  });
 }

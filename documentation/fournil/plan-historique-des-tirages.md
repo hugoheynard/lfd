@@ -513,8 +513,76 @@ Décidé au bâti de H3 (2026-11-27), là où le plan ne tranchait pas :
   vérifier entiers — une sortie à vérifier ne se cache pas derrière un
   compte.
 
-**H4 — lire.** La liste des versions et la comparaison, deux requêtes et
-leurs routes sous le contrôleur de la journée ; droit de lecture du dossier.
+~~**H4 — lire.** La liste des versions et la comparaison, deux requêtes et
+leurs routes sous le contrôleur de la journée ; droit de lecture du dossier.~~
+— 2026-11-28, bâti, non commité. Noyau : ports publiés `PlanVersionListing`
+et `PlanVersionComparison` (`day/domain/ports/`), lecture interne
+`PlanVersionChainReader` (`PrismaPlanVersionChainReader`), règle pure
+`planVersionEntriesOf` (`day/domain/services/plan-version-entries.ts`). Plan :
+`ListPlanVersionsQuery`, `ComparePlanVersionsQuery`,
+`ListDossierDispatchesQuery` (`plan/application/queries/`), formes dans
+`plan-version.views.ts`, `PlanVersionPaperShelf`, port
+`DossierDispatchesReader`, contrôleur `production-plan-versions.controller.ts`.
+Tests : `plan-version-entries.spec.ts`, `chain-plan-version-readings.spec.ts`,
+`plan-versions.queries.spec.ts`, `list-dossier-dispatches.handler.spec.ts`,
+`plan-version-range.query-schema.spec.ts`, la table des routes, et
+`apps/lfd-api/test/production-plan-versions-read.e2e-spec.ts`.
+
+Les routes (surface `production_plan`, lecture — celle du dossier) :
+
+| route                                            | réponse                                                                  |
+| ------------------------------------------------ | ------------------------------------------------------------------------ |
+| `GET admin/production/batch/:date/plan-versions` | `PlanVersionView[]`, de la 1 à la dernière, `[]` sans version            |
+| `GET …/plan-versions/compare?from=&to=`          | `PlanVersionDiffView` ; 400 forme ou ordre inversé, 404 version inconnue |
+| `GET …/plan-versions/dispatches`                 | `DossierDispatchView[]`                                                  |
+
+Pour l'écran (H5) :
+
+- `PlanVersionView` : `version`, `cause`, `recordedAt` et `closedAt` (ISO),
+  `printRun`, `shipmentCount`, `author`, `paper`.
+- `author` : `{ kind: "staff", staffId, name }` — `name` figé au geste, sinon
+  celui de l'annuaire aujourd'hui, sinon `null` (l'écran dit « l'équipe ») ;
+  `{ kind: "customer" | "guest" }` (« le client ») ; `{ kind: "system" }`
+  (« automatique »).
+- `paper` : `{ version, dossier, count }`. `version` est celle dont le papier
+  sert (elle-même ; pour un retrait, la dernière d'avant qui a un papier ;
+  `null` s'il n'y en a pas). `dossier` et `count` : `true` rangé, `false` non
+  rangé, `null` le stockage n'a pas répondu.
+- `PlanVersionDiffView` : la sortie de H3 telle quelle (`from`, `to`,
+  `baselineUnknown`, `production`, `changes`, `resupplies`, `toCheck`), chaque
+  `PlanVersionMark` avec `recordedAt` et `closedAt` en ISO. Les auteurs du
+  diff ne sont pas nommés par l'annuaire : l'écran les relit dans la liste,
+  par numéro de version.
+- `DossierDispatchView` : `recipientId`, `name`, `lastReceived`
+  (`{ at, planVersion }` du dernier envoi `sent`, ou `null`), `lastAttempt`
+  (le dernier envoi, avec son `outcome`).
+
+Décidé au bâti de H4 (2026-11-28), là où le plan ne tranchait pas :
+
+- **Les requêtes vivent au plan, les versions restent au noyau.** Le papier
+  (stockage, clés) et la trace d'envoi sont au plan ; le noyau publie deux
+  lectures nommées, une par question (ISP). `day/index.ts` passe de 79 à
+  **81** (`$h4` de `production-subcontexts-debt.json`, **à relire**). Leurs
+  types ne sont pas exportés : le plan les lit sur la signature des ports.
+- **Les types de réponse sont dans l'API** (`plan-version.views.ts`), pas dans
+  `@lfd/contracts` : le paquet était en travail dans une autre session, et un
+  fichier neuf n'y serait atteint qu'en modifiant `index.ts`. **À déplacer au
+  paquet avant H5**, avec le schéma `?from=&to=`
+  (`plan/http/plan-version-range.query-schema.ts`).
+- **« Papier rangé » : le dossier ET le compte**, sous la clé de la version.
+  Lu par `isArchived`, qui lit l'objet entier : quelques versions par
+  journée, un dossier de l'ordre de 200 Ko (spécimen), lectures en
+  parallèle, une version lue une fois même si un retrait y renvoie. Jugé
+  acceptable : pas de lecture d'existence au port de stockage (elle aurait
+  demandé de toucher `packages/storage`).
+- **Un stockage qui ne répond pas rend `null`** pour ce papier au lieu de
+  faire tomber la liste ; il ne dit jamais « non rangé ».
+- **Les envois** sont une troisième requête : les destinataires qu'un envoi
+  servirait maintenant (`dossierAddresseesOf`), avec leurs traces de la
+  journée. Une ligne retirée de la liste n'y figure plus.
+- ⚠️ La clé du dossier par version porte `DOSSIER_LAYOUT_VERSION` : le jour où
+  la mise en page change, les dossiers des versions déjà rangés se diront
+  « non rangé » (même piège que la clé par tirage, H2).
 
 **H5 — l'écran.** Dans `prod-manager` : « Versions du plan » — liste (cause,
 qui, quand, papier rangé ou non), comparer deux versions (par défaut la

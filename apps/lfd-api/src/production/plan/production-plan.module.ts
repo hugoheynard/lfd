@@ -73,6 +73,13 @@ import { AdminDayPapersSpecimensController } from "./http/admin-day-papers-speci
 import { AutoCloseController } from "./http/auto-close.controller.js";
 import { ProductionDayRetakeController } from "./http/production-day-retake.controller.js";
 import { ProductionDayController } from "./http/production-day.controller.js";
+import { ProductionPlanVersionsController } from "./http/production-plan-versions.controller.js";
+import { ComparePlanVersionsHandler } from "./application/queries/compare-plan-versions.handler.js";
+import { ListDossierDispatchesHandler } from "./application/queries/list-dossier-dispatches.handler.js";
+import { ListPlanVersionsHandler } from "./application/queries/list-plan-versions.handler.js";
+import { PlanVersionPaperShelf } from "./application/services/plan-version-paper-shelf.js";
+import { DossierDispatchesReader } from "./domain/ports/dossier-dispatches.reader.js";
+import { PrismaDossierDispatchesReader } from "./infrastructure/prisma-dossier-dispatches.reader.js";
 import { ProductionDossierRecipientsController } from "./http/production-dossier-recipients.controller.js";
 import { ProductionSettingsController } from "./http/production-settings.controller.js";
 import { ProductionSimulationController } from "./http/production-simulation.controller.js";
@@ -111,6 +118,7 @@ import { PrismaProductionSettingsReader } from "./infrastructure/prisma-producti
   ],
   controllers: [
     ProductionDayController,
+    ProductionPlanVersionsController,
     ProductionDayRetakeController,
     ProductionSettingsController,
     AdminDayPapersSpecimensController,
@@ -181,6 +189,13 @@ import { PrismaProductionSettingsReader } from "./infrastructure/prisma-producti
     { provide: DossierRecipientsRepository, useClass: PrismaDossierRecipientsRepository },
     { provide: DossierRecipientsReader, useClass: PrismaDossierRecipientsReader },
     { provide: DossierDispatchLog, useClass: PrismaDossierDispatchLog },
+    // Les versions du plan (lot H4) : la liste, la comparaison, et ce que
+    // chaque destinataire a reçu — des lectures, la trace se lit par son port.
+    ListPlanVersionsHandler,
+    ComparePlanVersionsHandler,
+    ListDossierDispatchesHandler,
+    PlanVersionPaperShelf,
+    { provide: DossierDispatchesReader, useClass: PrismaDossierDispatchesReader },
     ProductionPlanAdmissionDesk,
     // L'impression provisoire du dossier, avant l'arrêt : écrire, lire et
     // balayer sont trois ports (ISP).

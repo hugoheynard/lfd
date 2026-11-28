@@ -571,6 +571,7 @@
   "test/production-order-off-plan.e2e-spec.ts": 8000,
   "test/production-plan-version-paper.e2e-spec.ts": 8000,
   "test/production-plan-versions.e2e-spec.ts": 8000,
+  "test/production-plan-versions-read.e2e-spec.ts": 8000,
   "test/production-problems.e2e-spec.ts": 12000,
   "test/production-provisional-print.e2e-spec.ts": 12000,
   "test/production-quality-settings.e2e-spec.ts": 4365,

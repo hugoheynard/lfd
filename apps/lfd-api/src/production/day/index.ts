@@ -75,6 +75,10 @@ export { PlannedOrderLinesReader } from "./domain/ports/planned-order-lines.read
 export { LaunchedResupplyLookup } from "./domain/ports/launched-resupply.lookup.js";
 /** Le SKU et le nom des lignes des journées arrêtées d'une plage (la page Postes, l'alerte). */
 export { KnownArticles } from "./domain/ports/known-articles.reader.js";
+/** Les versions du plan d'une journée, et leur papier (la liste des versions du plan). */
+export { PlanVersionListing } from "./domain/ports/plan-version-listing.js";
+/** Ce qui a changé d'une version du plan à une autre, expliqué (la comparaison des versions). */
+export { PlanVersionComparison } from "./domain/ports/plan-version-comparison.js";
 
 /**
  * ## Ce qu'on écrit

@@ -10,6 +10,11 @@ import { DayInscribedOrderHeaderReader } from "./application/services/day-inscri
 import { DayPlannedDestinationsReader } from "./application/services/day-planned-destinations.reader.js";
 import { LedgerPlanVersionRecorder } from "./application/services/ledger-plan-version-recorder.js";
 import { PlanVersionRecorder } from "./domain/ports/plan-version.recorder.js";
+import { ChainPlanVersionComparison } from "./application/services/chain-plan-version-comparison.js";
+import { ChainPlanVersionListing } from "./application/services/chain-plan-version-listing.js";
+import { PlanVersionChainReader } from "./domain/ports/plan-version-chain.reader.js";
+import { PlanVersionComparison } from "./domain/ports/plan-version-comparison.js";
+import { PlanVersionListing } from "./domain/ports/plan-version-listing.js";
 import { ProductionDayVersionSource } from "./application/services/production-day-version.source.js";
 import { ProductionOrderRevisionDesk } from "./application/services/production-order-revision.desk.js";
 import { ProductionOrderWithdrawalDesk } from "./application/services/production-order-withdrawal.desk.js";
@@ -53,6 +58,7 @@ import { PrismaOrderRevisionNoticesReader } from "./infrastructure/prisma-order-
 import { PrismaOrderWithdrawalLedger } from "./infrastructure/prisma-order-withdrawal.ledger.js";
 import { PrismaOrderWithdrawalsReader } from "./infrastructure/prisma-order-withdrawals.reader.js";
 import {
+  PrismaPlanVersionChainReader,
   PrismaPlanVersionLedger,
   PrismaPlanVersionsReader,
 } from "./infrastructure/prisma-plan-versions.js";
@@ -131,6 +137,11 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
       useClass: PrismaWithdrawalsAfterInscriptionReader,
     },
     { provide: PlanVersionRecorder, useClass: LedgerPlanVersionRecorder },
+    // Ce que le noyau répond sur ses versions : la liste et la comparaison,
+    // deux ports (ISP), lus par le plan.
+    { provide: PlanVersionChainReader, useClass: PrismaPlanVersionChainReader },
+    { provide: PlanVersionListing, useClass: ChainPlanVersionListing },
+    { provide: PlanVersionComparison, useClass: ChainPlanVersionComparison },
     // Publiés pour le colisage et la pierre tombale ; reliés par `PackingFeedModule`.
     DayPlannedDestinationsReader,
     DayInscribedOrderHeaderReader,
@@ -161,6 +172,8 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
     ProductionBatchRepository,
     ProductionDayLock,
     PlanVersionRecorder,
+    PlanVersionListing,
+    PlanVersionComparison,
     CountedProductNameReader,
     ProductionDayStatusReader,
     ProductionTrancheSettingsReader,
