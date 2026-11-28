@@ -17,6 +17,7 @@
       hover
       clickable
       density="compact"
+      narrowLayout="cards"
       caption="Brouillons de commande"
       [columns]="columns"
       [rows]="rows()"
@@ -66,6 +67,32 @@
           <span>{{ row.savedByName ?? '—' }}</span>
           <fold-badge radius="square" variant="neutral" content="L’équipe" />
         </span>
+      </ng-template>
+      <!-- Sur un téléphone, une carte par brouillon : le compte en tête, le
+           jour et le mode dessous, le Total HT en gros, comme la liste. -->
+      <ng-template foldRowCard let-row>
+        <div class="odl-card" [attr.data-draft-card]="row.companyId">
+          <span class="odl-card-who">{{ row.companyName }}</span>
+          <span class="odl-card-meta">
+            Pour le {{ day(row) ?? '—' }}
+            @if (window(row); as slot) {
+              · {{ slot }}
+            }
+          </span>
+          <span class="odl-card-foot">
+            <span class="odl-card-tags">
+              @if (mode(row); as category) {
+                <app-logistics-swatch [category]="category" />
+              }
+              <span class="odl-time">
+                {{ row.content?.itemCount ?? '—' }} article(s) · {{ date(row) }}
+              </span>
+            </span>
+            @if (pretax(row); as total) {
+              <span class="odl-card-total">{{ total }}</span>
+            }
+          </span>
+        </div>
       </ng-template>
     </fold-data-table>
   }

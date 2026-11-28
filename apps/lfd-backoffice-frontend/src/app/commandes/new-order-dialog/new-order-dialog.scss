@@ -3,3 +3,12 @@
   flex-direction: column;
   gap: var(--fold-space-md);
 }
+
+/* Au téléphone, la feuille monte jusqu'à la barre de l'app (règle globale de
+   `styles.scss`) : les deux choix se posent en bas, sous le pouce, et l'air
+   reste au-dessus. */
+@media (max-width: 40rem) {
+  .nod-body {
+    align-content: end;
+  }
+}

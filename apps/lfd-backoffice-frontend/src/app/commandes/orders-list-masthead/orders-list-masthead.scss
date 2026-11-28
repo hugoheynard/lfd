@@ -27,75 +27,16 @@
 }
 
 .olm-action {
+  display: flex;
+  gap: var(--fold-space-xs);
+  flex: none;
   margin-inline-start: auto;
 }
 
-.olm-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  gap: var(--fold-space-md);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.olm-label {
-  display: block;
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm);
-}
-
-.olm-value {
-  display: block;
-  font-size: var(--fold-text-xl);
-  font-variant-numeric: tabular-nums;
-}
-
-.olm-value--alert {
-  color: var(--fold-color-alert-text);
-}
-
-/* Sur un téléphone, les compteurs tiennent en une ligne qui défile : quatre
-   tuiles empilées prenaient un tiers de l'écran, même à zéro. Le chiffre passe
-   à côté de son libellé, et un zéro s'estompe. */
+/* Au téléphone, le bandeau se resserre. */
 @media (max-width: 40rem) {
   .olm {
     gap: var(--fold-space-sm);
     padding-block: var(--fold-space-md);
-  }
-
-  .olm-cards {
-    display: flex;
-    gap: var(--fold-space-sm);
-    margin-inline: calc(-1 * var(--fold-page-gutter));
-    padding-inline: var(--fold-page-gutter);
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .olm-cards > li {
-    flex: none;
-  }
-
-  .olm-cards fold-card {
-    --fold-card-padding: var(--fold-space-sm);
-  }
-
-  .olm-label,
-  .olm-value {
-    display: inline;
-  }
-
-  .olm-label {
-    margin-inline-end: var(--fold-space-xs);
-    white-space: nowrap;
-  }
-
-  .olm-value {
-    font-size: var(--fold-text-md);
-  }
-
-  .olm-value--zero {
-    opacity: 0.5;
   }
 }

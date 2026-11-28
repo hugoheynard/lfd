@@ -40,46 +40,33 @@ export function scopeDays(
 }
 
 /**
- * Une carte du masthead : un compte, et les filtres qui le produisent. Cliquer
- * la carte pose ces filtres — le chiffre et la liste disent alors la même chose.
+ * Un compte du panneau des statistiques, et les filtres qui le produisent :
+ * le toucher pose ces filtres, et la liste dit alors le même chiffre.
  */
-export interface ScopeCard {
+export interface ScopeStat {
   readonly key: string;
   readonly label: string;
   readonly filters: Partial<OrderListFilters>;
-  /** Un compte qui demande d'agir : mis en avant dès qu'il n'est pas nul. */
-  readonly alert?: true;
 }
 
 /**
- * Les cartes de chaque cadrage, choisies pour la question qu'on s'y pose :
- * aujourd'hui, « qu'est-ce qui sort, qu'est-ce qui coince ? » ; demain,
- * « qu'est-ce qui se prépare ? » ; toutes, « qu'est-ce qui arrive ? ».
+ * Les comptes de chaque cadrage, sortis de la liste dans un panneau (Hugo,
+ * 2026-11-28) : aujourd'hui, ce qui sort et comment ; demain, ce qui se
+ * prépare ; toutes, ce qui arrive.
  */
-export function scopeCards(scope: OrdersScope, today: string): readonly ScopeCard[] {
+export function scopeStats(scope: OrdersScope, today: string): readonly ScopeStat[] {
   const days = scopeDays(scope, today);
+  const split: readonly ScopeStat[] = [
+    { key: 'pickup', label: 'Retraits', filters: { ...days, method: 'pickup' } },
+    { key: 'delivery', label: 'Livraisons', filters: { ...days, method: 'delivery' } },
+    { key: 'pro', label: 'Pro', filters: { ...days, clientele: 'pro' } },
+    { key: 'public', label: 'Particuliers', filters: { ...days, clientele: 'public' } },
+  ];
   switch (scope) {
     case 'today':
-      return [
-        { key: 'total', label: 'Pour aujourd’hui', filters: days },
-        { key: 'ready', label: 'Prêtes', filters: { ...days, status: 'ready' } },
-        { key: 'pickup', label: 'Retraits', filters: { ...days, method: 'pickup' } },
-        { key: 'delivery', label: 'Livraisons', filters: { ...days, method: 'delivery' } },
-        {
-          key: 'payment-failed',
-          label: 'Règlement en échec',
-          filters: { ...days, paymentStatus: 'failed' },
-          alert: true,
-        },
-      ];
+      return [{ key: 'ready', label: 'Prêtes', filters: { ...days, status: 'ready' } }, ...split];
     case 'tomorrow':
-      return [
-        { key: 'total', label: 'Pour demain', filters: days },
-        { key: 'pickup', label: 'Retraits', filters: { ...days, method: 'pickup' } },
-        { key: 'delivery', label: 'Livraisons', filters: { ...days, method: 'delivery' } },
-        { key: 'pro', label: 'Pro', filters: { ...days, clientele: 'pro' } },
-        { key: 'public', label: 'Particuliers', filters: { ...days, clientele: 'public' } },
-      ];
+      return split;
     case 'all':
       return [
         {
@@ -89,12 +76,6 @@ export function scopeCards(scope: OrdersScope, today: string): readonly ScopeCar
         },
         { key: 'today', label: 'Pour aujourd’hui', filters: scopeDays('today', today) },
         { key: 'tomorrow', label: 'Pour demain', filters: scopeDays('tomorrow', today) },
-        {
-          key: 'payment-failed',
-          label: 'Règlement en échec',
-          filters: { paymentStatus: 'failed' },
-          alert: true,
-        },
       ];
   }
 }

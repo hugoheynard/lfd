@@ -6,7 +6,6 @@
     [scope]="scope()"
     [today]="today"
     (scopeChange)="selectScope($event)"
-    (picked)="showCard($event)"
   >
     <fold-tabs
       tabNav
@@ -15,15 +14,41 @@
       size="compact"
       activeStyle="fill"
       background="transparent"
+      [collapsed]="narrow()"
       [tabs]="tabs()"
       [activeKey]="tab()"
       (activeKeyChange)="selectTab($event)"
       data-tabs="view"
     />
-    @if (canPlace) {
+    <!-- Au bureau, « Nouvelle commande » se tient dans le bandeau ; au
+         téléphone, elle flotte en bas de l'écran (voir plus bas). -->
+    @if (canPlace() && !narrow()) {
       <button foldButton intent="primary" (click)="openNewOrder()" data-new-order>
         Nouvelle commande
       </button>
+    }
+    <!-- Au téléphone, le filtre et les statistiques sur la ligne du cadrage. -->
+    @if (narrow() && !draftsTab()) {
+      <ng-container ngProjectAs="button" *ngTemplateOutlet="filterToggle" />
+    }
+    <!-- La recherche et le filtre, dans le bandeau ; leur panneau reste dans
+         le corps. Les brouillons n'en ont pas. -->
+    @if (!draftsTab()) {
+      <div class="ol-bar" mastheadBar>
+        <fold-search
+          class="ol-search"
+          [placeholder]="narrow() ? 'Rechercher…' : 'Référence, société, enseigne, nom du client…'"
+          ariaLabel="Rechercher une commande"
+          [value]="filters().q ?? ''"
+          (searchChange)="setSearch($event)"
+          data-filter="q"
+        />
+        <!-- Filtre et statistiques à côté de la recherche ; au téléphone, ils
+             montent sur la ligne du cadrage, et la recherche prend la largeur. -->
+        @if (!narrow()) {
+          <ng-container *ngTemplateOutlet="filterToggle" />
+        }
+      </div>
     }
   </app-orders-list-masthead>
 
@@ -32,125 +57,13 @@
     <!-- Les filtres restent à l'écran dans les quatre états : c'est par eux qu'on
        sort d'une liste vide ou d'un échec. -->
     <section class="ol-filters" aria-label="Filtres">
-      <div class="ol-bar">
-        <fold-search
-          class="ol-search"
-          placeholder="Référence, société, enseigne, nom du client…"
-          ariaLabel="Rechercher une commande"
-          [value]="filters().q ?? ''"
-          (searchChange)="setSearch($event)"
-          data-filter="q"
-        />
-        <!-- Mobile et tablette : la recherche seule, et ce bouton qui déplie le
-         reste. Au bureau, tout est à l'écran et le bouton n'existe pas. -->
-        <button
-          foldButton
-          class="ol-toggle"
-          emphasis="soft"
-          intent="neutral"
-          size="sm"
-          [attr.aria-expanded]="filtersOpen()"
-          aria-controls="ol-more"
-          (click)="filtersOpen.set(!filtersOpen())"
-          data-filters-toggle
-        >
-          Filtres{{ activeCount() ? ' (' + activeCount() + ')' : '' }}
-        </button>
-      </div>
-      <div id="ol-more" class="ol-more" [class.is-open]="filtersOpen()">
-        <div class="ol-row">
-          <fold-listbox
-            size="sm"
-            label="Clientèle"
-            [options]="clienteleChoices"
-            [value]="choice('clientele')"
-            (selectionChange)="setChoice('clientele', $event)"
-            data-filter="clientele"
-          />
-          <fold-listbox
-            size="sm"
-            label="Mode"
-            [options]="methodChoices"
-            [value]="choice('method')"
-            (selectionChange)="setChoice('method', $event)"
-            data-filter="method"
-          />
-          <fold-listbox
-            size="sm"
-            label="Avancement"
-            [options]="statusChoices"
-            [value]="choice('status')"
-            (selectionChange)="setChoice('status', $event)"
-            data-filter="status"
-          />
-          <fold-listbox
-            size="sm"
-            label="Règlement"
-            [options]="paymentChoices"
-            [value]="choice('paymentStatus')"
-            (selectionChange)="setChoice('paymentStatus', $event)"
-            data-filter="paymentStatus"
-          />
-          <!-- Une annulée n'est plus à servir : masquée d'office, elle se
-               retrouve en décochant (ou par l'avancement « Annulée »). La vue
-               des tentatives, toutes annulées, n'a pas la case. -->
-          @if (filters().view !== 'abandoned_attempts') {
-            <fold-checkbox
-              label="Masquer les annulées"
-              [checked]="filters().cancelled === null"
-              (checkedChange)="setHideCancelled($event)"
-              data-filter="cancelled"
-            />
-          }
+      <!-- Au téléphone, les champs montent dans une feuille du bas (voir
+           `toggleFilters`) ; ailleurs, ils se déplient ici. -->
+      @if (!narrow()) {
+        <div id="ol-more" class="ol-more" [class.is-open]="filtersOpen()">
+          <ng-container *ngTemplateOutlet="filterFields" />
         </div>
-        <!-- Aujourd'hui, demain : le cadrage EST la date. Les champs de dates
-         n'existent que sous « Toutes ». -->
-        <div class="ol-row">
-          @if (!dayScoped()) {
-            <fold-date
-              size="sm"
-              label="Passée du"
-              [value]="filters().placedFrom ?? ''"
-              (valueChange)="setDay('placedFrom', $event)"
-              data-filter="placedFrom"
-            />
-            <fold-date
-              size="sm"
-              label="au"
-              [value]="filters().placedTo ?? ''"
-              (valueChange)="setDay('placedTo', $event)"
-              data-filter="placedTo"
-            />
-            <fold-date
-              size="sm"
-              label="Pour le (retrait ou livraison) du"
-              [value]="filters().fulfillmentFrom ?? ''"
-              (valueChange)="setDay('fulfillmentFrom', $event)"
-              data-filter="fulfillmentFrom"
-            />
-            <fold-date
-              size="sm"
-              label="au"
-              [value]="filters().fulfillmentTo ?? ''"
-              (valueChange)="setDay('fulfillmentTo', $event)"
-              data-filter="fulfillmentTo"
-            />
-          }
-          @if (filtered()) {
-            <button
-              foldButton
-              class="ol-clear"
-              emphasis="soft"
-              intent="neutral"
-              size="sm"
-              (click)="clearFilters()"
-              data-clear-filters
-            >
-              Retirer les filtres
-            </button>
-          }
-        </div>
-      </div>
+      }
     </section>
   }
 </fold-page-layout>
@@ -158,7 +71,7 @@
 <!-- La liste, hors de la mise en page : elle prend la hauteur qui reste sous
      la bande et les filtres, et c'est le tableau qui défile, son en-tête
      collé en haut. La pagination reste visible dessous. -->
-<div class="ol-body" data-orders-body>
+<div #body class="ol-body" data-orders-body>
   <fold-tab-panel class="ol-panel" [tabs]="bar" [key]="tab()">
     @if (draftsTab()) {
       <app-order-drafts-list />
@@ -208,7 +121,22 @@
             />
           }
 
-          @if (total() > pageSize) {
+          @if (narrow()) {
+            @if (remaining() > 0) {
+              <!-- Au téléphone, la suite s'ajoute sous la liste, d'un geste. -->
+              <button
+                foldButton
+                emphasis="soft"
+                intent="neutral"
+                class="ol-more-rows"
+                (click)="showMore()"
+                data-show-more
+              >
+                Voir les {{ remaining() < pageSize ? remaining() : pageSize }} suivantes
+                <span class="ol-more-count">· {{ rows().length }} sur {{ total() }}</span>
+              </button>
+            }
+          } @else if (total() > pageSize) {
             <fold-paginator
               [currentPage]="currentPage()"
               [pageSize]="pageSize"
@@ -223,3 +151,152 @@
     }
   </fold-tab-panel>
 </div>
+
+<!-- Au téléphone, l'action principale flotte en bas à droite, sous le pouce,
+     et le tiroir qu'elle ouvre monte du même côté (Hugo, 2026-11-28). -->
+@if (canPlace() && narrow()) {
+  <button
+    foldButton
+    intent="primary"
+    size="lg"
+    shape="pill"
+    icon="plus"
+    class="ol-fab"
+    (click)="openNewOrder()"
+    data-new-order
+  >
+    Nouvelle commande
+  </button>
+}
+
+<ng-template #filterToggle>
+  <button
+    foldButton
+    class="ol-toggle"
+    emphasis="soft"
+    intent="neutral"
+    size="sm"
+    icon="filter"
+    [attr.aria-label]="'Filtres' + (activeCount() ? ', ' + activeCount() + ' posés' : '')"
+    title="Filtres"
+    [attr.aria-expanded]="filtersOpen()"
+    [attr.aria-controls]="narrow() ? null : 'ol-more'"
+    (click)="toggleFilters()"
+    data-filters-toggle
+  >
+    @if (activeCount()) {
+      {{ activeCount() }}
+    }
+  </button>
+  <!-- Les comptes du cadrage, dans un panneau : hors de la liste. -->
+  <button
+    foldButton
+    emphasis="soft"
+    intent="neutral"
+    size="sm"
+    icon="stats"
+    aria-label="Statistiques"
+    title="Statistiques"
+    (click)="openStats()"
+    data-stats-toggle
+  ></button>
+</ng-template>
+
+<!-- Les champs des filtres, une seule fois : dépliés sous la recherche, ou
+     dans la feuille du bas au téléphone. -->
+<ng-template #filterFields>
+  <div class="ol-more is-open">
+    <div class="ol-row">
+      <fold-listbox
+        size="sm"
+        label="Clientèle"
+        [options]="clienteleChoices"
+        [value]="choice('clientele')"
+        (selectionChange)="setChoice('clientele', $event)"
+        data-filter="clientele"
+      />
+      <fold-listbox
+        size="sm"
+        label="Mode"
+        [options]="methodChoices"
+        [value]="choice('method')"
+        (selectionChange)="setChoice('method', $event)"
+        data-filter="method"
+      />
+      <fold-listbox
+        size="sm"
+        label="Avancement"
+        [options]="statusChoices"
+        [value]="choice('status')"
+        (selectionChange)="setChoice('status', $event)"
+        data-filter="status"
+      />
+      <fold-listbox
+        size="sm"
+        label="Règlement"
+        [options]="paymentChoices"
+        [value]="choice('paymentStatus')"
+        (selectionChange)="setChoice('paymentStatus', $event)"
+        data-filter="paymentStatus"
+      />
+      <!-- Une annulée n'est plus à servir : masquée d'office, elle se
+           retrouve en décochant (ou par l'avancement « Annulée »). La vue
+           des tentatives, toutes annulées, n'a pas la case. -->
+      @if (filters().view !== 'abandoned_attempts') {
+        <fold-checkbox
+          label="Masquer les annulées"
+          [checked]="filters().cancelled === null"
+          (checkedChange)="setHideCancelled($event)"
+          data-filter="cancelled"
+        />
+      }
+    </div>
+    <!-- Aujourd'hui, demain : le cadrage EST la date. Les champs de dates
+     n'existent que sous « Toutes ». -->
+    <div class="ol-row">
+      @if (!dayScoped()) {
+        <fold-date
+          size="sm"
+          label="Passée du"
+          [value]="filters().placedFrom ?? ''"
+          (valueChange)="setDay('placedFrom', $event)"
+          data-filter="placedFrom"
+        />
+        <fold-date
+          size="sm"
+          label="au"
+          [value]="filters().placedTo ?? ''"
+          (valueChange)="setDay('placedTo', $event)"
+          data-filter="placedTo"
+        />
+        <fold-date
+          size="sm"
+          label="Pour le (retrait ou livraison) du"
+          [value]="filters().fulfillmentFrom ?? ''"
+          (valueChange)="setDay('fulfillmentFrom', $event)"
+          data-filter="fulfillmentFrom"
+        />
+        <fold-date
+          size="sm"
+          label="au"
+          [value]="filters().fulfillmentTo ?? ''"
+          (valueChange)="setDay('fulfillmentTo', $event)"
+          data-filter="fulfillmentTo"
+        />
+      }
+      @if (filtered()) {
+        <button
+          foldButton
+          class="ol-clear"
+          emphasis="soft"
+          intent="neutral"
+          size="sm"
+          (click)="clearFilters()"
+          data-clear-filters
+        >
+          Retirer les filtres
+        </button>
+      }
+    </div>
+  </div>
+</ng-template>

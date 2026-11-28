@@ -66,7 +66,7 @@
 .oc {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-xs);
+  gap: 0;
 }
 
 .oc-head,
@@ -105,7 +105,7 @@
 }
 
 .oc-total {
-  font-size: var(--fold-text-lg);
+  font-size: var(--fold-text-md);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;

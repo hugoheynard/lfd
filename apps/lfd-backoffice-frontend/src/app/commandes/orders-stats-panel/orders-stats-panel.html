@@ -1,0 +1,22 @@
+<fold-panel-header title="Statistiques" [subtitle]="title()" />
+
+<fold-panel-body>
+  <ul class="osp" data-orders-stats>
+    @for (stat of stats(); track stat.key) {
+      <li>
+        <fold-card
+          padding="md"
+          [interactive]="true"
+          [ariaLabel]="stat.label + ' : afficher la liste'"
+          (activated)="pick(stat)"
+          [attr.data-stat]="stat.key"
+        >
+          <span class="osp-label">{{ stat.label }}</span>
+          <strong class="osp-value" [class.osp-value--zero]="stat.count === 0">
+            {{ stat.count ?? '—' }}
+          </strong>
+        </fold-card>
+      </li>
+    }
+  </ul>
+</fold-panel-body>

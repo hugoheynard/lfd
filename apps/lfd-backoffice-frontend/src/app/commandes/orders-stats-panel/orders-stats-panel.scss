@@ -1,0 +1,25 @@
+/* Deux comptes par ligne : on les compare d'un coup d'œil. */
+.osp {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.osp-label {
+  display: block;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.osp-value {
+  display: block;
+  font-size: var(--fold-text-xl);
+  font-variant-numeric: tabular-nums;
+}
+
+.osp-value--zero {
+  opacity: 0.5;
+}

@@ -9,16 +9,11 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import {
-  FoldCardComponent,
-  FoldSurfaceDirective,
-  FoldViewToggleComponent,
-  type FoldViewToggleOption,
-} from 'fold-ng';
+import { FoldSurfaceDirective, FoldViewToggleComponent, type FoldViewToggleOption } from 'fold-ng';
 
-import { NO_FILTERS, filtersToQuery, type OrderListFilters } from '../order-list-filters';
+import { NO_FILTERS, filtersToQuery } from '../order-list-filters';
 import { AdminOrdersService } from '../orders.service';
-import { scopeCards, type OrdersScope, type ScopeCard } from '../orders-scope';
+import { scopeDays, type OrdersScope } from '../orders-scope';
 import { watchGlobalSubjects } from '../../shared/version/watch-global-subjects';
 
 const SCOPES: readonly FoldViewToggleOption[] = [
@@ -27,29 +22,23 @@ const SCOPES: readonly FoldViewToggleOption[] = [
   { value: 'all', label: 'Toutes' },
 ];
 
-/** Un compte et son état : `null` tant qu'il n'est pas lu, ou si la lecture a échoué. */
-interface CountedCard extends ScopeCard {
-  readonly count: number | null;
-}
-
 function isScope(value: string): value is OrdersScope {
   return value === 'today' || value === 'tomorrow' || value === 'all';
 }
 
 /**
- * **Le masthead de la liste des commandes** : le cadrage (aujourd'hui, demain,
- * toutes) et les quelques comptes qu'on y regarde d'abord.
+ * **Le bandeau de la liste des commandes** : le cadrage (aujourd'hui, demain,
+ * toutes) avec ses deux comptes, les onglets, le geste « Nouvelle commande »,
+ * puis la recherche et le filtre, projetés par la page.
  *
- * Chaque compte est le `total` de `GET /admin/orders` sous les filtres de sa
- * carte, lu avec `limit=1` : le serveur compte, rien n'est recalculé ici — le
- * chiffre d'une carte est exactement la longueur de la liste qu'elle ouvre.
- * Les comptes ignorent les filtres posés sous le masthead : ils décrivent le
- * jour, pas la recherche en cours.
+ * Un compte du cadrage est le `total` de `GET /admin/orders` sous les bornes
+ * du jour, lu avec `limit=1` : le chiffre est exactement la longueur de la
+ * liste qu'il ouvre.
  */
 @Component({
   selector: 'app-orders-list-masthead',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent, FoldSurfaceDirective, FoldViewToggleComponent],
+  imports: [FoldSurfaceDirective, FoldViewToggleComponent],
   templateUrl: './orders-list-masthead.html',
   styleUrl: './orders-list-masthead.scss',
 })
@@ -60,49 +49,47 @@ export class OrdersListMasthead {
   readonly today = input.required<string>();
 
   readonly scopeChange = output<OrdersScope>();
-  /** Une carte choisie : les filtres complets à poser, onglet compris. */
-  readonly picked = output<OrderListFilters>();
 
   private readonly orders = inject(AdminOrdersService);
 
-  protected readonly scopes = SCOPES;
-  /** Sans cadrage reconnu, les cartes de « Toutes » : elles ne supposent aucun jour. */
-  protected readonly shown = computed<OrdersScope>(() => this.scope() ?? 'all');
-  protected readonly cards = signal<readonly CountedCard[]>([]);
-
-  private generation = 0;
+  /** Les commandes à servir aujourd'hui et demain ; `null` tant qu'on ne le sait pas. */
+  private readonly dayCounts = signal<Readonly<Record<'today' | 'tomorrow', number | null>>>({
+    today: null,
+    tomorrow: null,
+  });
+  /**
+   * Le cadrage porte son compte : « Aujourd’hui · 12 ». Il remplace les cartes
+   * « Pour aujourd'hui » et « Pour demain », qui disaient le même chiffre une
+   * ligne plus bas (Hugo, 2026-11-28).
+   */
+  protected readonly scopes = computed<readonly FoldViewToggleOption[]>(() => {
+    const counts = this.dayCounts();
+    return SCOPES.map((scope) => {
+      const count = scope.value === 'all' ? null : counts[scope.value as 'today' | 'tomorrow'];
+      return count === null ? scope : { ...scope, label: `${scope.label} · ${count}` };
+    });
+  });
 
   constructor() {
     effect(() => {
-      const scope = this.shown();
       const today = this.today();
-      untracked(() => void this.count(scope, today));
+      untracked(() => void this.countDays(today));
     });
-    watchGlobalSubjects(['orders-all'], () => this.count(this.shown(), this.today(), true));
+    watchGlobalSubjects(['orders-all'], () => this.countDays(this.today()));
   }
 
   protected choose(value: string): void {
     if (isScope(value)) this.scopeChange.emit(value);
   }
 
-  protected pick(card: ScopeCard): void {
-    this.picked.emit({ ...NO_FILTERS, ...card.filters });
-  }
-
-  /** `quiet` : relecture de fond, les chiffres restent affichés jusqu'aux nouveaux. */
-  private async count(scope: OrdersScope, today: string, quiet = false): Promise<void> {
-    const generation = ++this.generation;
-    const defs = scopeCards(scope, today);
-    if (!quiet) this.cards.set(defs.map((card) => ({ ...card, count: null })));
-    const counts = await Promise.all(
-      defs.map((card) =>
-        this.orders
-          .list({ ...filtersToQuery({ ...NO_FILTERS, ...card.filters }), limit: 1 })
-          .then((page) => page.total)
-          .catch(() => null),
-      ),
-    );
-    if (generation !== this.generation) return;
-    this.cards.set(defs.map((card, index) => ({ ...card, count: counts[index] ?? null })));
+  /** Les deux comptes du cadrage, lus comme ceux des cartes : `total` sous `limit=1`. */
+  private async countDays(today: string): Promise<void> {
+    const read = (scope: OrdersScope): Promise<number | null> =>
+      this.orders
+        .list({ ...filtersToQuery({ ...NO_FILTERS, ...scopeDays(scope, today) }), limit: 1 })
+        .then((page) => page.total)
+        .catch(() => null);
+    const [todayCount, tomorrowCount] = await Promise.all([read('today'), read('tomorrow')]);
+    this.dayCounts.set({ today: todayCount, tomorrow: tomorrowCount });
   }
 }

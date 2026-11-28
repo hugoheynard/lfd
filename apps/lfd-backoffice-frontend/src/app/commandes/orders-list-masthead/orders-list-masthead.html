@@ -1,5 +1,5 @@
 <section class="olm" foldSurface="chrome" aria-label="En un coup d’œil" data-orders-masthead>
-  <!-- Les onglets de la page (Commandes, Tentatives abandonnées) : projetés,
+  <!-- Les onglets de la page : projetés,
        pour que leur panneau, resté dans la page, garde sa référence. -->
   <div class="olm-top">
     <!-- Le cadrage tient la place du titre : une ligne de gagnée. Le titre
@@ -8,7 +8,7 @@
     <fold-view-toggle
       ariaLabel="Commandes à servir"
       activeStyle="accent"
-      [options]="scopes"
+      [options]="scopes()"
       [value]="scope() ?? ''"
       (valueChange)="choose($event)"
       data-scope-toggle
@@ -17,27 +17,7 @@
   </div>
   <ng-content select="fold-tabs" />
 
-  <ul class="olm-cards">
-    @for (card of cards(); track card.key) {
-      <li>
-        <fold-card
-          padding="md"
-          [interactive]="true"
-          [ariaLabel]="card.label + ' : afficher la liste'"
-          (activated)="pick(card)"
-          [attr.data-card]="card.key"
-        >
-          <span class="olm-label">{{ card.label }}</span>
-          <strong
-            class="olm-value"
-            [class.olm-value--alert]="card.alert && (card.count ?? 0) > 0"
-            [class.olm-value--zero]="card.count === 0"
-            data-card-count
-          >
-            {{ card.count ?? '—' }}
-          </strong>
-        </fold-card>
-      </li>
-    }
-  </ul>
+  <!-- La recherche et le filtre, sous les onglets : ce qu'on fait d'abord
+       sur une liste (Hugo, 2026-11-28). Projetés : la page les tient. -->
+  <ng-content select="[mastheadBar]" />
 </section>

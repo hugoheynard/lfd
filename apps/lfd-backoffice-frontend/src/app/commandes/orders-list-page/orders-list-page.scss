@@ -104,4 +104,61 @@
   .ol-more:not(.is-open) {
     display: none;
   }
+
+  /* Repliée, la section n'a plus rien à montrer : elle ne garde pas son écart. */
+  .ol-filters:not(:has(.ol-more.is-open)) {
+    display: none;
+  }
+}
+
+/* Au téléphone, les cartes prennent un peu plus de largeur : la gouttière du
+   corps se resserre, le bandeau garde la sienne. */
+@media (max-width: 40rem) {
+  /* Le bandeau touche la liste : la page ne paie pas son bas ici. */
+  .ol-page {
+    --fold-page-pad-bottom: 0;
+  }
+
+  .ol-body {
+    padding-inline: var(--fold-space-sm);
+    padding-block-start: var(--fold-space-sm);
+    /* L'air sous la dernière carte et la pagination : le bouton flottant ne
+       cache jamais un montant. */
+    padding-block-end: calc(var(--fold-space-5xl) + var(--fold-space-lg));
+  }
+}
+
+/* Dans la feuille du bas : deux champs par ligne, pleine largeur. */
+@media (max-width: 40rem) {
+  .ol-row > * {
+    flex: 1 1 calc(50% - var(--fold-space-md));
+  }
+}
+
+/* Au téléphone, la liste prend sa hauteur et c'est le corps qui défile :
+   bornée à l'écran, la boîte du tableau coupait tout ce qui dépassait. */
+@media (max-width: 40rem) {
+  .ol-panel,
+  .ol-table {
+    flex: none;
+  }
+}
+
+/* « Voir les 50 suivantes » : toute la largeur, sous la dernière carte. */
+.ol-more-rows {
+  align-self: stretch;
+  margin-block-start: var(--fold-space-md);
+}
+
+.ol-more-count {
+  color: var(--fold-color-text-muted);
+}
+
+/* « Nouvelle commande » au téléphone : en bas à droite, au-dessus de la liste. */
+.ol-fab {
+  position: fixed;
+  inset-inline-end: var(--fold-page-gutter);
+  bottom: max(var(--fold-space-lg), env(safe-area-inset-bottom));
+  z-index: 10;
+  box-shadow: var(--fold-shadow-lg);
 }

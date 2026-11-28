@@ -1,13 +1,13 @@
 <fold-panel-header title="Nouvelle commande" subtitle="Pour qui est-elle ?" />
 
-<fold-panel-body>
+<fold-panel-body class="nod-body">
   <div class="nod-choices">
     <fold-card interactive ariaLabel="Commande pro" (activated)="go(pro)" data-choice-pro>
       <fold-element-title
         variant="title"
         icon="customer-account"
         title="Commande pro"
-        subtitle="Pour un compte pro actif : on cherche le compte, puis on saisit sa commande."
+        subtitle="On cherche le compte, puis on saisit."
       />
     </fold-card>
     <fold-card
@@ -20,7 +20,7 @@
         variant="title"
         icon="shopping-cart"
         title="Commande particulier"
-        subtitle="Pour un particulier, au retrait : elle se règle à la caisse de la boutique, en venant."
+        subtitle="Au retrait, réglée à la caisse en venant."
       />
     </fold-card>
   </div>
