@@ -17,10 +17,15 @@
       activeStyle="fill"
       background="transparent"
     />
-    @if (canPlace()) {
+    @if (canPlace() && !narrow()) {
       <button foldButton intent="primary" (click)="openNewOrder()" data-new-order>
         Nouvelle commande
       </button>
     }
   </div>
 </header>
+
+<!-- Au téléphone, l'action principale flotte en bas à droite, sous le pouce. -->
+@if (canPlace() && narrow()) {
+  <app-new-order-fab origin="/comptoir" [point]="activePoint()" />
+}

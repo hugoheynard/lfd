@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { headerNameOf, pageNameOf } from '../page-name';
+import { HEADER_SECTION, headerNameOf, headerSectionOf, pageNameOf } from '../page-name';
 
 /**
  * Le titre d'une route sert DEUX lecteurs : l'onglet du navigateur, qui a
@@ -42,5 +42,17 @@ describe('headerNameOf', () => {
 
   it('rend null quand ni espace ni titre', () => {
     expect(headerNameOf(undefined, null)).toBeNull();
+  });
+});
+
+describe('headerSectionOf', () => {
+  it('rend le nom déclaré par la route la plus proche de la feuille', () => {
+    expect(
+      headerSectionOf([{ data: {} }, { data: { [HEADER_SECTION]: 'Comptoir' } }, { data: {} }]),
+    ).toBe('Comptoir');
+  });
+
+  it("rend null quand aucune route ne nomme d'espace", () => {
+    expect(headerSectionOf([{ data: {} }, { data: { autre: 'x' } }])).toBeNull();
   });
 });

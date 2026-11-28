@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
@@ -9,6 +10,7 @@ import {
   Injector,
   input,
   output,
+  signal,
   untracked,
 } from '@angular/core';
 import type { HandoverQueueEntryView, OrderClientele, PackingAbandonedLine } from '@lfd/contracts';
@@ -17,6 +19,9 @@ import {
   FoldCalloutComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
+  FoldDataTableRowCardDirective,
+  FoldButtonComponent,
+  FoldButtonIconComponent,
   FoldDataTableRowNoteDirective,
   type FoldBadgeVariant,
   type FoldTableColumn,
@@ -44,6 +49,7 @@ import {
 } from '../handover-queue';
 import { causeOf, type OverdueCause } from '../../supervision/handover-slots';
 import { transferBlockReason } from '../handover-transfer';
+import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 
 /**
  * Les libellés de clientèle. Le badge est carré (`radius="square"`) quand
@@ -93,6 +99,10 @@ const CLIENTELE_LABELS: Readonly<Record<OrderClientele, string>> = {
     FoldCalloutComponent,
     FoldDataTableCellDirective,
     FoldDataTableComponent,
+    FoldDataTableRowCardDirective,
+    FoldButtonComponent,
+    FoldButtonIconComponent,
+    NgTemplateOutlet,
     FoldDataTableRowNoteDirective,
   ],
   templateUrl: './queue-table.html',
@@ -101,6 +111,8 @@ const CLIENTELE_LABELS: Readonly<Record<OrderClientele, string>> = {
 export class QueueTable {
   /** Les lignes à peindre — déjà filtrées par onglet, pas encore ordonnées. */
   readonly entries = input.required<readonly HandoverQueueEntryView[]>();
+  /** Sans barre (le téléphone pose la sienne au-dessus de la file) : pas de bande vide. */
+  readonly toolbar = input(true);
 
   /** Le jour de service : un créneau ne porte qu'une heure, et l'heure seule ne
    *  se compare à rien. */
@@ -204,6 +216,22 @@ export class QueueTable {
     return settledLast(kept, this.reversed());
   });
 
+  /** Au téléphone, la première liste : ce qui reste à tendre. */
+  protected readonly waitingRows = computed(() =>
+    this.rows().filter((entry) => entry.state !== 'handed_over'),
+  );
+  /** Au téléphone, la seconde liste, sous son séparateur : les retirées. */
+  protected readonly handedRows = computed(() =>
+    this.rows().filter((entry) => entry.state === 'handed_over'),
+  );
+
+  /**
+   * Au téléphone, le séparateur entre l'attente et les retirées les masque ou
+   * les montre (Hugo, 2026-11-28) : au comptoir, on cherche d'abord ce qui
+   * reste à tendre.
+   */
+  protected readonly hideHandedOver = signal(false);
+
   protected readonly columns: readonly FoldTableColumn<HandoverQueueEntryView>[] = [
     // Le créneau en tête : c'est l'ordre de la file, et donc l'ordre dans
     // lequel on la parcourt des yeux au comptoir.
@@ -251,6 +279,52 @@ export class QueueTable {
 
   /** « 9 h 42 » — l'heure que dit la barre. */
   protected readonly nowLabel = computed(() => formatHour(clockOf(this.now())));
+
+  /**
+   * Au téléphone, la carte replie ses avertissements derrière un « i »
+   * (Hugo, 2026-11-28) : sous la carte ne reste que la barre « maintenant ».
+   */
+  protected readonly phone = narrowViewport();
+  /** Les cartes dont l'avertissement est déplié. */
+  private readonly openNotes = signal<ReadonlySet<string>>(new Set());
+
+  protected readonly hasNowLine = (entry: HandoverQueueEntryView): boolean =>
+    entry.orderId === this.nowAfter();
+
+  /** « Retirée · 11 h 02 » dans le badge de la carte : l'heure n'a pas sa ligne. */
+  protected cardLabel(entry: HandoverQueueEntryView): string {
+    return entry.handedOverAt === null
+      ? this.label(entry)
+      : `Retirée · ${formatHour(clockOf(new Date(entry.handedOverAt)))}`;
+  }
+
+  /** La ligne porte-t-elle un avertissement (incomplète, transfert, retard) ? */
+  protected hasCallouts(entry: HandoverQueueEntryView): boolean {
+    return this.late(entry) || this.transferBlock(entry) !== null || this.abandoned(entry) !== null;
+  }
+
+  /** Rouge quand c'est grave pour nous (retard de cuisine, commande incomplète), accent sinon. */
+  protected calloutTone(entry: HandoverQueueEntryView): 'critical' | 'accent' {
+    return this.lateCause(entry) === 'kitchen' || this.abandoned(entry) !== null
+      ? 'critical'
+      : 'accent';
+  }
+
+  protected isOpenNote(entry: HandoverQueueEntryView): boolean {
+    return this.openNotes().has(entry.orderId);
+  }
+
+  /** Le « i » d'une carte : déplie ou replie, sans ouvrir la fiche dessous. */
+  protected toggleNote(entry: HandoverQueueEntryView, event: MouseEvent): void {
+    event.stopPropagation();
+    this.openNotes.update((open) => {
+      const next = new Set(open);
+      if (!next.delete(entry.orderId)) {
+        next.add(entry.orderId);
+      }
+      return next;
+    });
+  }
 
   protected readonly hasNote = (entry: HandoverQueueEntryView): boolean =>
     this.late(entry) ||

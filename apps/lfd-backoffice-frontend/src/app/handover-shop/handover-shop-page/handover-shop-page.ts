@@ -3,10 +3,12 @@ import {
   Component,
   computed,
   effect,
+  DestroyRef,
   ElementRef,
   inject,
   signal,
   untracked,
+  TemplateRef,
   viewChild,
 } from '@angular/core';
 import type { HandoverQueueEntryView } from '@lfd/contracts';
@@ -19,6 +21,7 @@ import {
   FoldAsideLayoutComponent,
   FoldPageLayoutComponent,
   FoldPanelHostService,
+  type FoldPanelHandle,
   FoldTabPanelComponent,
   FoldIconComponent,
   FoldViewToggleComponent,
@@ -41,6 +44,10 @@ import { HandoverDetail } from '../handover-detail/handover-detail';
 import { TransferStrip } from '../transfer-strip/transfer-strip';
 import { ScanDialog, type ScanDialogData, type ScanOutcome } from '../scan-dialog/scan-dialog';
 import { PermissionsStore } from '../../auth/permissions.store';
+import { DayCalendar } from '../../shared/day-calendar/day-calendar';
+
+/** La largeur de la feuille des vues ; au téléphone, elle prend l'écran. */
+const VIEW_SHEET_WIDTH = 490;
 
 /** Le seuil de `fold-aside-layout` (`@container (max-width: 1040px)`, lu le 2026-10-12). */
 const STACK_AT_PX = 1040;
@@ -88,6 +95,7 @@ const STACK_AT_PX = 1040;
     FoldTabPanelComponent,
     FoldButtonIconComponent,
     FoldViewToggleComponent,
+    DayCalendar,
     QueueTable,
     HandoverDetail,
     TransferStrip,
@@ -115,6 +123,35 @@ export class HandoverShopPage {
   protected readonly reversed = signal(false);
   protected readonly views = QUEUE_VIEWS;
   protected readonly viewOf = queueViewOf;
+  /** Le nom de la vue ouverte, que le bouton filtre du téléphone annonce. */
+  protected readonly viewLabel = computed(
+    () => QUEUE_VIEWS.find((option) => option.value === this.view())?.label ?? '',
+  );
+
+  /** Les vues et l'ordre de la file, que la feuille du téléphone présente. */
+  private readonly viewSheet = viewChild.required<TemplateRef<unknown>>('viewSheet');
+  private viewSheetHandle: FoldPanelHandle | null = null;
+
+  /** Au téléphone, le filtre ouvre (ou referme) la feuille des vues de la file. */
+  protected openViewSheet(): void {
+    if (this.viewSheetHandle !== null) {
+      this.closeViewSheet();
+      return;
+    }
+    this.viewSheetHandle = this.panels.present({
+      templateRef: this.viewSheet(),
+      title: signal('Vue de la file').asReadonly(),
+      subtitle: this.viewLabel,
+      side: 'bottom',
+      width: signal(VIEW_SHEET_WIDTH).asReadonly(),
+      onClose: () => this.closeViewSheet(),
+    });
+  }
+
+  private closeViewSheet(): void {
+    this.viewSheetHandle?.dismiss();
+    this.viewSheetHandle = null;
+  }
 
   /**
    * **La file et le sac ne tiennent plus côte à côte.**
@@ -133,6 +170,12 @@ export class HandoverShopPage {
    * fenêtre reste lue pour le premier rendu, avant toute mesure.
    */
   private readonly narrowWindow = narrowViewport('(max-width: 1040px)');
+  /**
+   * Au téléphone, « Scanner le QR » quitte la barre de la file pour un rond
+   * posé au-dessus du « + » (Hugo, 2026-11-28) : c'est le geste le plus
+   * fréquent du comptoir, il reste à portée du pouce, sans menu.
+   */
+  protected readonly phone = narrowViewport();
   private readonly boardRef = viewChild('board', { read: ElementRef<HTMLElement> });
   private readonly boardWidth = signal(0);
   /** Le bas de la barre de l'app, en px — où s'arrête la feuille du sac. */
@@ -188,6 +231,8 @@ export class HandoverShopPage {
   });
 
   constructor() {
+    // La page quittée, sa feuille des vues ne reste pas ouverte sur la suivante.
+    inject(DestroyRef).onDestroy(() => this.closeViewSheet());
     effect((onCleanup) => {
       const board = this.boardRef()?.nativeElement;
       if (board === undefined || typeof ResizeObserver === 'undefined') {
@@ -250,6 +295,15 @@ export class HandoverShopPage {
    * dire le prendre en silence : l'écran affirme un point de retrait, et le
    * dialogue doit pouvoir dire quand le code n'en est pas.
    */
+  /** Un jour choisi au calendrier ; `null` (« Aujourd'hui ») rend la main à l'horloge. */
+  protected pickDay(day: string | null): void {
+    if (day === null) {
+      this.store.backToToday();
+    } else {
+      this.store.goToDay(day);
+    }
+  }
+
   protected scan(): void {
     const data: ScanDialogData = {
       expected: null,

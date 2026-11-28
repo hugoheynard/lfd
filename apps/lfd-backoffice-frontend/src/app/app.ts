@@ -20,7 +20,7 @@ import { filter, map } from 'rxjs';
 
 import { NavCountsService } from './nav-counts.service';
 import { watchCompanySubjects } from './comptes-clients/company-cache/company-subjects';
-import { headerNameOf, pageNameOf } from './page-name';
+import { headerNameOf, headerSectionOf, pageNameOf } from './page-name';
 import {
   FoldAppShellComponent,
   FoldAvatarDetailComponent,
@@ -589,8 +589,17 @@ export class App {
    * l'écran. Un espace nomme déjà sa vue en tête de rail et dans son bandeau —
    * l'en-tête, lui, doit dire OÙ l'on est, pas redire ce qu'on regarde.
    */
+  /** L'espace que la route nomme elle-même, faute de rail (le comptoir). */
+  private readonly headerSection = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map(() => headerSectionOf(deepest(this.router.routerState.snapshot.root).pathFromRoot)),
+    ),
+    { initialValue: null },
+  );
+
   protected readonly headerName = computed<string | null>(() =>
-    headerNameOf(this.workspace()?.title, this.pageName()),
+    headerNameOf(this.workspace()?.title ?? this.headerSection() ?? undefined, this.pageName()),
   );
 
   constructor() {

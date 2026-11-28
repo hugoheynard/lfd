@@ -25,3 +25,11 @@ app-comptoir-masthead {
   // Conteneur de taille : une vue borne ses colonnes collantes à SA hauteur (`cqh`).
   container-type: size;
 }
+
+// Au téléphone, « Nouvelle commande » flotte en bas : la vue garde de l'air
+// sous son dernier élément pour qu'il ne le cache jamais.
+@media (max-width: 40rem) {
+  :host > ::ng-deep router-outlet + * {
+    padding-block-end: calc(var(--fold-space-5xl) + var(--fold-space-lg));
+  }
+}

@@ -123,6 +123,15 @@
   flex: 1 1 auto;
 }
 
+/* Au téléphone, deux listes l'une sous l'autre : chacune prend sa hauteur,
+   sans quoi la première s'étirait et repoussait le séparateur en bas de
+   l'écran une fois les retirées masquées. */
+@media (max-width: 40rem) {
+  .qt-table {
+    flex: none;
+  }
+}
+
 /* Le bloc de la note porte le trait que fold pose sous chaque ligne : une
    commande se lit d'un trait à l'autre, note comprise. Même ton que le
    séparateur de fold, relu dans le navigateur le 2026-11-03. */
@@ -167,4 +176,104 @@
   display: inline-flex;
   flex-wrap: wrap;
   gap: var(--fold-space-xs);
+}
+
+/* La carte du téléphone (Hugo, 2026-11-28) : à gauche qui (l'enseigne en
+   gras et sa clientèle, la raison sociale dessous) et quoi ; à droite
+   l'heure, l'état dessous, et le « i » des avertissements. */
+.qc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.qc-main {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.qc-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+}
+
+.qc-right {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--fold-space-xs);
+}
+
+.qc-state {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.qc-who {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+}
+
+.qc-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--fold-text-md);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qc-legal {
+  margin-top: calc(-1 * var(--fold-space-xs));
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.qc-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  font-size: var(--fold-text-sm);
+}
+
+.qc-units {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Les avertissements, l'un sous l'autre, sous la ligne ou dans la carte. */
+.qt-callouts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+/* Le séparateur entre l'attente et les retirées, au téléphone : un trait, le
+   compte, et le geste de les replier. */
+.qt-split {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding-block: var(--fold-space-sm);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.qt-split::before {
+  content: '';
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--fold-color-border);
+}
+
+.qt-split-label {
+  order: -1;
+  white-space: nowrap;
 }

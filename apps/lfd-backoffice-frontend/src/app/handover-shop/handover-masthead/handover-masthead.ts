@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, inject, viewChild } from '@angular/
 import { FoldTabsComponent } from 'fold-ng';
 
 import { HandoverQueueStore } from '../handover-queue.store';
+import { DayCalendar } from '../../shared/day-calendar/day-calendar';
+import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 
 /**
  * **La part du retrait dans la bande du comptoir** : le point ouvert, ce qui
@@ -19,12 +21,27 @@ import { HandoverQueueStore } from '../handover-queue.store';
 @Component({
   selector: 'app-handover-masthead',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldTabsComponent],
+  imports: [DayCalendar, FoldTabsComponent],
   templateUrl: './handover-masthead.html',
   styleUrl: './handover-masthead.scss',
 })
 export class HandoverMasthead {
   protected readonly store = inject(HandoverQueueStore);
+
+  /**
+   * Au téléphone, la bande tient en deux lignes (Hugo, 2026-11-28) : les
+   * points et l'icône du calendrier sur la même, les onglets serrés.
+   */
+  protected readonly narrow = narrowViewport();
+
+  /** Un jour choisi au calendrier ; `null` (« Aujourd'hui ») rend la main à l'horloge. */
+  protected pickDay(day: string | null): void {
+    if (day === null) {
+      this.store.backToToday();
+    } else {
+      this.store.goToDay(day);
+    }
+  }
 
   /** La barre d'onglets de point, telle que ce gabarit la rend. */
   private readonly tabBar = viewChild(FoldTabsComponent);

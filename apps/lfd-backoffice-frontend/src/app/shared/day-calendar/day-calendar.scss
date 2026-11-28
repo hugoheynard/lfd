@@ -12,13 +12,25 @@
   color: var(--fold-ref-navyink-50);
 }
 
+// Posé dans la grappe du bas (le téléphone), le bouton se fond dans son rond
+// bleu pâle : ni le fond sombre ni le filet prévus pour le chrome.
+:host(.day-fab) .trigger,
+:host(.day-fab) .is-custom {
+  border-color: transparent;
+  background: transparent;
+  color: inherit;
+}
+
 .calendar {
   // 272 px (A1) : sept cases de 32 px et leurs écarts.
   width: 272px;
+  padding: var(--fold-space-md);
+}
+
+.calendar-content {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-sm);
-  padding: var(--fold-space-md);
 }
 
 .calendar-head {
@@ -40,6 +52,9 @@
   --fold-calendar-month-cell-padding: 0;
   --fold-calendar-month-daynum-size: 28px;
 
+  // Les semaines de fold s'étirent pour remplir leur parent : dans un popover
+  // aussi haut que l'écran, elles faisaient des cases de 100 px.
+  flex: none;
   border: 0;
 }
 

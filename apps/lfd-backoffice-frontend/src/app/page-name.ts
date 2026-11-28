@@ -41,3 +41,22 @@ export function pageNameOf(title: string | undefined): string | null {
 export function headerNameOf(workspace: string | undefined, page: string | null): string | null {
   return workspace ?? page;
 }
+
+/**
+ * La clé de `data` par laquelle une route nomme son espace dans le fil
+ * d'en-tête, quand cet espace n'a pas de rail qui le ferait (le comptoir).
+ */
+export const HEADER_SECTION = 'headerSection';
+
+/** Le nom d'espace déclaré par la route la plus proche de la feuille, `null` sinon. */
+export function headerSectionOf(
+  chain: readonly { readonly data: Readonly<Record<string, unknown>> }[],
+): string | null {
+  for (const route of [...chain].reverse()) {
+    const section = route.data[HEADER_SECTION];
+    if (typeof section === 'string') {
+      return section;
+    }
+  }
+  return null;
+}

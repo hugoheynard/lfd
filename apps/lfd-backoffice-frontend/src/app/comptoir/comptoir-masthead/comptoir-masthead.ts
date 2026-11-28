@@ -11,6 +11,8 @@ import { NewOrderDialog } from '../../commandes/new-order-dialog/new-order-dialo
 import { HandoverMasthead } from '../../handover-shop/handover-masthead/handover-masthead';
 import { HandoverQueueStore } from '../../handover-shop/handover-queue.store';
 import { WorkspaceCatalogue } from '../../shared/workspace-rail/workspaces';
+import { narrowViewport } from '../../shared/viewport/narrow-viewport';
+import { NewOrderFab } from '../../shared/new-order-fab/new-order-fab';
 
 /**
  * **La bande de tête du comptoir**, présente sur ses vues (Hugo,
@@ -41,10 +43,20 @@ const SITED_LABELS: Readonly<Record<string, string>> = {
   reassort: 'Réassort',
 };
 
+/**
+ * Au téléphone, un mot par onglet (Hugo, 2026-11-28) : le point ouvert est
+ * déjà nommé juste au-dessus, et « Retrait commande Le Labo » se coupait.
+ */
+const SHORT_LABELS: Readonly<Record<string, string>> = {
+  retrait: 'Retrait',
+  reassort: 'Réassort',
+};
+
 @Component({
   selector: 'app-comptoir-masthead',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    NewOrderFab,
     FoldButtonComponent,
     FoldViewNavComponent,
     // 🔴 La directive, et pas seulement l'attribut : sans elle
@@ -73,6 +85,9 @@ export class ComptoirMasthead {
   protected readonly views = computed(() => {
     const views = this.permitted();
     const place = this.holdsCounter() ? this.injector.get(HandoverQueueStore).activePlace() : null;
+    if (this.narrow()) {
+      return views.map((view) => ({ ...view, label: SHORT_LABELS[view.key] ?? view.label }));
+    }
     return views.map((view) => {
       const base = SITED_LABELS[view.key];
       if (base === undefined) {
@@ -83,6 +98,12 @@ export class ComptoirMasthead {
   });
 
   private readonly panels = inject(FoldPanelHostService);
+
+  /**
+   * Au téléphone, « Nouvelle commande » flotte en bas à droite, comme sur la
+   * liste des commandes (Hugo, 2026-11-28) : le bandeau garde sa place.
+   */
+  protected readonly narrow = narrowViewport();
 
   /** Saisir une commande demande la caisse et la passation, comme la page de la saisie. */
   protected readonly canPlace = computed(
@@ -95,14 +116,19 @@ export class ComptoirMasthead {
    * « Terminer » ramène au comptoir.
    */
   protected openNewOrder(): void {
-    const point = this.holdsCounter()
-      ? (this.injector.get(HandoverQueueStore).activePlace()?.id ?? null)
-      : null;
+    const point = this.activePoint();
     this.panels.open(NewOrderDialog, {
       side: 'center',
       width: 'sm',
       data: { origin: '/comptoir', point },
     });
+  }
+
+  /** Le point de retrait ouvert, que la saisie propose en « Retrait immédiat ». */
+  protected activePoint(): string | null {
+    return this.holdsCounter()
+      ? (this.injector.get(HandoverQueueStore).activePlace()?.id ?? null)
+      : null;
   }
 
   /** Monte-t-on la part du retrait — et donc la file ? */

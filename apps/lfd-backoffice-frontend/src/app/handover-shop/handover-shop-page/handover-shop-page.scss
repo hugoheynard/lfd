@@ -15,6 +15,38 @@
   --fold-page-gap: var(--fold-space-sm);
 }
 
+/* Au téléphone, la recherche sous la bande, sur le fond de la page : elle
+   reste en haut quand la file défile. La page ne paie plus son haut. */
+@media (max-width: 40rem) {
+  :host {
+    --fold-page-pad-top: 0;
+  }
+}
+
+.phone-search {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin-inline: calc(-1 * var(--fold-page-gutter));
+  padding: var(--fold-space-sm) var(--fold-page-gutter);
+  background: var(--fold-color-bg-page);
+}
+
+.phone-search-field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* La feuille des vues : le choix, puis l'ordre, en pleine largeur. */
+.view-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
 /* ── LA BARRE DE LA FILE ────────────────────────────────────────────────────
    Une ligne, une hauteur (Hugo, 2026-11-03) : le filtre et son sens à gauche,
    la recherche qui prend le milieu et rétrécit la première, le scan au bout.
@@ -143,4 +175,64 @@
 
 .board-queue app-queue-table {
   flex: 1 1 auto;
+}
+
+/* Le scan, au téléphone : un rond plus petit, bleu pâle — blanc, il se
+   perdait sur les cartes blanches de la file —, sur l'axe du « + »
+   (56 px, voir `new-order-fab`) et juste au-dessus de lui. Un bouton NATIF :
+   un rond de 48 px n'est pas une forme de `foldButton`. Le voile du « + »
+   ouvert le recouvre (z-index 10 contre 9). */
+.scan-fab {
+  --scan-size: 3rem;
+
+  position: fixed;
+  inset-inline-end: calc(var(--fold-page-gutter) + (3.5rem - var(--scan-size)) / 2);
+  bottom: calc(
+    max(var(--fold-space-lg), env(safe-area-inset-bottom)) + 3.5rem + var(--fold-space-md)
+  );
+  z-index: 9;
+  display: grid;
+  place-items: center;
+  width: var(--scan-size);
+  height: var(--scan-size);
+  padding: 0;
+  border: 1px solid var(--fold-color-primary-border);
+  border-radius: var(--fold-radius-round);
+  /* Opaque : le bleu pâle de fold est translucide, et les badges de la carte
+     dessous se lisaient à travers. Le même ton, posé sur le blanc. */
+  background: color-mix(in srgb, var(--fold-color-primary) 14%, var(--fold-color-surface-card));
+  color: var(--fold-color-primary);
+  box-shadow: var(--fold-shadow-lg);
+  cursor: pointer;
+}
+
+.scan-fab:active {
+  transform: scale(0.94);
+}
+
+.scan-fab:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 2px;
+}
+
+/* Le calendrier de la grappe : un rond comme le QR, à gauche, à mi-hauteur
+   entre le « + » et le QR, et assez près d'eux pour se lire comme un geste du
+   même groupe. Hors d'aujourd'hui, il s'élargit en pastille datée. */
+.day-fab {
+  --day-fab-size: 3rem;
+
+  position: fixed;
+  inset-inline-end: calc(var(--fold-page-gutter) + 3.25rem);
+  bottom: calc(max(var(--fold-space-lg), env(safe-area-inset-bottom)) + 2rem);
+  z-index: 9;
+  display: grid;
+  place-items: center;
+  min-width: var(--day-fab-size);
+  height: var(--day-fab-size);
+  padding-inline: var(--fold-space-xs);
+  border: 1px solid var(--fold-color-primary-border);
+  border-radius: var(--fold-radius-pill);
+  background: color-mix(in srgb, var(--fold-color-primary) 14%, var(--fold-color-surface-card));
+  color: var(--fold-color-primary);
+  box-shadow: var(--fold-shadow-lg);
 }

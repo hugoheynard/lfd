@@ -1,6 +1,40 @@
 <!-- Pas de `title` sur le layout : la bande de tête du comptoir, au-dessus,
      porte les onglets, le point ouvert et la journée (Hugo, 2026-10-12). -->
 <fold-page-layout>
+  <!-- Au téléphone, la recherche et le filtre sous la bande, sur le fond de
+       la page (Hugo, 2026-11-28) : la bande reste légère, et la barre se colle
+       en haut quand la file défile dessous. -->
+  @if (phone()) {
+    <div class="phone-search">
+      <fold-search
+        class="phone-search-field"
+        variant="underline"
+        placeholder="Rechercher…"
+        ariaLabel="Filtrer la file"
+        [(value)]="query"
+        [resultCount]="matches()"
+        [resultLabel]="matches() === 1 ? 'ligne' : 'lignes'"
+        placement="end"
+        data-phone-search
+      />
+      <!-- Les vues et l'ordre de la file, dans une feuille du bas. -->
+      <button
+        foldButton
+        emphasis="soft"
+        intent="neutral"
+        size="sm"
+        icon="filter"
+        [attr.aria-label]="'Vue de la file : ' + viewLabel()"
+        title="Vue de la file"
+        (click)="openViewSheet()"
+        data-phone-filter
+      >
+        @if (view() !== 'all') {
+          1
+        }
+      </button>
+    </div>
+  }
   <!--
     **La file et le sac, côte à côte.** Un `fold-aside-layout` et non un panneau
     modal : au comptoir on lit la file ET ce qu'on tend, on passe de l'une à
@@ -84,6 +118,7 @@
                 />
 
                 <app-queue-table
+                  [toolbar]="!phone()"
                   [entries]="store.rows()"
                   [query]="query()"
                   [view]="view()"
@@ -99,49 +134,63 @@
                      sur-titre « La file · <point> » et l'indication d'ordre
                      sont retirés — l'onglet dit déjà le point, le bouton dit
                      l'ordre — pour que la table monte au niveau du rail. -->
-                  <div class="file-head" data-file-head>
-                    <!-- Une ligne, une hauteur (Hugo, 2026-11-03 : « je veux que
-                         l'interface soit belle ») : le filtre et son sens à
-                         gauche, la recherche qui prend l'air du milieu, le scan
-                         au bout — le seul geste plein de la barre. -->
-                    <fold-view-toggle
-                      class="file-views"
-                      size="sm"
-                      ariaLabel="Lignes montrées dans la file"
-                      activeStyle="accent"
-                      [options]="views"
-                      [value]="view()"
-                      (valueChange)="view.set(viewOf($event))"
-                    />
-                    <fold-button-icon
-                      data-queue-reverse
-                      size="sm"
-                      [icon]="reversed() ? 'chevron-up' : 'chevron-down'"
-                      [tooltip]="
-                        reversed()
-                          ? 'Plus récent en tête — passer au plus ancien'
-                          : 'Plus ancien en tête — passer au plus récent'
-                      "
-                      (clicked)="reversed.set(!reversed())"
-                    />
-                    <!-- 🔴 `[(value)]` et non `(searchChange)` : la file est DÉJÀ
-                         en mémoire, et un délai n'ajouterait ici que de la
-                         latence entre la frappe et ce qu'on voit. Le compte
-                         annoncé vient de la file elle-même. -->
-                    <fold-search
-                      class="file-search"
-                      placeholder="Rechercher…"
-                      ariaLabel="Filtrer la file"
-                      size="sm"
-                      [(value)]="query"
-                      [resultCount]="matches()"
-                      [resultLabel]="matches() === 1 ? 'ligne' : 'lignes'"
-                      placement="end"
-                    />
-                    <button class="file-scan" foldButton size="sm" icon="qr-code" (click)="scan()">
-                      Scanner le QR code client
-                    </button>
-                  </div>
+                  @if (!phone()) {
+                    <div class="file-head" data-file-head>
+                      <!-- Une ligne, une hauteur (Hugo, 2026-11-03 : « je veux que
+                           l'interface soit belle ») : le filtre et son sens à
+                           gauche, la recherche qui prend l'air du milieu, le scan
+                           au bout — le seul geste plein de la barre. -->
+                      @if (!phone()) {
+                        <fold-view-toggle
+                          class="file-views"
+                          size="sm"
+                          ariaLabel="Lignes montrées dans la file"
+                          activeStyle="accent"
+                          [options]="views"
+                          [value]="view()"
+                          (valueChange)="view.set(viewOf($event))"
+                        />
+                        <fold-button-icon
+                          data-queue-reverse
+                          size="sm"
+                          [icon]="reversed() ? 'chevron-up' : 'chevron-down'"
+                          [tooltip]="
+                            reversed()
+                              ? 'Plus récent en tête — passer au plus ancien'
+                              : 'Plus ancien en tête — passer au plus récent'
+                          "
+                          (clicked)="reversed.set(!reversed())"
+                        />
+                      }
+                      <!-- 🔴 `[(value)]` et non `(searchChange)` : la file est DÉJÀ
+                           en mémoire, et un délai n'ajouterait ici que de la
+                           latence entre la frappe et ce qu'on voit. Le compte
+                           annoncé vient de la file elle-même. -->
+                      @if (!phone()) {
+                        <fold-search
+                          class="file-search"
+                          placeholder="Rechercher…"
+                          ariaLabel="Filtrer la file"
+                          size="sm"
+                          [(value)]="query"
+                          [resultCount]="matches()"
+                          [resultLabel]="matches() === 1 ? 'ligne' : 'lignes'"
+                          placement="end"
+                        />
+                      }
+                      @if (!phone()) {
+                        <button
+                          class="file-scan"
+                          foldButton
+                          size="sm"
+                          icon="qr-code"
+                          (click)="scan()"
+                        >
+                          Scanner le QR code client
+                        </button>
+                      }
+                    </div>
+                  }
                 </app-queue-table>
               </fold-tab-panel>
             }
@@ -160,3 +209,50 @@
     />
   </fold-aside-layout>
 </fold-page-layout>
+
+<!-- Au téléphone, la grappe du bas autour du « + » de la bande : le scan
+     au-dessus, le calendrier à gauche entre les deux (Hugo, 2026-11-28). -->
+@if (phone()) {
+  <app-day-calendar
+    class="day-fab"
+    [selected]="store.day()"
+    [today]="store.today()"
+    [custom]="!store.isToday()"
+    [short]="true"
+    [narrow]="true"
+    [sheet]="true"
+    (pick)="pickDay($event)"
+  />
+  <button
+    type="button"
+    class="scan-fab"
+    aria-label="Scanner le QR code client"
+    (click)="scan()"
+    data-scan-fab
+  >
+    <fold-icon name="qr-code" size="md" />
+  </button>
+}
+
+<!-- Au téléphone, les vues et l'ordre de la file, dans une feuille du bas. -->
+<ng-template #viewSheet>
+  <div class="view-sheet">
+    <fold-view-toggle
+      class="view-sheet-views"
+      ariaLabel="Lignes montrées dans la file"
+      activeStyle="accent"
+      [options]="views"
+      [value]="view()"
+      (valueChange)="view.set(viewOf($event))"
+    />
+    <button
+      foldButton
+      emphasis="soft"
+      intent="neutral"
+      [icon]="reversed() ? 'chevron-up' : 'chevron-down'"
+      (click)="reversed.set(!reversed())"
+    >
+      {{ reversed() ? 'Plus récent en tête' : 'Plus ancien en tête' }}
+    </button>
+  </div>
+</ng-template>

@@ -1,9 +1,22 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+  TemplateRef,
+  viewChild,
+} from '@angular/core';
 import {
   FoldButtonComponent,
   FoldButtonIconComponent,
   FoldCalendarDayDirective,
   FoldCalendarMonthComponent,
+  FoldPanelHostService,
+  type FoldPanelHandle,
   FoldPopoverComponent,
   FoldPopoverTriggerDirective,
 } from 'fold-ng';
@@ -14,6 +27,10 @@ const DAY_LABEL = new Intl.DateTimeFormat('fr-FR', {
   day: 'numeric',
   month: 'long',
 });
+/** « sam. 28 » — la même date, quand la bande n'a pas la place. */
+const DAY_LABEL_SHORT = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric' });
+/** La largeur de la feuille du mois ; au téléphone, elle prend l'écran. */
+const SHEET_WIDTH = 490;
 const MONTH_TITLE = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' });
 
 /** `AAAA-MM-JJ` → le 1er du mois d'avant ou d'après. */
@@ -45,6 +62,7 @@ export function shiftMonth(isoDay: string, months: number): string {
     FoldCalendarMonthComponent,
     FoldPopoverComponent,
     FoldPopoverTriggerDirective,
+    NgTemplateOutlet,
   ],
   templateUrl: './day-calendar.html',
   styleUrl: './day-calendar.scss',
@@ -57,10 +75,20 @@ export class DayCalendar {
   /** Hors ±1 : le bouton dit la date en toutes lettres. */
   readonly custom = input(false);
   readonly narrow = input(false);
+  /** La date en abrégé sur le bouton (« sam. 28 ») : elle reste écrite, plus courte. */
+  readonly short = input(false);
+  /** Le mois dans une feuille du bas plutôt qu'en popover (le téléphone). */
+  readonly sheet = input(false);
 
   readonly pick = output<string | null>();
 
   protected readonly open = signal(false);
+
+  /**
+   * Une lettre par jour (« L M M J V S D ») : l'en-tête de fold dit « LUN. »,
+   * plus large qu'une case de 32 px, et débordait la grille.
+   */
+  protected readonly formats = { weekdayShort: { weekday: 'narrow' } } as const;
   /** Le mois affiché — recalé sur le jour regardé à chaque ouverture. */
   protected readonly month = signal('');
 
@@ -72,7 +100,7 @@ export class DayCalendar {
   protected readonly label = computed(() => {
     const selected = this.selected();
     return this.custom() && selected !== null
-      ? DAY_LABEL.format(new Date(`${selected}T00:00:00`))
+      ? (this.short() ? DAY_LABEL_SHORT : DAY_LABEL).format(new Date(`${selected}T00:00:00`))
       : '';
   });
 
@@ -81,6 +109,31 @@ export class DayCalendar {
       this.month.set(this.selected() ?? this.today() ?? '');
     }
     this.open.set(open);
+    if (!open) {
+      this.closeSheet();
+    }
+  }
+
+  private readonly panels = inject(FoldPanelHostService);
+  private readonly calendarBody = viewChild.required<TemplateRef<unknown>>('calendarBody');
+  private sheetHandle: FoldPanelHandle | null = null;
+
+  /** Le mois dans une feuille du bas, sous le pouce : fold pose le voile et rend le focus. */
+  protected openSheet(): void {
+    this.month.set(this.selected() ?? this.today() ?? '');
+    this.sheetHandle = this.panels.present({
+      templateRef: this.calendarBody(),
+      title: signal('Choisir une date').asReadonly(),
+      subtitle: signal('').asReadonly(),
+      side: 'bottom',
+      width: signal(SHEET_WIDTH).asReadonly(),
+      onClose: () => this.closeSheet(),
+    });
+  }
+
+  private closeSheet(): void {
+    this.sheetHandle?.dismiss();
+    this.sheetHandle = null;
   }
 
   protected page(months: number): void {
@@ -92,6 +145,7 @@ export class DayCalendar {
 
   protected choose(day: string | null): void {
     this.open.set(false);
+    this.closeSheet();
     this.pick.emit(day === this.today() ? null : day);
   }
 

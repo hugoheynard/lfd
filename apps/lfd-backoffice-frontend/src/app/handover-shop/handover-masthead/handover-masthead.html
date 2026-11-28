@@ -3,7 +3,7 @@
 @if (store.state() === 'ready' && store.tabs().length > 0) {
   <fold-tabs
     direction="horizontal"
-    size="comfortable"
+    [size]="narrow() ? 'compact' : 'comfortable'"
     background="surface"
     activeStyle="fill"
     [tabs]="store.tabs()"
@@ -33,26 +33,50 @@
   </p>
 }
 
-<!-- 🔴 **La journée se change ici, et elle a son histoire** (2026-09-17). Un
-     sélecteur de date a vécu dans cette bande jusqu'au 2026-09-11, puis a été
-     retiré : il mettait à portée du doigt « le seul geste qui peut faire tendre
-     un sac en croyant être un autre jour ». Deux flèches au lieu d'un
-     calendrier, la journée en toutes lettres, et un retour à aujourd'hui qui
-     n'apparaît QUE lorsqu'on s'en est éloigné. -->
+<!-- 🔴 **La journée se change ici.** Changer de jour est le seul geste qui
+     peut faire tendre un sac en croyant être un autre jour : la journée reste
+     donc en toutes lettres, le retour à aujourd'hui n'apparaît que lorsqu'on
+     s'en est éloigné, et l'avertissement ci-dessous crie hors d'aujourd'hui.
+     Les flèches pour la veille et le lendemain, le calendrier pour aller plus
+     loin (Hugo, 2026-11-28). -->
 <div class="masthead-day">
-  <button
-    class="day-step"
-    type="button"
-    aria-label="Journée précédente"
-    (click)="store.shiftDay(-1)"
-  >
-    ‹
-  </button>
-  <span class="day-label">{{ store.dayLabel() }}</span>
-  <button class="day-step" type="button" aria-label="Journée suivante" (click)="store.shiftDay(1)">
-    ›
-  </button>
-  @if (!store.isToday()) {
+  <!-- Au téléphone, l'icône seule (Hugo, 2026-11-28) : la date revient sur
+       le bouton dès qu'on n'est plus sur aujourd'hui. -->
+  @if (!narrow()) {
+    <button
+      class="day-step"
+      type="button"
+      aria-label="Journée précédente"
+      (click)="store.shiftDay(-1)"
+    >
+      ‹
+    </button>
+  }
+  <!-- Entre les deux flèches, le calendrier pour aller plus loin (Hugo,
+       2026-11-28). La journée reste écrite en toutes lettres sur le bouton,
+       et l'avertissement plus bas crie toujours hors d'aujourd'hui. -->
+  <!-- Au téléphone, le calendrier quitte la bande pour la grappe de boutons
+       du bas, que la page du retrait pose (Hugo, 2026-11-28). -->
+  @if (!narrow()) {
+    <app-day-calendar
+      [selected]="store.day()"
+      [today]="store.today()"
+      [custom]="true"
+      [narrow]="true"
+      (pick)="pickDay($event)"
+    />
+  }
+  @if (!narrow()) {
+    <button
+      class="day-step"
+      type="button"
+      aria-label="Journée suivante"
+      (click)="store.shiftDay(1)"
+    >
+      ›
+    </button>
+  }
+  @if (!store.isToday() && !narrow()) {
     <button class="day-today" type="button" (click)="store.backToToday()">Aujourd’hui</button>
   }
 </div>
@@ -62,7 +86,17 @@
      s'était déplacé. Il ne paraît jamais sur la journée en cours — sinon on
      cesserait de le voir. -->
 @if (!store.isToday()) {
+  <!-- Au téléphone, la journée est écrite dans l'avertissement lui-même, avec
+       le retour : la bande n'a pas la place de les poser à côté. -->
   <p class="masthead-warning" role="status">
-    Vous consultez une autre journée — ne remettez rien depuis cet écran.
+    @if (narrow()) {
+      <span class="warning-text">
+        <strong class="warning-day">{{ store.dayLabel() }}</strong> — autre journée. Ne remettez
+        rien depuis cet écran.
+      </span>
+      <button class="day-today" type="button" (click)="store.backToToday()">Aujourd’hui</button>
+    } @else {
+      Vous consultez une autre journée — ne remettez rien depuis cet écran.
+    }
   </p>
 }

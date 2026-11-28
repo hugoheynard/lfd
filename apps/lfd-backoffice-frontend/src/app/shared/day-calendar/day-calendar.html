@@ -1,8 +1,39 @@
-<fold-popover
-  [placement]="narrow() ? 'bottom-end' : 'bottom-start'"
-  [open]="open()"
-  (openChange)="toggle($event)"
->
+@if (!sheet()) {
+  <fold-popover
+    [placement]="narrow() ? 'bottom-end' : 'bottom-start'"
+    [open]="open()"
+    (openChange)="toggle($event)"
+  >
+    @if (label() !== '') {
+      <button
+        foldButton
+        type="button"
+        emphasis="outline"
+        size="sm"
+        icon="calendar"
+        class="trigger is-custom"
+        foldPopoverTrigger
+        data-calendar
+      >
+        {{ label() }}
+      </button>
+    } @else {
+      <fold-button-icon
+        icon="calendar"
+        tooltip="Choisir une date"
+        class="trigger"
+        [size]="narrow() ? 'lg' : 'md'"
+        foldPopoverTrigger
+        data-calendar
+      />
+    }
+    <div foldPopoverPanel class="calendar">
+      <ng-container *ngTemplateOutlet="calendarBody" />
+    </div>
+  </fold-popover>
+} @else {
+  <!-- Au téléphone, le mois monte dans une feuille du bas (Hugo,
+       2026-11-28) : un popover sous le bouton débordait de l'écran. -->
   @if (label() !== '') {
     <button
       foldButton
@@ -11,7 +42,7 @@
       size="sm"
       icon="calendar"
       class="trigger is-custom"
-      foldPopoverTrigger
+      (click)="openSheet()"
       data-calendar
     >
       {{ label() }}
@@ -21,12 +52,17 @@
       icon="calendar"
       tooltip="Choisir une date"
       class="trigger"
-      [size]="narrow() ? 'lg' : 'md'"
-      foldPopoverTrigger
+      size="lg"
+      (clicked)="openSheet()"
       data-calendar
     />
   }
-  <div foldPopoverPanel class="calendar">
+}
+
+<!-- Le mois, ses deux flèches et ses deux gestes : le même dans le popover et
+     dans la feuille. -->
+<ng-template #calendarBody>
+  <div class="calendar-content">
     <div class="calendar-head">
       <fold-button-icon
         icon="chevron-left"
@@ -41,6 +77,8 @@
       <fold-calendar-month
         class="calendar-grid"
         weekStartsOn="mon"
+        [maxLanes]="0"
+        [formats]="formats"
         [month]="month()"
         (monthChange)="follow($event)"
         [today]="today() ?? undefined"
@@ -62,4 +100,4 @@
       </button>
     </div>
   </div>
-</fold-popover>
+</ng-template>

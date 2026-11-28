@@ -148,7 +148,9 @@ export class HandoverQueueStore {
   readonly requestedTab = this.requested.asReadonly();
 
   /** Sommes-nous sur la journée en cours ? La bande en dépend entièrement. */
-  readonly isToday = computed(() => this.day() === isoDay(this.now()));
+  /** Le jour de service, `AAAA-MM-JJ` — cerclé au calendrier. */
+  readonly today = computed(() => isoDay(this.now()));
+  readonly isToday = computed(() => this.day() === this.today());
 
   /** « samedi 16 août » — la journée regardée, écrite en toutes lettres. */
   readonly dayLabel = computed(() => DAY_LABEL.format(new Date(`${this.day()}T00:00:00`)));
@@ -364,8 +366,9 @@ export class HandoverQueueStore {
   }
 
   /**
-   * **Change de journée**, d'un jour à la fois. Deux flèches et non un
-   * calendrier : au comptoir, le besoin est « la veille » ou « demain ».
+   * **Change de journée**, d'un jour à la fois : au comptoir, le besoin est
+   * surtout « la veille » ou « demain ». Le calendrier ({@link goToDay}) sert
+   * à aller plus loin.
    */
   shiftDay(days: number): void {
     const target = addDays(this.day(), days);
@@ -374,6 +377,16 @@ export class HandoverQueueStore {
     // comportement de comptoir, bascule de minuit comprise.
     this.followingClock.set(target === isoDay(this.now()));
     this.dayState.set(target);
+  }
+
+  /**
+   * **Va à une journée choisie au calendrier** (Hugo, 2026-11-28), entre les
+   * deux flèches : la même règle qu'elles — on ne suit l'horloge que si l'on
+   * retombe exactement sur le jour courant, et la bande crie sinon.
+   */
+  goToDay(day: string): void {
+    this.followingClock.set(day === isoDay(this.now()));
+    this.dayState.set(day);
   }
 
   /** Revient au jour de service, et **rend la main à l'horloge**. */

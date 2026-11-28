@@ -16,6 +16,7 @@ import { b2bRoutes } from './b2b/b2b.routes';
 import { comptabiliteRoutes } from './comptabilite/comptabilite.routes';
 import { pimRoutes } from './pim/pim.routes';
 import { reglagesRoutes } from './reglages/reglages.routes';
+import { HEADER_SECTION } from './page-name';
 
 /**
  * **L'assemblage des routes** — et, surtout, leur ORDRE.
@@ -1140,6 +1141,9 @@ export const routes: Routes = [
     // `b2b_place_order`), et un garde commun fermerait l'un à qui ne tient que
     // l'autre. Chaque vue porte le sien — un favori atterrit sur une vue.
     path: 'comptoir',
+    // L'espace se nomme dans le fil d'en-tête (« LFC PRO / COMPTOIR ») : il
+    // n'a pas de rail qui le ferait (Hugo, 2026-11-28).
+    data: { [HEADER_SECTION]: 'Comptoir' },
     loadComponent: () =>
       import('./comptoir/comptoir-workspace/comptoir-workspace-page').then(
         (m) => m.ComptoirWorkspacePage,

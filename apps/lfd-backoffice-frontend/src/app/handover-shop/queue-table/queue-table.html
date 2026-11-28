@@ -1,151 +1,301 @@
-<fold-data-table
-  class="qt-table"
-  caption="File de retrait du comptoir"
-  narrowLayout="cards"
-  hover
-  clickable
-  [columns]="columns"
-  [rows]="rows()"
-  [rowKey]="rowKey"
-  [rowTone]="toneOf"
-  [rowNote]="hasNote"
-  [empty]="nothingFound"
-  (rowClick)="opened.emit($event)"
->
-  <!-- La barre de la file dans l'en-tête de la table (Hugo, 2026-11-03) :
-       l'écran la fournit (filtre, sens, recherche, scan), la table la pose dans
-       l'emplacement prévu par fold — une bande de moins au-dessus d'elle. -->
-  <div foldToolbar class="qt-toolbar">
-    <ng-content />
-  </div>
-
-  <!-- `fold-data-table` n'a AUCUN rendu par défaut : une colonne sans
-       `foldCell` rend une cellule vide. Chaque `key` a donc son gabarit. -->
-
-  <!-- 🔴 Une commande SANS créneau le dit, et ne se voit pas prêter une heure. -->
-  <ng-template foldCell="window" let-row>
-    @if (windowLabel(row); as slot) {
-      <span class="qt-slot" [class.qt-slot-late]="late(row)">{{ slot }}</span>
-    } @else {
-      <span class="qt-muted">Sans créneau</span>
+@if (!phone()) {
+  <fold-data-table
+    class="qt-table"
+    caption="File de retrait du comptoir"
+    narrowLayout="cards"
+    hover
+    clickable
+    [columns]="columns"
+    [rows]="rows()"
+    [rowKey]="rowKey"
+    [rowTone]="toneOf"
+    [rowNote]="hasNote"
+    [empty]="nothingFound"
+    (rowClick)="opened.emit($event)"
+  >
+    <!-- La barre de la file dans l'en-tête de la table (Hugo, 2026-11-03) :
+         l'écran la fournit (filtre, sens, recherche, scan), la table la pose dans
+         l'emplacement prévu par fold — une bande de moins au-dessus d'elle. -->
+    @if (toolbar()) {
+      <div foldToolbar class="qt-toolbar">
+        <ng-content />
+      </div>
     }
-  </ng-template>
 
-  <!-- Le nom, et sous lui l'heure du retrait une fois le sac parti. Une ligne
-       barrée reste DANS la file — une contestation se règle avec l'heure sous
-       les yeux, pas en cherchant ailleurs. -->
-  <!-- La clientèle à côté du nom : « Pro » ou « Public », telle que figée à la
-       passation. 🔴 Sur une commande d'avant la distinction (`null`), AUCUN
-       badge — rien n'est deviné. Le badge reste hors du barré : une ligne
-       retirée se relit entière. -->
-  <ng-template foldCell="customer" let-row>
-    <span class="qt-who">
-      <span class="qt-name" [class.qt-struck]="row.state === 'handed_over'">
-        {{ row.customerLabel }}
+    <!-- `fold-data-table` n'a AUCUN rendu par défaut : une colonne sans
+         `foldCell` rend une cellule vide. Chaque `key` a donc son gabarit. -->
+
+    <!-- 🔴 Une commande SANS créneau le dit, et ne se voit pas prêter une heure. -->
+    <ng-template foldCell="window" let-row>
+      @if (windowLabel(row); as slot) {
+        <span class="qt-slot" [class.qt-slot-late]="late(row)">{{ slot }}</span>
+      } @else {
+        <span class="qt-muted">Sans créneau</span>
+      }
+    </ng-template>
+
+    <!-- Le nom, et sous lui l'heure du retrait une fois le sac parti. Une ligne
+         barrée reste DANS la file — une contestation se règle avec l'heure sous
+         les yeux, pas en cherchant ailleurs. -->
+    <!-- La clientèle à côté du nom : « Pro » ou « Public », telle que figée à la
+         passation. 🔴 Sur une commande d'avant la distinction (`null`), AUCUN
+         badge — rien n'est deviné. Le badge reste hors du barré : une ligne
+         retirée se relit entière. -->
+    <ng-template foldCell="customer" let-row>
+      <span class="qt-who">
+        <span class="qt-name" [class.qt-struck]="row.state === 'handed_over'">
+          {{ row.customerLabel }}
+        </span>
+        @if (clienteleLabel(row); as who) {
+          <fold-badge radius="square" [variant]="clienteleVariant(row)" [content]="who" />
+        }
+        <!-- La commande ouverte dans le rail — par un clic ou par le QR. Plus de
+             badge « Ouverte » (Hugo, 2026-11-03 : il se lisait comme un état de
+             la commande) : un marqueur invisible, que le contour de la ligne et
+             le défilement lisent. -->
+        @if (isCurrent(row)) {
+          <span class="qt-current-mark" data-current aria-hidden="true"></span>
+        }
       </span>
-      @if (clienteleLabel(row); as who) {
-        <fold-badge radius="square" [variant]="clienteleVariant(row)" [content]="who" />
+      @if (handedOverAt(row); as done) {
+        <span class="qt-sub">{{ done }}</span>
       }
-      <!-- La commande ouverte dans le rail — par un clic ou par le QR. Plus de
-           badge « Ouverte » (Hugo, 2026-11-03 : il se lisait comme un état de
-           la commande) : un marqueur invisible, que le contour de la ligne et
-           le défilement lisent. -->
-      @if (isCurrent(row)) {
-        <span class="qt-current-mark" data-current aria-hidden="true"></span>
-      }
-    </span>
-    @if (handedOverAt(row); as done) {
-      <span class="qt-sub">{{ done }}</span>
+    </ng-template>
+
+    <!-- Le numéro dans sa colonne : c'est ce qu'on compare à l'écran d'un client
+         ou à ce qu'il épelle au téléphone, et une colonne alignée se compare
+         caractère par caractère. -->
+    <ng-template foldCell="reference" let-row>
+      <span class="qt-ref">{{ row.reference }}</span>
+    </ng-template>
+
+    <ng-template foldCell="units" let-row>
+      <span class="qt-units">{{ row.totalUnits }}</span>
+    </ng-template>
+
+    <!-- 🔴 L'état SEUL. Le retard a vécu ici aussi, en pastille ambre, pendant
+         que la note le répétait deux lignes plus bas — la même minute écrite
+         deux fois, dans deux tons, sur la même ligne. -->
+    <ng-template foldCell="state" let-row>
+      <span class="qt-state">
+        <fold-badge [variant]="variant(row)" [content]="label(row)" />
+        <!-- Un manque signalé au colisage : le superviseur décide, le comptoir
+             attend (plan des niveaux de suivi du colisage, D7). -->
+        @if (row.awaitingShortfallDecision) {
+          <fold-badge
+            variant="warning"
+            content="Décision du superviseur attendue"
+            data-awaiting-decision
+          />
+        }
+      </span>
+    </ng-template>
+
+    <!-- **La carte du téléphone** (Hugo, 2026-11-28) : l'enseigne en gras et
+         sa clientèle, l'état à droite, la raison sociale dessous, puis le créneau, la
+         référence et les pièces sur une ligne. Les notes (retard, manque,
+         transfert) restent dessous, comme sur la table. -->
+    <ng-template foldRowCard let-row>
+      <ng-container *ngTemplateOutlet="card; context: { $implicit: row }" />
+    </ng-template>
+
+    <!--
+      **Le retard s'annonce SOUS la ligne**, et pas dans une colonne. Il n'y
+      porte plus de geste : « Envoyer un rappel » est parti à la supervision le
+      2026-10-25 (Hugo).
+
+      🔴 Une NOTE et non un tiroir (`foldRowNote`, fold 0.26). Le tiroir fait
+      pousser un chevron sur CHAQUE ligne, parce qu'il cache quelque chose ; un
+      retard ne se cache pas — un avertissement qu'il faut déplier n'alerte
+      personne. La note est là sur les lignes que `hasNote` désigne, et sur
+      aucune autre.
+    -->
+    <ng-template foldRowNote let-row>
+      <ng-container *ngTemplateOutlet="note; context: { $implicit: row }" />
+    </ng-template>
+  </fold-data-table>
+} @else {
+  <!-- **Au téléphone, deux listes** (Hugo, 2026-11-28) : ce qui reste à tendre,
+       puis un séparateur, puis les retirées, qu'on peut replier. Deux tables
+       et non une : la note de fold se dessine DANS la carte, et le séparateur
+       doit tomber ENTRE les cartes. -->
+  <fold-data-table
+    class="qt-table"
+    caption="File de retrait du comptoir — à tendre"
+    narrowLayout="cards"
+    hover
+    clickable
+    [columns]="columns"
+    [rows]="waitingRows()"
+    [rowKey]="rowKey"
+    [rowTone]="toneOf"
+    [rowNote]="hasNowLine"
+    [empty]="nothingFound"
+    (rowClick)="opened.emit($event)"
+  >
+    <ng-template foldRowCard let-row>
+      <ng-container *ngTemplateOutlet="card; context: { $implicit: row }" />
+    </ng-template>
+    <ng-template foldRowNote let-row>
+      <ng-container *ngTemplateOutlet="note; context: { $implicit: row }" />
+    </ng-template>
+  </fold-data-table>
+
+  @if (handedRows().length > 0) {
+    <div class="qt-split" data-handed-split>
+      <span class="qt-split-label">Retirées · {{ handedRows().length }}</span>
+      <button
+        foldButton
+        emphasis="soft"
+        intent="neutral"
+        size="sm"
+        [icon]="hideHandedOver() ? 'eye' : 'eye-off'"
+        (click)="hideHandedOver.set(!hideHandedOver())"
+        data-toggle-handed
+      >
+        {{ hideHandedOver() ? 'Afficher' : 'Masquer' }}
+      </button>
+    </div>
+    @if (!hideHandedOver()) {
+      <fold-data-table
+        class="qt-table"
+        caption="File de retrait du comptoir — retirées"
+        narrowLayout="cards"
+        hover
+        clickable
+        [columns]="columns"
+        [rows]="handedRows()"
+        [rowKey]="rowKey"
+        [rowTone]="toneOf"
+        (rowClick)="opened.emit($event)"
+      >
+        <ng-template foldRowCard let-row>
+          <ng-container *ngTemplateOutlet="card; context: { $implicit: row }" />
+        </ng-template>
+      </fold-data-table>
     }
-  </ng-template>
+  }
+}
 
-  <!-- Le numéro dans sa colonne : c'est ce qu'on compare à l'écran d'un client
-       ou à ce qu'il épelle au téléphone, et une colonne alignée se compare
-       caractère par caractère. -->
-  <ng-template foldCell="reference" let-row>
-    <span class="qt-ref">{{ row.reference }}</span>
-  </ng-template>
-
-  <ng-template foldCell="units" let-row>
-    <span class="qt-units">{{ row.totalUnits }}</span>
-  </ng-template>
-
-  <!-- 🔴 L'état SEUL. Le retard a vécu ici aussi, en pastille ambre, pendant
-       que la note le répétait deux lignes plus bas — la même minute écrite
-       deux fois, dans deux tons, sur la même ligne. -->
-  <ng-template foldCell="state" let-row>
-    <span class="qt-state">
-      <fold-badge [variant]="variant(row)" [content]="label(row)" />
-      <!-- Un manque signalé au colisage : le superviseur décide, le comptoir
-           attend (plan des niveaux de suivi du colisage, D7). -->
-      @if (row.awaitingShortfallDecision) {
-        <fold-badge
-          variant="warning"
-          content="Décision du superviseur attendue"
-          data-awaiting-decision
-        />
-      }
-    </span>
-  </ng-template>
-
-  <!--
-    **Le retard s'annonce SOUS la ligne**, et pas dans une colonne. Il n'y
-    porte plus de geste : « Envoyer un rappel » est parti à la supervision le
-    2026-10-25 (Hugo).
-
-    🔴 Une NOTE et non un tiroir (`foldRowNote`, fold 0.26). Le tiroir fait
-    pousser un chevron sur CHAQUE ligne, parce qu'il cache quelque chose ; un
-    retard ne se cache pas — un avertissement qu'il faut déplier n'alerte
-    personne. La note est là sur les lignes que `hasNote` désigne, et sur
-    aucune autre.
-  -->
-  <ng-template foldRowNote let-row>
-    <!-- Le trait sous la note (Hugo, 2026-11-03) : fold trace le sien sous la
-         ligne, donc ENTRE la ligne et sa note ; sans celui-ci, rien ne séparait
-         la note de la commande suivante. -->
-    <div class="qt-note">
-      <!-- Départ incomplet décidé (2026-10-25) : le comptoir voit ce qui ne part
+<!-- Les avertissements d'une ligne — incomplète, transfert, retard —, rendus
+     sous la ligne sur la table et derrière le « i » d'une carte. -->
+<ng-template #callouts let-row>
+  <div class="qt-callouts">
+    <!-- Départ incomplet décidé (2026-10-25) : le comptoir voit ce qui ne part
            pas AVANT d'ouvrir la fiche. Il informe ; prévenir le client est une
            décision du commerce (« Écrire au client », E6d). -->
-      <!-- Une ligne, pas la liste (Hugo, 2026-11-03 : elle mangeait la file) :
+    <!-- Une ligne, pas la liste (Hugo, 2026-11-03 : elle mangeait la file) :
            le détail article par article est dans le rail. -->
-      @if (abandoned(row); as lines) {
-        <fold-callout appearance="inset" variant="warning" icon="info" data-missing-summary>
-          <strong>Commande incomplète</strong> · {{ missingSummary(lines) }}
-        </fold-callout>
-      }
-      <!-- Le transfert du site n'est pas reçu : la remise est refusée, et la
+    @if (abandoned(row); as lines) {
+      <fold-callout appearance="inset" variant="warning" icon="info" data-missing-summary>
+        <strong>Commande incomplète</strong> · {{ missingSummary(lines) }}
+      </fold-callout>
+    }
+    <!-- Le transfert du site n'est pas reçu : la remise est refusée, et la
            ligne dit pourquoi (plan du transfert interne, §6.2). -->
-      @if (transferBlock(row); as why) {
-        <fold-callout appearance="inset" variant="info" icon="truck">{{ why }}</fold-callout>
-      }
-      <!-- L'origine du retard, comme en Supervision (Hugo, 2026-11-03) : en
+    @if (transferBlock(row); as why) {
+      <fold-callout appearance="inset" variant="info" icon="truck">{{ why }}</fold-callout>
+    }
+    <!-- L'origine du retard, comme en Supervision (Hugo, 2026-11-03) : en
            alerte quand c'est nous, en avertissement quand le client n'est pas
            venu. -->
-      @if (lateCause(row); as cause) {
-        @if (cause === 'kitchen') {
-          <fold-callout appearance="inset" variant="alert" icon="info" data-late-cause="kitchen">
-            <strong>{{ lateText(row) }}</strong> · par nous : le sac n'était pas prêt à la fin du
-            créneau.
-          </fold-callout>
-        } @else {
-          <fold-callout appearance="inset" variant="warning" icon="info" data-late-cause="customer">
-            <strong>{{ lateText(row) }}</strong> · client pas venu : le sac était prêt à temps.
-          </fold-callout>
+    @if (lateCause(row); as cause) {
+      @if (cause === 'kitchen') {
+        <fold-callout appearance="inset" variant="alert" icon="info" data-late-cause="kitchen">
+          <strong>{{ lateText(row) }}</strong> · par nous : le sac n'était pas prêt à la fin du
+          créneau.
+        </fold-callout>
+      } @else {
+        <fold-callout appearance="inset" variant="warning" icon="info" data-late-cause="customer">
+          <strong>{{ lateText(row) }}</strong> · client pas venu : le sac était prêt à temps.
+        </fold-callout>
+      }
+    }
+  </div>
+</ng-template>
+
+<!-- La carte d'une ligne (Hugo, 2026-11-28), commune aux listes du téléphone et
+     à la table quand sa colonne devient étroite. -->
+<ng-template #card let-row>
+  <div class="qc" [attr.data-queue-card]="row.orderId">
+    <div class="qc-main">
+      <div class="qc-left">
+        <span class="qc-who">
+          <span class="qc-name" [class.qt-struck]="row.state === 'handed_over'">
+            {{ row.tradeName ?? row.customerLabel }}
+          </span>
+          @if (clienteleLabel(row); as who) {
+            <fold-badge radius="square" [variant]="clienteleVariant(row)" [content]="who" />
+          }
+        </span>
+        @if (row.tradeName !== null) {
+          <span class="qc-legal">{{ row.customerLabel }}</span>
         }
-      }
-      <!-- La barre « maintenant » (Hugo, 2026-11-03) : sous la dernière ligne
-           d'un côté de l'heure, comme l'heure d'un agenda. -->
-      @if (row.orderId === nowAfter()) {
-        <div
-          class="qt-now"
-          role="separator"
-          [attr.aria-label]="'Maintenant, ' + nowLabel()"
-          data-now-line
-        >
-          <span class="qt-now-label">Maintenant · {{ nowLabel() }}</span>
-        </div>
-      }
+        <span class="qc-meta">
+          <span class="qt-ref">{{ row.reference }}</span>
+          <span class="qc-units">{{ row.totalUnits }} pièces</span>
+        </span>
+      </div>
+      <!-- L'heure en haut à droite, l'état dessous (Hugo, 2026-11-28). -->
+      <div class="qc-right">
+        @if (windowLabel(row); as slot) {
+          <span class="qt-slot" [class.qt-slot-late]="late(row)">{{ slot }}</span>
+        } @else {
+          <span class="qt-muted">Sans créneau</span>
+        }
+        <!-- L'état et, devant lui, le « i » : une ligne de moins par carte. -->
+        <span class="qc-state">
+          @if (hasCallouts(row)) {
+            <!-- Le « i » prend la couleur de l'alerte : un avertissement replié
+                   doit se voir replié. Il ne rouvre pas la fiche. -->
+            <fold-button-icon
+              size="sm"
+              [icon]="isOpenNote(row) ? 'close' : 'info'"
+              [tone]="calloutTone(row)"
+              [tooltip]="isOpenNote(row) ? 'Masquer l’avertissement' : 'Voir l’avertissement'"
+              (clicked)="toggleNote(row, $event)"
+              data-card-note-toggle
+            />
+          }
+          <fold-badge [variant]="variant(row)" [content]="cardLabel(row)" />
+        </span>
+      </div>
     </div>
-  </ng-template>
-</fold-data-table>
+    @if (row.awaitingShortfallDecision) {
+      <fold-badge variant="warning" content="Décision du superviseur attendue" />
+    }
+    @if (isOpenNote(row)) {
+      <ng-container *ngTemplateOutlet="callouts; context: { $implicit: row }" />
+    }
+    @if (isCurrent(row)) {
+      <span class="qt-current-mark" data-current aria-hidden="true"></span>
+    }
+  </div>
+</ng-template>
+
+<!-- Ce qui se lit SOUS une ligne : les avertissements (sauf au téléphone, où la
+     carte les replie derrière son « i ») et la barre « maintenant ». -->
+<ng-template #note let-row>
+  <!-- Le trait sous la note (Hugo, 2026-11-03) : fold trace le sien sous la
+         ligne, donc ENTRE la ligne et sa note ; sans celui-ci, rien ne séparait
+         la note de la commande suivante. -->
+  <div class="qt-note">
+    <!-- Au téléphone, ces avertissements se lisent sur la carte, derrière
+           son « i » (Hugo, 2026-11-28) ; ici, la barre « maintenant » seule. -->
+    @if (!phone()) {
+      <ng-container *ngTemplateOutlet="callouts; context: { $implicit: row }" />
+    }
+    <!-- La barre « maintenant » (Hugo, 2026-11-03) : sous la dernière ligne
+           d'un côté de l'heure, comme l'heure d'un agenda. -->
+    @if (row.orderId === nowAfter()) {
+      <div
+        class="qt-now"
+        role="separator"
+        [attr.aria-label]="'Maintenant, ' + nowLabel()"
+        data-now-line
+      >
+        <span class="qt-now-label">Maintenant · {{ nowLabel() }}</span>
+      </div>
+    }
+  </div>
+</ng-template>

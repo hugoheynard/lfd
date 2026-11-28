@@ -51,12 +51,6 @@ fold-tabs {
   background: var(--fold-color-surface-raised);
 }
 
-.day-label {
-  font-variant-numeric: tabular-nums;
-  /* Première lettre en capitale : `Intl` rend « samedi », la bande dit « Samedi ». */
-  text-transform: capitalize;
-}
-
 /* Le retour, et il ne paraît QUE hors de la journée en cours. */
 .day-today {
   min-height: 3rem;
@@ -118,4 +112,45 @@ fold-tabs {
 .mc-clock {
   color: var(--fold-color-text-muted);
   font-family: var(--fold-font-mono);
+}
+
+/* Au téléphone, la ligne des compteurs saute (Hugo, 2026-11-28) : les onglets
+   des points portent déjà leur compte, et la hauteur est ce qui manque. */
+@media (max-width: 40rem) {
+  .masthead-counters {
+    display: none;
+  }
+}
+
+/* Au téléphone, la journée n'a plus sa place dans la bande : le calendrier
+   est dans la grappe du bas, et l'avertissement porte la date et le retour.
+   La bande ne garde que les points, et l'avertissement passe dessous. */
+@media (max-width: 40rem) {
+  :host {
+    gap: var(--fold-space-xs);
+  }
+
+  .masthead-day {
+    display: none;
+  }
+
+  .masthead-warning {
+    display: flex;
+    align-items: center;
+    gap: var(--fold-space-sm);
+    padding: var(--fold-space-sm);
+  }
+
+  .warning-text {
+    flex: 1 1 auto;
+  }
+
+  .warning-day {
+    text-transform: capitalize;
+  }
+
+  .masthead-warning .day-today {
+    flex: none;
+    min-height: 2.5rem;
+  }
 }
