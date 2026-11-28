@@ -23,6 +23,7 @@ import {
 } from "../src/lafoliecoffee/orders/application/handlers/on-production-day-closed.handler.js";
 import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import {
   CompanyStatus,
   CustomerRole,
@@ -250,11 +251,13 @@ describe("le BL prévu naît à l'arrêt du plan", () => {
     const fact = new ProductionDayClosedEvent(DAY, confirmedAt, [account]);
 
     // La livraison rejouée, telle que le relais la ferait : même charge.
-    await ctx.app.get(OnProductionDayClosed).handle({
-      eventId: `replay-${ON_PRODUCTION_DAY_CLOSED}`,
-      type: "production.day_closed",
-      payload: fact.durableFact().payload,
-    });
+    await ctx.app.get(UnitOfWork).run(() =>
+      ctx.app.get(OnProductionDayClosed).handle({
+        eventId: `replay-${ON_PRODUCTION_DAY_CLOSED}`,
+        type: "production.day_closed",
+        payload: fact.durableFact().payload,
+      }),
+    );
 
     expect(await notesOf(account)).toEqual([first]);
   });

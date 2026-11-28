@@ -1,4 +1,5 @@
 import { ORDER_REVIEW_STARTS_AT } from "../../src/lafoliecoffee/orders/domain/services/order-review-start.js";
+import { serviceDay } from "../e2e-harness.js";
 import { INTENT_KEY, freshIntent } from "../intent-key.js";
 import { placeOrder } from "../order-factory.js";
 import { routeKey, STAFF, staffOf, type ReplayWorld, type ScenarioSet } from "./scenario.js";
@@ -15,6 +16,8 @@ async function proOrderToReview(world: ReplayWorld): Promise<string> {
     buyerUserId: ownerId,
     companyId,
     fulfillment: { method: "pickup", pickupSiteId },
+    // Régression : le jour déduit de `placedAt` (fixe) passait, et le visa refusait `SameDayOrderClosedError`.
+    forDay: serviceDay(),
     // Comparée à la mise en service, jamais à l'horloge du scénario.
     placedAt: new Date(ORDER_REVIEW_STARTS_AT.getTime() + 60_000),
   });

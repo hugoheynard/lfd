@@ -106,6 +106,47 @@ const PRINT_SCENARIOS: ScenarioSet = {
   },
 };
 
+const PLAN_VERSIONS = "production/plan/http/production-plan-versions.controller.ts";
+const PLAN_HISTORY = `/admin/production/batch/${SERVICE_DAY}/plan-history`;
+
+/**
+ * Le renvoi du dossier (`fournil/plan-historique-des-tirages.md`, H6) : un
+ * destinataire ajouté APRÈS l'arrêt n'a reçu aucune version, il est à servir.
+ */
+const PLAN_VERSION_SCENARIOS: ScenarioSet = {
+  [routeKey(PLAN_VERSIONS, "resend")]: async ({ ctx }) => {
+    const buyer = await createUser(ctx.prisma, { auth0Sub: "replay-dossier", firstName: "Léna" });
+    const order = await placeOrder(ctx, {
+      buyerUserId: buyer.id,
+      forDay: serviceDay(),
+      fulfillment: { method: "pickup", pickupSiteId: await pickupPoint(ctx) },
+      lines: [{ sku: CROISSANT, quantity: 2 }],
+    });
+    await payByCard(ctx, order);
+    await closePlan(ctx);
+    await ctx.drain();
+    await ctx
+      .asSub(STAFF)
+      .post("/admin/production/settings/dossier-recipients")
+      .set(INTENT_KEY, freshIntent())
+      .send({
+        kind: "external",
+        email: "jeanne@imprimerie.fr",
+        firstName: "Jeanne",
+        lastName: "Roux",
+      })
+      .expect(201);
+    const listed = await ctx.asSub(STAFF).get(`${PLAN_HISTORY}/dispatches`).expect(200);
+    const [recipient] = jsonBody<readonly { recipientId: string }[]>(listed);
+    if (recipient === undefined) throw new RangeError("e2e : aucun destinataire du dossier");
+    return {
+      sub: STAFF,
+      path: `${PLAN_HISTORY}/resend`,
+      body: { target: "recipient", recipientId: recipient.recipientId },
+    };
+  },
+};
+
 /** Les postes du fournil (plan `fournil/les-postes-du-fournil.md`, W1). */
 export const PRODUCTION_SCENARIOS: ScenarioSet = {
   [routeKey(CONTROLLER, "declare")]: () =>
@@ -152,4 +193,5 @@ export const PRODUCTION_SCENARIOS: ScenarioSet = {
   ...WORKSHEET_SCENARIOS,
   ...TRACKING_SCENARIOS,
   ...PRINT_SCENARIOS,
+  ...PLAN_VERSION_SCENARIOS,
 };
