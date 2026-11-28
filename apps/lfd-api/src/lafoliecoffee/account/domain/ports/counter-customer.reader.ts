@@ -18,7 +18,8 @@ export abstract class CounterCustomerReader {
   /**
    * La carte d'une société **active**, ou `null` — inconnue et non active se
    * confondent ici : le comptoir ne distingue pas un compte suspendu d'un
-   * compte absent.
+   * compte absent. Un compte ouvert au comptoir (`counter_opened`) se sert
+   * aussi : le comptoir le saisit dès son ouverture (`plan-comptes-du-comptoir.md`).
    */
   abstract activeCard(companyId: string): Promise<CounterCustomerCard | null>;
 }

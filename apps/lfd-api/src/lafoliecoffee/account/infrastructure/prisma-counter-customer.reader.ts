@@ -53,7 +53,11 @@ export class PrismaCounterCustomerReader extends CounterCustomerReader {
 
   async activeCard(companyId: string): Promise<CounterCustomerCard | null> {
     const row = await this.prisma.company.findFirst({
-      where: { id: companyId, status: CompanyStatus.active, archivedAt: null },
+      where: {
+        id: companyId,
+        status: { in: [CompanyStatus.active, CompanyStatus.counter_opened] },
+        archivedAt: null,
+      },
       select: CARD_COLUMNS,
     });
     return row === null ? null : toCard(row);

@@ -48,6 +48,12 @@ export interface StaffSettlementPorts {
  * au comptoir — pas « réglez par lien » (Hugo, 2026-11-03). Mêmes lectures
  * que `accountStanding`, séparées pour distinguer la société inactive du
  * délai non accordé.
+ *
+ * Un compte ouvert au comptoir (`counter_opened`) règle au compte sur ce
+ * chemin seulement, et seulement pour qui détient `b2b_counter_accounts:write`
+ * (`chargesCounterAccounts`, lu en base par la porte staff) — plan
+ * `documentation/comptes-client/plan-comptes-du-comptoir.md`, § 3.2.
+ * `accountStanding`, le chemin de la boutique, continue de le refuser.
  */
 export async function staffSettlementRefusal(
   ports: StaffSettlementPorts,
@@ -55,6 +61,7 @@ export async function staffSettlementRefusal(
   settlement: StaffSettlement,
   companyId: string,
   atCounter: boolean,
+  chargesCounterAccounts = false,
 ): Promise<
   | AccountSettlementNotGrantedError
   | SuspendedCompanyAccountSettlementError
@@ -81,7 +88,8 @@ export async function staffSettlementRefusal(
     return new PublicBuyerCardRefusedError();
   }
   if (settlement === "account") {
-    const refusal = await accountRefusal(ports.guard, order, companyId, atCounter);
+    const counter = atCounter ? { chargesCounterAccounts } : null;
+    const refusal = await accountRefusal(ports.guard, order, companyId, counter);
     if (refusal !== null && (await ports.guard.isPublicPayer(payerId))) {
       return new PublicBuyerAccountUnavailableError();
     }
@@ -102,15 +110,19 @@ async function accountRefusal(
   guard: StaffSettlementPorts["guard"],
   order: Order,
   companyId: string,
-  atCounter: boolean,
+  counter: CounterGrants | null,
 ): Promise<
   | AccountSettlementNotGrantedError
   | SuspendedCompanyAccountSettlementError
   | CounterAccountSettlementNotGrantedError
   | null
 > {
-  if (atCounter) {
-    return counterAccountRefusal(guard, { companyId, payerId: order.billedCompanyId });
+  if (counter !== null) {
+    return counterAccountRefusal(
+      guard,
+      { companyId, payerId: order.billedCompanyId },
+      counter.chargesCounterAccounts,
+    );
   }
   // É18 : la suspendue est servie comme dans son espace (lot P0), jamais au
   // compte — et un payeur suspendu ferme le compte de ses sites (décision 2).
@@ -129,14 +141,22 @@ async function accountRefusal(
     : new AccountSettlementNotGrantedError(standing === "blocked");
 }
 
+/** Ce que le droit de celui qui saisit ouvre au comptoir. */
+interface CounterGrants {
+  /** `b2b_counter_accounts:write` : régler au compte d'un compte du comptoir. */
+  readonly chargesCounterAccounts: boolean;
+}
+
 /** Le refus du comptoir, par cause — ou `null` quand le compte règle. */
 async function counterAccountRefusal(
   guard: StaffSettlementPorts["guard"],
   parties: { readonly companyId: string; readonly payerId: string | null },
+  chargesCounterAccounts: boolean,
 ): Promise<CounterAccountSettlementNotGrantedError | null> {
   const status = await guard.companyStatusOf(parties.companyId);
   const statusRefusal = counterStatusRefusalOf(
     await settlingStatusOf(guard, parties.companyId, parties.payerId, status),
+    chargesCounterAccounts,
   );
   if (statusRefusal) {
     return statusRefusal;
@@ -159,20 +179,31 @@ async function counterAccountRefusal(
  * suffit à savoir que « Au compte » serait refusé aussi. Le refus du lien dit
  * alors la cause réelle au lieu d'envoyer le vendeur vers un second refus
  * (Hugo, 2026-11-03, option a).
+ *
+ * Un compte du comptoir n'y est pas dit « inactif » : il règle au compte pour
+ * qui en a le droit, et le lien garde alors son propre refus. Ce rang ne
+ * juge aucun crédit — la passation au compte le juge, droit compris.
  */
 export async function counterCompanyStatusRefusal(
   guard: Pick<StaffSettlementPorts["guard"], "companyStatusOf">,
   companyId: string,
 ): Promise<CounterAccountSettlementNotGrantedError | null> {
-  return counterStatusRefusalOf(await guard.companyStatusOf(companyId));
+  return counterStatusRefusalOf(await guard.companyStatusOf(companyId), true);
 }
 
-/** La règle, sur un statut déjà lu — de la société, ou de son payeur. */
+/**
+ * La règle, sur un statut déjà lu — de la société, ou de son payeur. Un
+ * compte du comptoir passe quand celui qui saisit en a le droit.
+ */
 function counterStatusRefusalOf(
   status: OrderCompanyStatus | null,
+  admitsCounterOpened: boolean,
 ): CounterAccountSettlementNotGrantedError | null {
   if (status === "suspended") {
     return new CounterAccountSettlementNotGrantedError("company_suspended");
+  }
+  if (status === "counter_opened" && admitsCounterOpened) {
+    return null;
   }
   if (status !== "active") {
     return new CounterAccountSettlementNotGrantedError("company_inactive");

@@ -118,6 +118,11 @@ export class IssuePasswordLinkHandler implements ICommandHandler<
     if (subject === null) {
       throw new PendingAccessNotFoundError(command.userId);
     }
+    // La société nommée est jugée avant tout appel au fournisseur : un compte
+    // ouvert au comptoir ne fait fabriquer aucun lien.
+    if (command.companyId !== null) {
+      await this.ensureAdmitsMembers(command.companyId);
+    }
     const url = await this.identity.issuePasswordLink(subject);
     return await this.uow.run(async () => {
       const renewed = await this.renewal.renew(command.userId, command.companyId, this.clock.now());

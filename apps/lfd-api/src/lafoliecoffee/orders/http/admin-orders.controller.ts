@@ -234,6 +234,7 @@ export class AdminOrdersController {
         intentKey,
         mayExceedItemLimits(permissions),
         hasStaffPermission(permissions, "b2b_offer_order:write"),
+        hasStaffPermission(permissions, "b2b_counter_accounts:write"),
       ),
     );
     // `exactOptionalPropertyTypes` : `paymentUrl` est présent ou absent, jamais

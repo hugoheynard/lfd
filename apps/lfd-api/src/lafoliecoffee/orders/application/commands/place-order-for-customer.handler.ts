@@ -118,6 +118,7 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
             staffUserId: command.staffUserId,
             payload: command.payload,
             exceedItemLimits: command.exceedItemLimits,
+            chargesCounterAccounts: command.chargesCounterAccounts,
           },
           PLACEMENT_POLICY,
           ORDINARY_STAFF_PLACEMENT,

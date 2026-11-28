@@ -39,6 +39,7 @@ export class EstimateOrderForCustomerHandler implements IQueryHandler<
       query.payload,
       query.exceedItemLimits,
       PLACEMENT_POLICY,
+      query.chargesCounterAccounts,
     );
   }
 }

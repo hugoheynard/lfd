@@ -54,6 +54,7 @@ export class StaffOrderEstimation {
     payload: AdminOrderEstimatePayload,
     exceedItemLimits: boolean,
     policy: DraftPolicy,
+    chargesCounterAccounts = false,
   ): Promise<AdminOrderEstimateView> {
     return withCatalogueSnapshot(async () => {
       const drafted = await this.draftOrRefusal(staffUserId, payload, exceedItemLimits, policy);
@@ -65,7 +66,7 @@ export class StaffOrderEstimation {
         amounts: amountsViewOf(drafted.order.amounts(), drafted.order.offer),
         cutoff,
         refusal: null,
-        warnings: await this.warningsOf(drafted.order, payload),
+        warnings: await this.warningsOf(drafted.order, payload, chargesCounterAccounts),
       };
     });
   }
@@ -98,6 +99,7 @@ export class StaffOrderEstimation {
   private async warningsOf(
     order: Order,
     payload: AdminOrderEstimatePayload,
+    chargesCounterAccounts: boolean,
   ): Promise<readonly AdminOrderEstimateNotice[]> {
     const short = await this.ports.shelf.stockShortfallOf(order);
     const credit = await staffSettlementRefusal(
@@ -106,6 +108,7 @@ export class StaffOrderEstimation {
       payload.settlement,
       payload.companyId,
       isCounterEntry(payload.entryOrigin, payload.entryShortcut),
+      chargesCounterAccounts,
     );
     return [short, credit].flatMap((warning) =>
       warning === null ? [] : [{ code: warning.code, message: warning.message }],

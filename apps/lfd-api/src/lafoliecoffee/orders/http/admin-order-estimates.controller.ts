@@ -2,6 +2,7 @@ import {
   type AdminOrderEstimateView,
   type AdminOrderEstimatePayload,
   adminOrderEstimatePayloadSchema,
+  hasStaffPermission,
   type StaffPermission,
 } from "@lfd/contracts";
 import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
@@ -45,7 +46,12 @@ export class AdminOrderEstimatesController {
     @StaffPermissions() permissions: readonly StaffPermission[],
   ): Promise<AdminOrderEstimateView> {
     return this.queries.execute<EstimateOrderForCustomerQuery, AdminOrderEstimateView>(
-      new EstimateOrderForCustomerQuery(staffUserId, payload, mayExceedItemLimits(permissions)),
+      new EstimateOrderForCustomerQuery(
+        staffUserId,
+        payload,
+        mayExceedItemLimits(permissions),
+        hasStaffPermission(permissions, "b2b_counter_accounts:write"),
+      ),
     );
   }
 }
