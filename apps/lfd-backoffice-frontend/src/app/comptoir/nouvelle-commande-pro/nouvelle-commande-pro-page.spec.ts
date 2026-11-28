@@ -193,12 +193,11 @@ describe('NouvelleCommandeProPage — retour de la saisie', () => {
     TestBed.resetTestingModule();
   });
 
-  it('garde l’origine et le point dans son lien de retour', async () => {
-    // Sans quoi le choix pro ou particulier perdrait le chemin du retour.
+  it('le lien retour ramène à l’écran d’où l’on vient, et le nomme', async () => {
     const host = await arriveWith({}, NO_DRAFT, { retour: '/comptoir', point: 'p1' });
-    expect(host.querySelector('fold-back-link a')?.getAttribute('href')).toBe(
-      '/nouvelle-commande?retour=%2Fcomptoir&point=p1',
-    );
+    const back = host.querySelector('fold-back-link a');
+    expect(back?.getAttribute('href')).toBe('/comptoir');
+    expect(back?.textContent).toContain('Retour au comptoir');
   });
 
   it('« Terminer » ramène à l’origine', async () => {

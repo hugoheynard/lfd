@@ -1,10 +1,7 @@
 <fold-page-layout title="Nouvelle commande pro">
-  <fold-back-link
-    pageEyebrow
-    routerLink="/nouvelle-commande"
-    queryParamsHandling="preserve"
-    label="Pro ou particulier"
-  />
+  <!-- Le retour ramène d'où l'on vient — le comptoir, la liste des commandes
+     —, d'où le « + » a ouvert la saisie (Hugo, 2026-11-28). -->
+  <fold-back-link pageEyebrow [routerLink]="backTarget()" [label]="backLabel()" />
   @if (placed(); as order) {
     <div class="placed">
       <fold-callout variant="success" announce>
@@ -62,10 +59,19 @@
 
   @if (canOpenProspect) {
     <!-- Une enseigne qui n'est pas encore cliente (une dégustation) : son
-         compte s'ouvre sans e-mail, puis sa saisie. -->
-    <div class="row" data-prospect>
-      <button foldButton emphasis="outline" type="button" (click)="openProspect()">
-        Nouvelle enseigne
+         compte s'ouvre sans e-mail, puis sa saisie. Au téléphone, le bouton
+         flotte en bas, sous le pouce (Hugo, 2026-11-28). -->
+    <div class="row" [class.prospect-fab]="narrow()" data-prospect>
+      <button
+        foldButton
+        [emphasis]="narrow() ? 'solid' : 'outline'"
+        [size]="narrow() ? 'lg' : 'md'"
+        [shape]="narrow() ? 'pill' : 'rounded'"
+        icon="plus"
+        type="button"
+        (click)="openProspect()"
+      >
+        Créer un compte pro
       </button>
     </div>
   }
@@ -89,34 +95,42 @@
         </fold-empty-state>
       } @else {
         <div class="picker">
-          <p class="picker-hint">
-            Cherchez le compte du client, puis saisissez sa commande. Seuls les comptes pro actifs
-            sont proposés.
-          </p>
+          @if (!narrow()) {
+            <p class="picker-hint">
+              Cherchez le compte du client, puis saisissez sa commande. Seuls les comptes pro actifs
+              sont proposés.
+            </p>
+          }
           <fold-search
-            placeholder="Raison sociale, enseigne, référence, SIRET…"
+            class="picker-search"
+            [variant]="narrow() ? 'underline' : 'default'"
+            [placeholder]="
+              narrow() ? 'Rechercher un compte…' : 'Raison sociale, enseigne, référence, SIRET…'
+            "
             ariaLabel="Chercher un compte client"
             [resultCount]="rows().length"
+            [resultLabel]="rows().length === 1 ? 'compte' : 'comptes'"
             (searchChange)="onSearchChange($event)"
           />
 
           @for (row of rows(); track row.id) {
+            <!-- Le nom en gras, d'un coup d'œil ; la référence et le SIRET en
+                 petit, pour départager deux maisons du même nom. -->
             <fold-card
               interactive
+              padding="sm"
               [ariaLabel]="'Commander pour ' + row.name"
               (activated)="choose(row.id)"
             >
-              <fold-element-title variant="title" [title]="row.name" [subtitle]="row.detail">
+              <div class="account">
+                <span class="account-text">
+                  <span class="account-name">{{ row.name }}</span>
+                  <span class="account-detail">{{ row.detail }}</span>
+                </span>
                 @if (row.draft; as draft) {
-                  <fold-badge
-                    titleAction
-                    variant="warning"
-                    radius="pill"
-                    [content]="draft"
-                    data-draft-badge
-                  />
+                  <fold-badge variant="warning" radius="pill" [content]="draft" data-draft-badge />
                 }
-              </fold-element-title>
+              </div>
             </fold-card>
           } @empty {
             <fold-empty-state

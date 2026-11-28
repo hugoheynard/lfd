@@ -11,7 +11,6 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
-  FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldLoadingStateComponent,
@@ -27,7 +26,10 @@ import {
   COUNTER_ORDER_ENTRY_LINK,
   counterPlacedOrderOf,
 } from '../../commandes/nouvelle-commande/order-entry-origin';
-import { returnTargetOf } from '../../commandes/nouvelle-commande/order-entry-return';
+import {
+  returnLabelOf,
+  returnTargetOf,
+} from '../../commandes/nouvelle-commande/order-entry-return';
 import { OrderDraftsService } from '../../commandes/order-drafts.service';
 import { NotifyService } from '../../notify.service';
 import { CounterCustomersService } from '../counter-customers.service';
@@ -35,6 +37,7 @@ import { CounterDeliveryNoteService } from '../counter-delivery-note.service';
 import { matchesCounterSearch } from '../counter-customer-search';
 import { draftBadgeLabel } from './draft-badge-label';
 import { ProspectPanel } from './prospect-panel/prospect-panel';
+import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -78,7 +81,6 @@ interface CompanyRow {
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
-    FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
     FoldLoadingStateComponent,
@@ -97,13 +99,15 @@ export class NouvelleCommandeProPage {
   private readonly panels = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
   /**
-   * « Nouvelle enseigne » : ouvrir un compte ET y commander — les deux droits.
+   * « Créer un compte pro » : ouvrir un compte ET y commander — les deux droits.
    * Le vendeur du comptoir, qui n'a pas la fiche client, ne le voit pas.
    */
   protected readonly canOpenProspect =
     this.permissions.can('b2b_companies:write') && this.permissions.can('b2b_place_order:write');
-  /** D'où l'on vient (`?retour=`) : « Terminer » y ramène. */
+  /** D'où l'on vient (`?retour=`) : « Terminer » et le lien retour y ramènent. */
   readonly retour = input<string>();
+  protected readonly backTarget = computed(() => returnTargetOf(this.retour()));
+  protected readonly backLabel = computed(() => returnLabelOf(this.backTarget()));
   /** Le bon se réimprime-t-il en ce moment ? */
   protected readonly printing = signal(false);
 
@@ -174,8 +178,13 @@ export class NouvelleCommandeProPage {
   }
 
   /** Ouvre le compte d'une enseigne démarchée, puis sa saisie. */
+  /** Au téléphone : la recherche soulignée, et « Créer un compte pro » qui flotte en bas. */
+  protected readonly narrow = narrowViewport();
+
   protected async openProspect(): Promise<void> {
-    const ref = this.panels.open(ProspectPanel, {});
+    // Au téléphone, une feuille du bas (Hugo, 2026-11-28) ; ailleurs, le
+    // dialogue centré que le panneau déclare.
+    const ref = this.panels.open(ProspectPanel, this.narrow() ? { side: 'bottom' } : {});
     const companyId = await ref.closed;
     // Le panneau rend l'id du compte créé, rien s'il est fermé sans créer.
     if (typeof companyId === 'string') {

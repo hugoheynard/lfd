@@ -26,3 +26,48 @@
   overflow-wrap: anywhere;
   user-select: all;
 }
+
+/* Un compte : le nom en gras, le détail dessous, le brouillon à droite. */
+.account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.account-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.account-name {
+  overflow: hidden;
+  font-size: var(--fold-text-md);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-detail {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* « Créer un compte pro » au téléphone : en bas à droite, en pilule, et la
+   liste garde de l'air sous son dernier compte. */
+.prospect-fab {
+  position: fixed;
+  inset-inline-end: var(--fold-page-gutter);
+  bottom: max(var(--fold-space-lg), env(safe-area-inset-bottom));
+  z-index: 10;
+  box-shadow: var(--fold-shadow-lg);
+  border-radius: var(--fold-radius-pill);
+}
+
+@media (max-width: 40rem) {
+  .picker {
+    padding-block-end: calc(var(--fold-space-5xl) + var(--fold-space-lg));
+  }
+}
