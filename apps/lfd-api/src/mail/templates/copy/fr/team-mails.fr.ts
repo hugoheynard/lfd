@@ -115,6 +115,49 @@ export const TEAM_MAILS_FR: TeamMailsCopy = {
       "Cet e-mail part automatiquement à chaque arrêt du plan. Pour ne plus le recevoir, " +
       "demandez à l'équipe de vous retirer des destinataires (Production › Réglages).",
   },
+  "staff.production-dossier-updated": {
+    kicker: "Dossier de production",
+    subject: "Dossier de production mis à jour — plan du {day}",
+    greeting: "Bonjour {firstName},",
+    greetingWithoutName: "Bonjour,",
+    intro:
+      "Le plan de production du {day} a changé depuis la version {since} que vous avez reçue. " +
+      "Voici la version {version}, en pièce jointe.",
+    introNothingReceived:
+      "Voici la version {version} du plan de production du {day}, en pièce jointe. " +
+      "Ce qui suit la compare à la version {since}, la première de la journée.",
+    productionHeading: "Effet sur la production :",
+    productionLine: "{product} {before} → {after}, {delta}",
+    productionUnchanged: "Le compte à produire n'a pas changé.",
+    changesHeading: "Les commandes :",
+    enteredArrested: "{shipment} au plan dès l'arrêt",
+    enteredRetaken: "{shipment} intégrée au retirage de {at}",
+    enteredRetakenOffPlan: "{shipment} hors plan, intégrée au retirage de {at}",
+    enteredRearrested: "{shipment} refigée après réouverture",
+    enteredRearrestedOffPlan: "{shipment} refigée après réouverture (reçue hors plan)",
+    enteredUnknown: "{shipment} entrée au plan, sans trace de la façon",
+    revised: "{shipment} révisée : {lines}",
+    modifiedDuringReopen: "{shipment} modifiée pendant la réouverture : {lines}",
+    linesChanged: "{shipment} changée : {lines}",
+    lineChange: "{product} {before} → {after}",
+    withdrawn: "{shipment} annulée après l'arrêt — toujours produite",
+    leftAfterWithdrawal: "{shipment} annulée, sortie du plan au nouvel arrêt",
+    otherChange: "et {count} autre changement",
+    otherChanges: "et {count} autres changements",
+    shipmentRank: "{reference} (envoi {rank})",
+    shipmentUnknown: "Une commande retirée",
+    resupplyLaunched: "Réassort {site} lancé",
+    resupplyEntered: "Réassort {site} entré au plan",
+    resupplyLeft: "Réassort {site} sorti du plan",
+    resupplyNamed: "{site} ({name})",
+    resupplyWithoutSite: "sans point connu",
+    toCheckHeading: "À vérifier :",
+    toCheckLine: "{shipment} sortie du plan, raison au commerce",
+    signature: "La Folie Coffee — Fournil",
+    footer:
+      "Cet e-mail part quand l'équipe renvoie le dossier mis à jour. Pour ne plus le recevoir, " +
+      "demandez à l'équipe de vous retirer des destinataires (Production › Réglages).",
+  },
   "staff.support-requested": {
     kicker: "Demande d'aide",
     subject: "Demande de contact — {contact} · {purpose}",

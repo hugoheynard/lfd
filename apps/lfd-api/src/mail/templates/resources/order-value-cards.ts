@@ -36,6 +36,14 @@ export const ORDER_VALUE_CARDS: Pick<
   | "pretax"
   | "withTax"
   | "quantity"
+  | "before"
+  | "after"
+  | "delta"
+  | "lines"
+  | "shipment"
+  | "rank"
+  | "version"
+  | "since"
 > = {
   ref: {
     label: "Référence de commande",
@@ -101,6 +109,11 @@ export const ORDER_VALUE_CARDS: Pick<
           "Le nombre que la phrase compte : commandes, pièces, réassorts, commandes en retrait ou en livraison, ou pièces de réassort.",
         example: "3",
       },
+      "staff.production-dossier-updated": {
+        label: "Nombre de changements tus",
+        description: "Les changements de commandes au-delà des dix énumérés : « et 3 autres ».",
+        example: "2",
+      },
       "staff.customer-request": {
         label: "Nombre de photos",
         description: "Le nombre de photos jointes à la demande du client.",
@@ -120,6 +133,11 @@ export const ORDER_VALUE_CARDS: Pick<
         description:
           "Le nom de la personne qui a annulé la commande : un autre membre de la société, ou une personne du compte principal.",
         example: "EXEMPLE — Jeanne M.",
+      },
+      "staff.production-dossier-updated": {
+        label: "Nom du réassort",
+        description: "Le nom donné au réassort, quand il en a un.",
+        example: "Matin",
       },
     },
   },
@@ -151,6 +169,11 @@ export const ORDER_VALUE_CARDS: Pick<
         label: "Point de retrait",
         description: "Le nom du point de retrait où la commande attend le client.",
         example: "Le Labo",
+      },
+      "staff.production-dossier-updated": {
+        label: "Point du réassort",
+        description: "Le point que le réassort approvisionne, suivi de son nom s'il en a un.",
+        example: "Le Village",
       },
     },
   },
@@ -214,10 +237,61 @@ export const ORDER_VALUE_CARDS: Pick<
     label: "Produit",
     description: "Le nom d'un produit, dans la liste de ce qui part ou de ce qui manque.",
     example: "Croissant au beurre",
+    senses: {
+      "customer.order-shortfall": SAME_SENSE,
+      "staff.production-dossier-updated": {
+        label: "Produit",
+        description:
+          "Le nom d'un produit dont le compte à produire, ou la ligne d'une commande, a changé.",
+        example: "Croissant",
+      },
+    },
   },
   quantity: {
     label: "Quantité",
     description: "La quantité de ce produit, à la pièce ou au poids.",
     example: "4",
+  },
+  before: {
+    label: "Avant",
+    description: "La quantité dans la version reçue, à la pièce ou au poids.",
+    example: "120",
+  },
+  after: {
+    label: "Après",
+    description: "La quantité dans la version courante, à la pièce ou au poids.",
+    example: "135",
+  },
+  delta: {
+    label: "Écart",
+    description: "L'écart signé entre les deux versions : « +15 », « −500 g ».",
+    example: "+15",
+  },
+  lines: {
+    label: "Lignes changées",
+    description: "Les lignes d'une commande dont la quantité a changé, déjà écrites.",
+    example: "Croissant 10 → 15",
+  },
+  shipment: {
+    label: "Commande",
+    description:
+      "La référence de la commande, et son envoi quand elle en a plusieurs : « ORD-0012 (envoi 2) ».",
+    example: "EXEMPLE-0031",
+  },
+  rank: {
+    label: "Numéro d'envoi",
+    description: "Le rang de l'envoi, pour une commande livrée en plusieurs fois.",
+    example: "2",
+  },
+  version: {
+    label: "Version courante",
+    description: "Le numéro de la version du plan dont le papier est joint.",
+    example: "3",
+  },
+  since: {
+    label: "Version reçue",
+    description:
+      "La version que le destinataire avait reçue, ou la première de la journée s'il n'en avait reçu aucune.",
+    example: "1",
   },
 };

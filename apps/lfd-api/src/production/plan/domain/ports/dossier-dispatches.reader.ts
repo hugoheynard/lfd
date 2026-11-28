@@ -1,5 +1,8 @@
-/** Ce qu'un envoi du dossier a donné, tel que la trace le garde. */
-export type DossierDispatchState = "pending" | "sent" | "failed";
+/**
+ * Ce qu'un envoi du dossier a donné, tel que la trace le garde. `requested` :
+ * un renvoi demandé à la boîte d'envoi du bloc `mail`, pas encore accepté.
+ */
+export type DossierDispatchState = "pending" | "sent" | "failed" | "requested";
 
 /** Un envoi du dossier d'une journée à une ligne de la liste. */
 export interface DossierDispatchTrace {

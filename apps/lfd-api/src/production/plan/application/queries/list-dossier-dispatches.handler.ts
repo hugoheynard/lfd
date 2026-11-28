@@ -8,6 +8,7 @@ import {
 } from "../../domain/ports/dossier-dispatches.reader.js";
 import { DossierRecipientsReader } from "../../domain/ports/dossier-recipients.reader.js";
 import { dossierAddresseesOf } from "../../domain/services/dossier-addressees.js";
+import { isReceived } from "../../domain/services/dossier-resend-targets.js";
 import { ListDossierDispatchesQuery } from "./list-dossier-dispatches.query.js";
 
 /**
@@ -40,7 +41,7 @@ export class ListDossierDispatchesHandler implements IQueryHandler<
     ]);
     return dossierAddresseesOf(rows, cards).map((addressee) => {
       const mine = traces.filter((trace) => trace.recipientId === addressee.recipientId);
-      const lastSent = latest(mine.filter((trace) => trace.outcome === "sent"));
+      const lastSent = latest(mine.filter(isReceived));
       const lastAttempt = latest(mine);
       return {
         recipientId: addressee.recipientId,

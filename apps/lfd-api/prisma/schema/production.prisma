@@ -655,7 +655,9 @@ model ProductionDossierRecipient {
 /// ou un retirage (`occasion_at`). La clé primaire EST l'idempotence : le fait
 /// durable est livré au moins une fois, et seule la livraison dont la ligne
 /// entre (`ON CONFLICT DO NOTHING`) écrit au destinataire. `outcome` :
-/// `pending` (pris) puis `sent` | `failed`. Un échec n'est pas retenté tout
+/// `pending` (pris) puis `sent` | `failed` ; `requested` pour un dossier mis
+/// à jour, renvoyé à la main par la boîte d'envoi du bloc `mail` — demandé,
+/// pas encore accepté (`occasion_at` est alors l'instant du renvoi). Un échec n'est pas retenté tout
 /// seul : la ligne existe, la redélivrance la saute. Une trace, pas un
 /// agrégat : aucune règle ne refuse son écriture. Pas d'adresse e-mail : le
 /// nom au moment de l'envoi suffit à relire, et l'adresse se relit à la fiche.

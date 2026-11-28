@@ -35,6 +35,7 @@ import { renderOrderRevisedMail } from "./order-revised-mail.js";
 import { totalIsPretaxOnly } from "./order-total-form.js";
 import { renderDeliveryEnRouteMail } from "./delivery-en-route-mail.js";
 import { renderProductionDossierMail } from "./production-dossier-mail.js";
+import { renderProductionDossierUpdatedMail } from "./production-dossier-updated-mail.js";
 import { renderOrderShortfallMail } from "./order-shortfall-mail.js";
 import { renderOrderShortfallRefundedMail } from "./order-shortfall-refunded-mail.js";
 import { withAttachments } from "./order-sheet-mail-document.js";
@@ -695,6 +696,8 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       };
     },
     "staff.production-dossier": (data) => renderProductionDossierMail(data, staffMail),
+    "staff.production-dossier-updated": (data) =>
+      renderProductionDossierUpdatedMail(data, staffMail),
     "agency.vitrine-notice": (data) => renderVitrineNoticeMail(data, staffMail),
     "staff.customer-request": (data) =>
       renderCustomerRequestMail(data, staffMail, brand.backOfficeUrl),

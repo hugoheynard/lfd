@@ -341,6 +341,17 @@
       "textSha256": "1cc1a4299170c63ae175996fc3f1a54e51a800e347a4f64e3bb25ad24b2d5b79"
     }
   },
+  "staff.production-dossier-updated": {
+    "outdated": {
+      "textSha256": "781087d6214b2deb54843a4737f201eef0a2701a2918662bf8f07b55a66d2f78"
+    },
+    "everyKind": {
+      "textSha256": "5f925441e1072e338011978c3e17b2ddae638ceecb97f671928cc2de02a0b70a"
+    },
+    "nothingReceived": {
+      "textSha256": "8460f96732180a6c98a12d52cd0604296d3156ce8e9fef94596a5f90adf7b7a0"
+    }
+  },
   "staff.support-requested": {
     "only": {
       "textSha256": "3d712fb22d2184961d98332048957ec3eb0d9d2ef842b135d6e6d3c65443ba58"

@@ -66,6 +66,7 @@ export const MAIL_LINK_CARDS: { readonly [K in keyof B2bMails]: MailLinkCards } 
   "staff.access-suspended": {},
   "staff.access-restored": { cta: { label: "Accueil du back-office" } },
   "staff.production-dossier": {},
+  "staff.production-dossier-updated": {},
   "staff.support-requested": {},
   "staff.customer-request": { cta: { label: "La demande du client" } },
   "staff.link-payment-received": { cta: { label: "Ce que le paiement règle" } },

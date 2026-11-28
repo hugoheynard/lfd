@@ -85,6 +85,26 @@ describe("ListDossierDispatchesHandler", () => {
     ]);
   });
 
+  it("un renvoi demandé (`requested`) compte comme reçu : sa version est la dernière reçue", async () => {
+    const views = await new ListDossierDispatchesHandler(
+      new RecipientsRows([{ id: "r-paul", kind: "staff", staffUserId: "s-paul" }]),
+      new Directory().put(staffCard()),
+      new Traces([
+        { recipientId: "r-paul", outcome: "sent", claimedAt: EVENING, planVersion: 1 },
+        { recipientId: "r-paul", outcome: "requested", claimedAt: NIGHT, planVersion: 2 },
+      ]),
+    ).execute(new ListDossierDispatchesQuery(DAY));
+
+    expect(views).toEqual([
+      {
+        recipientId: "r-paul",
+        name: "Paul Martin",
+        lastReceived: { at: NIGHT.toISOString(), planVersion: 2 },
+        lastAttempt: { at: NIGHT.toISOString(), planVersion: 2, outcome: "requested" },
+      },
+    ]);
+  });
+
   it("sans destinataire, ne lit pas les traces", async () => {
     const traces = new Traces([]);
 

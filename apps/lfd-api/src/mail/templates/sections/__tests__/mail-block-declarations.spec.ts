@@ -31,8 +31,8 @@ function brandOf(html: string): string | null {
 const MAILS = mailKeys();
 
 describe("les déclarations de l'éditeur par blocs (S4a)", () => {
-  it("couvrent les 42 e-mails du registre", () => {
-    expect(MAILS).toHaveLength(42);
+  it("couvrent les 43 e-mails du registre", () => {
+    expect(MAILS).toHaveLength(43);
     expect(new Set(MAILS)).toEqual(new Set(Object.keys(MAIL_LAYOUTS)));
   });
 
@@ -46,10 +46,10 @@ describe("les déclarations de l'éditeur par blocs (S4a)", () => {
     expect([...mailBlockDeclarationOf(mail).locales]).toEqual(expected);
   });
 
-  it("23 e-mails partent en français seul", () => {
+  it("24 e-mails partent en français seul", () => {
     const frenchOnly = MAILS.filter((mail) => mailBlockDeclarationOf(mail).locales.length === 1);
 
-    expect(frenchOnly).toHaveLength(23);
+    expect(frenchOnly).toHaveLength(24);
   });
 
   it.each(MAILS)("%s : sa charte est celle de la coquille qui le rend", (mail) => {

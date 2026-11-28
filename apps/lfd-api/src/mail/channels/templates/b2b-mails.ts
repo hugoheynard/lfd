@@ -28,6 +28,7 @@ import type { OrderShortfallMailData } from "../../templates/order-shortfall-mai
 import type { OrderShortfallRefundedMailData } from "../../templates/order-shortfall-refunded-mail.js";
 import type { PickupPoint } from "../../templates/pickup-itinerary.js";
 import type { ProductionDossierMailData } from "../../templates/production-dossier-mail.js";
+import type { ProductionDossierUpdatedMailData } from "../../templates/production-dossier-updated-mail.js";
 import type { SubAccountActivityMailData } from "../../templates/sub-account-activity-mail.js";
 import type { SubAccountGestureMailData } from "../../templates/sub-account-gesture-mail.js";
 import type { VitrineNoticeMailData } from "../../templates/vitrine-notice-mail.js";
@@ -48,6 +49,12 @@ export type {
   OrderRevisedMoneyNote,
   OrderSheetMailDocument,
 };
+export type {
+  DossierUpdatedChange,
+  DossierUpdatedLineChange,
+  DossierUpdatedShipment,
+  ProductionDossierUpdatedMailData,
+} from "../../templates/production-dossier-updated-mail.js";
 export type { SubAccountActivity } from "../../templates/sub-account-activity-mail.js";
 export type { SubAccountGesture } from "../../templates/sub-account-gesture-mail.js";
 
@@ -494,6 +501,12 @@ export interface B2bMails {
   };
   /** **Le dossier du jour**, PDF joint. Cf. `production-dossier-mail.ts`. */
   "staff.production-dossier": ProductionDossierMailData;
+  /**
+   * **Le dossier du jour mis à jour**, renvoyé à la main : la version
+   * courante jointe, et ce qui a changé depuis celle que le destinataire
+   * avait reçue. Cf. `production-dossier-updated-mail.ts`.
+   */
+  "staff.production-dossier-updated": ProductionDossierUpdatedMailData;
   /** Un client demande à être rappelé ou écrit. Destinataire : la boîte de l'équipe. */
   "staff.support-requested": {
     readonly contactName: string;

@@ -570,6 +570,7 @@
   "test/production-normal-path.e2e-spec.ts": 8000,
   "test/production-order-off-plan.e2e-spec.ts": 8000,
   "test/production-plan-version-paper.e2e-spec.ts": 8000,
+  "test/production-plan-version-resend.e2e-spec.ts": 8000,
   "test/production-plan-versions.e2e-spec.ts": 8000,
   "test/production-plan-versions-read.e2e-spec.ts": 8000,
   "test/production-problems.e2e-spec.ts": 12000,

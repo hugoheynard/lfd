@@ -8,7 +8,12 @@ import {
   DossierDispatchesReader,
 } from "../domain/ports/dossier-dispatches.reader.js";
 
-const STATES: ReadonlySet<string> = new Set<DossierDispatchState>(["pending", "sent", "failed"]);
+const STATES: ReadonlySet<string> = new Set<DossierDispatchState>([
+  "pending",
+  "sent",
+  "failed",
+  "requested",
+]);
 
 function isState(value: string): value is DossierDispatchState {
   return STATES.has(value);

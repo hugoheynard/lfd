@@ -202,6 +202,11 @@ const MAIL_LABELS: Readonly<Record<string, MailLabel>> = {
     recipient: "L’équipe du fournil",
     moment: "à l’arrêt et à l’achèvement de la journée de production",
   },
+  "staff.production-dossier-updated": {
+    title: "Dossier du fournil mis à jour",
+    recipient: "Un destinataire du dossier dont la version est dépassée",
+    moment: "quand l’équipe renvoie le dossier de la version courante",
+  },
   "staff.support-requested": {
     title: "Demande de rappel",
     recipient: "La boîte de l’équipe",

@@ -22,6 +22,7 @@ export const TEAM_SPECIMENS: Pick<
   | "staff.access-suspended"
   | "staff.access-restored"
   | "staff.production-dossier"
+  | "staff.production-dossier-updated"
   | "staff.support-requested"
   | "staff.customer-request"
   | "staff.link-payment-received"
@@ -85,6 +86,39 @@ export const TEAM_SPECIMENS: Pick<
       completed: false,
       pdfBase64: SPECIMEN_PDF_BASE64,
       fileName: `dossier-du-jour-${SPECIMEN_MARK}.pdf`,
+    }),
+  },
+  "staff.production-dossier-updated": {
+    family: "team",
+    data: () => ({
+      firstName: SPECIMEN_MARK,
+      dayLabel: "mercredi 7 octobre 2026",
+      version: 3,
+      sinceVersion: 1,
+      received: true,
+      production: [
+        { productName: "Croissant", before: "120", after: "135", delta: "+15" },
+        { productName: "Pain de campagne", before: "2 kg", after: "1,5 kg", delta: "−500 g" },
+      ],
+      changes: [
+        {
+          kind: "entered",
+          shipment: { reference: `${SPECIMEN_MARK}-0031`, rank: 1 },
+          reason: "retaken_off_plan",
+          atLabel: "19 h 10",
+        },
+        {
+          kind: "revised",
+          shipment: { reference: `${SPECIMEN_MARK}-0012`, rank: 2 },
+          lines: [{ productName: "Croissant", before: "10", after: "15" }],
+        },
+        { kind: "withdrawn", shipment: { reference: `${SPECIMEN_MARK}-0007`, rank: 1 } },
+      ],
+      otherChanges: 2,
+      resupplies: [{ kind: "launched", siteLabel: "Le Village", name: null }],
+      toCheck: [{ reference: `${SPECIMEN_MARK}-0044`, rank: 1 }],
+      pdfBase64: SPECIMEN_PDF_BASE64,
+      fileName: `dossier-du-jour-${SPECIMEN_MARK}-version-3.pdf`,
     }),
   },
   "staff.support-requested": {

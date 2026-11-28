@@ -7,7 +7,7 @@ const MAILS = mailKeys();
 
 describe("la nature des e-mails (plan de désinscription, U1)", () => {
   it("chaque clé de B2bMails déclare une nature connue", () => {
-    expect(MAILS).toHaveLength(42);
+    expect(MAILS).toHaveLength(43);
     for (const mail of MAILS) {
       expect(MAIL_NATURES).toContain(natureOf(mail));
     }

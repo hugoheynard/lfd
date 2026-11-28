@@ -227,6 +227,59 @@ export interface LinkPaymentReceivedCopy {
 }
 
 /**
+ * **Le dossier de production mis à jour** (lot H6 de
+ * `plan-historique-des-tirages.md`) : la version courante renvoyée, et ce
+ * qui a changé depuis celle que le destinataire avait reçue.
+ */
+export interface ProductionDossierUpdatedCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
+  /** `{day}` — l'objet, qui est aussi le titre. */
+  readonly subject: string;
+  readonly greeting: string;
+  readonly greetingWithoutName: string;
+  /** `{day}`, `{version}`, `{since}` — il avait reçu la version `{since}`. */
+  readonly intro: string;
+  /** Il n'avait rien reçu : le résumé part de la première version. */
+  readonly introNothingReceived: string;
+  readonly productionHeading: string;
+  /** `{product}`, `{before}`, `{after}`, `{delta}`. */
+  readonly productionLine: string;
+  readonly productionUnchanged: string;
+  readonly changesHeading: string;
+  readonly enteredArrested: string;
+  /** `{shipment}`, `{at}` — l'heure du retirage. */
+  readonly enteredRetaken: string;
+  readonly enteredRetakenOffPlan: string;
+  readonly enteredRearrested: string;
+  readonly enteredRearrestedOffPlan: string;
+  readonly enteredUnknown: string;
+  /** `{shipment}`, `{lines}`. */
+  readonly revised: string;
+  readonly modifiedDuringReopen: string;
+  readonly linesChanged: string;
+  readonly lineChange: string;
+  readonly withdrawn: string;
+  readonly leftAfterWithdrawal: string;
+  /** `{count}` — les changements tus. */
+  readonly otherChange: string;
+  readonly otherChanges: string;
+  /** `{reference}`, `{rank}` — une commande livrée en plusieurs envois. */
+  readonly shipmentRank: string;
+  readonly shipmentUnknown: string;
+  /** `{site}` — le point, nommé ou non. */
+  readonly resupplyLaunched: string;
+  readonly resupplyEntered: string;
+  readonly resupplyLeft: string;
+  readonly resupplyNamed: string;
+  readonly resupplyWithoutSite: string;
+  readonly toCheckHeading: string;
+  readonly toCheckLine: string;
+  readonly signature: string;
+  readonly footer: string;
+}
+
+/**
  * **Un lien de paiement d'essai de 1 €**, envoyé à un membre de l'équipe : il
  * dit que c'est un essai, qu'il est réel, et qu'il se rembourse seul.
  */
@@ -257,6 +310,7 @@ export interface TeamMailsCopy {
   readonly "staff.access-suspended": StaffAccessSuspendedCopy;
   readonly "staff.access-restored": StaffAccessRestoredCopy;
   readonly "staff.production-dossier": ProductionDossierCopy;
+  readonly "staff.production-dossier-updated": ProductionDossierUpdatedCopy;
   readonly "staff.support-requested": SupportRequestedCopy;
   readonly "staff.customer-request": CustomerRequestCopy;
   readonly "staff.link-payment-received": LinkPaymentReceivedCopy;

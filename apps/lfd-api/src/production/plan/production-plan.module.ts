@@ -77,6 +77,9 @@ import { ProductionPlanVersionsController } from "./http/production-plan-version
 import { ComparePlanVersionsHandler } from "./application/queries/compare-plan-versions.handler.js";
 import { ListDossierDispatchesHandler } from "./application/queries/list-dossier-dispatches.handler.js";
 import { ListPlanVersionsHandler } from "./application/queries/list-plan-versions.handler.js";
+import { GetPlanVersionPaperHandler } from "./application/queries/get-plan-version-paper.handler.js";
+import { ResendPlanVersionDossierHandler } from "./application/commands/resend-plan-version-dossier.handler.js";
+import { VersionDossierPaper } from "./application/services/version-dossier-paper.js";
 import { PlanVersionPaperShelf } from "./application/services/plan-version-paper-shelf.js";
 import { DossierDispatchesReader } from "./domain/ports/dossier-dispatches.reader.js";
 import { PrismaDossierDispatchesReader } from "./infrastructure/prisma-dossier-dispatches.reader.js";
@@ -195,6 +198,9 @@ import { PrismaProductionSettingsReader } from "./infrastructure/prisma-producti
     ComparePlanVersionsHandler,
     ListDossierDispatchesHandler,
     PlanVersionPaperShelf,
+    GetPlanVersionPaperHandler,
+    ResendPlanVersionDossierHandler,
+    VersionDossierPaper,
     { provide: DossierDispatchesReader, useClass: PrismaDossierDispatchesReader },
     ProductionPlanAdmissionDesk,
     // L'impression provisoire du dossier, avant l'arrêt : écrire, lire et

@@ -114,6 +114,11 @@ export const BILLING_VALUE_CARDS: Pick<
         description: "Le jour du plan de production arrêté ou complété.",
         example: "mercredi 7 octobre 2026",
       },
+      "staff.production-dossier-updated": {
+        label: "Jour de production",
+        description: "Le jour du plan de production dont le dossier est renvoyé.",
+        example: "mercredi 7 octobre 2026",
+      },
     },
   },
   document: {

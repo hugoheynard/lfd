@@ -1088,7 +1088,11 @@ export type {
   ProductionDayResupplyLine,
 } from "./production-day-resupplies.js";
 export { productionBatchQuerySchema } from "./production-sheet.js";
-export { planVersionRangeQuerySchema } from "./production-plan-versions.js";
+export {
+  planVersionDossierResendPayloadSchema,
+  planVersionParamSchema,
+  planVersionRangeQuerySchema,
+} from "./production-plan-versions.js";
 export type {
   DossierDispatchMarkView,
   DossierDispatchOutcome,
@@ -1097,6 +1101,7 @@ export type {
   PlanVersionAuthorView,
   PlanVersionCause,
   PlanVersionDiffView,
+  PlanVersionDossierResendPayload,
   PlanVersionEntryReason,
   PlanVersionLineChange,
   PlanVersionMarkView,

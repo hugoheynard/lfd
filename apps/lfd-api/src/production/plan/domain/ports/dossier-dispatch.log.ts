@@ -9,8 +9,12 @@ export interface DossierDispatchSlot {
   readonly recipientId: string;
 }
 
-/** Ce que l'envoi a donné. */
+/**
+ * Ce que l'envoi a donné. `requested` : un renvoi parti par la boîte d'envoi
+ * du bloc `mail` — la demande est écrite, Resend ne l'a pas encore prise.
+ */
 export type DossierDispatchOutcome =
+  | { readonly kind: "requested" }
   | { readonly kind: "sent"; readonly providerId: string | null }
   | { readonly kind: "failed"; readonly failure: string };
 

@@ -81,13 +81,13 @@ type Every<B> = [B] extends [true] ? true : false;
  * la demande ne porte que sa clé, et le bloc le relit au moment de l'envoi —
  * après la validation, comme au balayeur.
  *
- * `store` nomme le stockage où la pièce est rangée. Seul celui des pièces
- * attachées à un client est ouvert au 2026-11-06 (le bon de commande, la
- * facture, le mandat à signer) ; le dossier du fournil n'y passe pas : il
- * part en `sendAndAwaitReceipt` (lot S2f).
+ * `store` nomme le stockage où la pièce est rangée : celui des pièces
+ * attachées à un client (le bon de commande, la facture, le mandat à signer),
+ * ou celui du fournil, pour le dossier mis à jour, rangé sous la clé de sa
+ * version. Le dossier de l'arrêt, lui, part en `sendAndAwaitReceipt` (S2f).
  */
 export interface StoredPdf {
-  readonly store: "customer-documents";
+  readonly store: "customer-documents" | "production-documents";
   readonly key: string;
 }
 
@@ -116,8 +116,8 @@ export type ByReference<T> = T extends string | number | boolean | null | undefi
  * `mandates/<société>/<mandat>/<intention>.pdf` (revue, cas 7). Depuis le
  * 2026-11-10, le bon révisé joint à « commande modifiée ». Le devis de
  * période, rangé sous `quotes/<entité>/<numéro>-v<version>.pdf`. Le dossier
- * du fournil RESTE fermé : il est rangé au stockage du fournil, que le bloc
- * n'ouvre pas.
+ * du fournil mis à jour, rangé au stockage du fournil sous la clé de sa
+ * version. Le dossier de l'arrêt reste fermé : il part en octets (S2f).
  */
 type OpenedByReference =
   | "customer.order-placed"
@@ -130,7 +130,8 @@ type OpenedByReference =
   | "customer.mandate-to-sign"
   // Le PDF des CGV déposé, rangé sous `legal/…/<fichier>.pdf` : l'annonce d'une
   // nouvelle version aux paniers récurrents (plan du bloc récurrent, § 7).
-  | "customer.recurring-sales-terms-changed";
+  | "customer.recurring-sales-terms-changed"
+  | "staff.production-dossier-updated";
 
 /**
  * Les données d'un envoi immédiat : la pièce par référence (`pdfStored`), ou

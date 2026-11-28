@@ -200,13 +200,17 @@ export interface DossierDispatchMarkView {
   readonly planVersion: number | null;
 }
 
-/** L'issue d'un envoi du dossier. */
-export type DossierDispatchOutcome = "pending" | "sent" | "failed";
+/**
+ * L'issue d'un envoi du dossier. `requested` : un renvoi du dossier mis à
+ * jour, demandé à la boîte d'envoi des e-mails — il partira, relancé tant que
+ * le fournisseur ne l'a pas pris, mais rien ne dit encore qu'il est parti.
+ */
+export type DossierDispatchOutcome = "pending" | "sent" | "failed" | "requested";
 
 /**
  * Un destinataire du dossier aujourd'hui, et ce qu'il a reçu de la journée.
- * `lastReceived` : le dernier envoi parti (`sent`) ; `lastAttempt` : le
- * dernier envoi, quelle qu'en soit l'issue.
+ * `lastReceived` : le dernier envoi parti (`sent`) ou demandé par un renvoi
+ * (`requested`) ; `lastAttempt` : le dernier envoi, quelle qu'en soit l'issue.
  */
 export interface DossierDispatchView {
   readonly recipientId: string;
@@ -233,3 +237,22 @@ export const planVersionRangeQuerySchema = z.object({
 });
 
 export type PlanVersionRangeQuery = z.infer<typeof planVersionRangeQuerySchema>;
+
+/** Un numéro de version lu dans le chemin (`…/plan-versions/:version/dossier.pdf`). */
+export const planVersionParamSchema = versionNumber;
+
+/**
+ * **Le corps du renvoi du dossier de la version courante**
+ * (`POST admin/production/batch/:date/plan-versions/resend`, en-tête
+ * `Idempotency-Key` obligatoire) : à une ligne de la liste des
+ * destinataires (`recipientId`, celui de `DossierDispatchView`), ou à tous
+ * ceux qui ne sont pas à jour (`outdated` : version reçue dépassée, envoi
+ * d'avant les versions, ou rien reçu). La forme seulement : la ligne
+ * inconnue (404) et le destinataire déjà à jour (409) sont jugés au serveur.
+ */
+export const planVersionDossierResendPayloadSchema = z.discriminatedUnion("target", [
+  z.object({ target: z.literal("recipient"), recipientId: z.string().trim().min(1) }),
+  z.object({ target: z.literal("outdated") }),
+]);
+
+export type PlanVersionDossierResendPayload = z.infer<typeof planVersionDossierResendPayloadSchema>;

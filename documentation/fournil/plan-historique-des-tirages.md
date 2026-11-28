@@ -613,8 +613,8 @@ Décidé au bâti de H5 (2026-11-28), là où le plan ne tranchait pas :
   (`…/dossier.pdf`) sert le papier de la journée chargée, donc de la version
   courante ; aucune route ne sert celui d'une version passée. La liste dit
   « Papier rangé » / « non rangé » / « même papier que la version n » pour les
-  autres. **À trancher** : une route par version (`…/plan-versions/:n/dossier.pdf`)
-  si l'on veut rouvrir un papier ancien.
+  autres. Tranché le 2026-11-28 : une route par version
+  (`…/plan-versions/:version/dossier.pdf`, H6), qui sert le papier rangé ou 404.
 - **L'ordre de la comparaison est celui du plan** : l'effet par produit, puis
   « à vérifier » en orange, puis les changements expliqués.
 - **Les bornes se lisent dans l'ordre** : choisir « de 4 à 2 » compare 2 à 4.
@@ -625,13 +625,13 @@ Décidé au bâti de H5 (2026-11-28), là où le plan ne tranchait pas :
 
 **H6 — le réenvoi.** Sur l'écran des versions : la liste des destinataires
 avec la dernière version reçue, et le geste « renvoyer la version courante »
-— à un destinataire ou à tous ceux qui ont une version dépassée. Un e-mail
+— à un destinataire ou à tous ceux qui ont une version dépassée. ~~Un e-mail
 « dossier mis à jour » (texte au dictionnaire des e-mails, manifeste
 régénéré), le papier de la version courante joint, une trace par envoi
 comme aujourd'hui (clé `(journée, instant du réenvoi, destinataire)`), la
-clé d'intention de l'écran (`lint:intent-key-gestures`).
+clé d'intention de l'écran (`lint:intent-key-gestures`).~~
 
-**L'e-mail porte un résumé du diff** (Hugo, 2026-11-27), calculé par la même
+~~**L'e-mail porte un résumé du diff** (Hugo, 2026-11-27), calculé par la même
 `diffPlanVersions` que l'écran — l'écran et l'e-mail ne peuvent pas dire deux
 choses différentes. Par destinataire, il compare **la dernière version qu'il a
 reçue** (`plan_version` de sa trace, H2b) à la version courante : chacun lit ce
@@ -640,7 +640,68 @@ produit (« croissant 120 → 135, +15 »), les changements de commandes en une
 ligne chacun (entrées, dont hors plan ; révisées ; annulées — toujours
 produites), plafonnés avec « et N autres », puis les sorties dont la raison
 est au commerce, dites comme à l'écran. Un destinataire sans trace de version
-(envoi d'avant H2b) reçoit le résumé contre la première version de la journée.
+(envoi d'avant H2b) reçoit le résumé contre la première version de la journée.~~
+— 2026-11-28, **partie API bâtie**, non commitée ; **reste le bouton** (l'écran).
+Migration `20261128002000_le_renvoi_du_dossier_est_une_demande` (retour
+arrière dans `prisma/rollback/`). Noyau : lecture publiée
+`PlanVersionSummaries` (`day/domain/ports/plan-version-summaries.ts`,
+`ChainPlanVersionSummaries`). Plan : `ResendPlanVersionDossierCommand` et son
+handler, `VersionDossierPaper`, `dossier-update-mail-data.ts`,
+`dossier-resend-targets.ts`, `dossier-resend-errors.ts`,
+`GetPlanVersionPaperQuery`. E-mail : `staff.production-dossier-updated`
+(`mail/templates/production-dossier-updated-mail.ts`). Tests :
+`resend-plan-version-dossier.handler.spec.ts`, `dossier-resend-targets.spec.ts`,
+`dossier-update-mail-data.spec.ts`, `get-plan-version-paper.handler.spec.ts`,
+`chain-plan-version-summaries.spec.ts`, `production-dossier-updated-mail.spec.ts`,
+`storage-mail-attachment.store.spec.ts`, la table des routes, et
+`apps/lfd-api/test/production-plan-version-resend.e2e-spec.ts`.
+
+Les routes, pour l'écran (types au paquet, `production-plan-versions.ts`) :
+
+| route                                                    | corps / réponse                                                                                                                                                                                         |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST admin/production/batch/:date/plan-versions/resend` | en-tête `Idempotency-Key` obligatoire (400 sans) ; corps `PlanVersionDossierResendPayload` : `{ target: "recipient", recipientId }` ou `{ target: "outdated" }` ; **204**, l'écran relit `…/dispatches` |
+| `GET …/plan-versions/:version/dossier.pdf`               | le dossier RANGÉ de la version ; 404 non rangé ou version inconnue                                                                                                                                      |
+| `GET …/plan-versions/:version/compte-a-produire.pdf`     | de même pour le compte à produire                                                                                                                                                                       |
+
+Refus du renvoi : 409 `production.dossier_resend.no_plan_version` (journée
+sans version), 409 `ProductionDayNotClosedError` (journée rouverte), 404
+`production.dossier_resend.unknown_recipient` (ligne retirée, fiche
+suspendue ou sans adresse), 409 `production.dossier_resend.up_to_date`
+(destinataire visé déjà à la version courante), 409
+`production.dossier_resend.paper_not_stored` (papier non rangeable). « Tous
+les dépassés » sans personne à servir rend 204 sans rien envoyer.
+
+Décidé au bâti de H6 (2026-11-28), là où le plan ne tranchait pas :
+
+- **Le droit est celui de l'arrêt** (`production_count_stop:write`), le geste
+  qui envoie déjà le dossier ; les routes des papiers passés sont sous la
+  lecture du dossier (`production_plan`).
+- **« Pas à jour »** se lit comme à l'écran (H5) : version reçue antérieure,
+  envoi d'avant les versions, ou rien reçu. Un envoi `failed` ne compte pas
+  comme reçu.
+- **Par la boîte d'envoi (`mail.send`)**, la trace s'écrit dans la même
+  transaction que la demande et se règle **`requested`** — une valeur neuve
+  du CHECK (migration additive) : `sent` affirmerait un reçu de Resend qu'on
+  n'a pas. La liste des envois (H4) compte `requested` comme reçu
+  (`lastReceived`) ; `DossierDispatchOutcome` gagne `"requested"`.
+- **La clé de la trace** est `(journée, instant du renvoi, ligne)` : la clé
+  primaire existante l'accepte, `occasion_at` = l'instant du renvoi. **La
+  clé de l'e-mail** dérive de la clé d'intention et de la ligne
+  (`production-dossier-updated:<jour>:<intention>:<ligne>`), jamais de
+  l'instant ni de l'adresse (`lint:intent-key-gestures`, `lint:mail-key-no-pii`).
+- **Le papier joint par référence** : le bloc `mail` ouvre le stockage du
+  fournil (`production-documents`, `MAIL_ATTACHMENT_STORES`) et le modèle à
+  `send` (`OpenedByReference`). Le papier est rangé avant la transaction
+  s'il ne l'est pas ; s'il ne peut pas l'être, le geste est refusé.
+- **Le papier d'une version passée** : celui d'un retrait est le papier de
+  la version dont il tient lieu (§ 1.14) ; jamais refait.
+- **`day/index.ts` passe de 81 à 82** (`$h6` de
+  `production-subcontexts-debt.json`, **à relire**) : une lecture publiée
+  plutôt que d'exporter le diff.
+- **Aucun fait de journal** pour le renvoi : un fait neuf demanderait sa
+  phrase au journal du back-office. L'auteur est tenu par l'intention
+  (`actorId`) ; la trace n'a pas de colonne d'auteur.
 
 ## 4. Ce que ce plan ne fait pas
 

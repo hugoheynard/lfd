@@ -107,6 +107,49 @@ export const TEAM_MAILS_IT: TeamMailsCopy = {
       "Questa e-mail parte automaticamente a ogni chiusura del piano. Per non riceverla più, " +
       "chieda al team di rimuoverla dai destinatari (Produzione › Impostazioni).",
   },
+  "staff.production-dossier-updated": {
+    kicker: "Dossier di produzione",
+    subject: "Dossier di produzione aggiornato — piano del {day}",
+    greeting: "Buongiorno {firstName},",
+    greetingWithoutName: "Buongiorno,",
+    intro:
+      "Il piano di produzione del {day} è cambiato dalla versione {since} che ha ricevuto. " +
+      "Ecco la versione {version}, in allegato.",
+    introNothingReceived:
+      "Ecco la versione {version} del piano di produzione del {day}, in allegato. " +
+      "Quanto segue la confronta con la versione {since}, la prima della giornata.",
+    productionHeading: "Effetto sulla produzione:",
+    productionLine: "{product} {before} → {after}, {delta}",
+    productionUnchanged: "Il conteggio da produrre non è cambiato.",
+    changesHeading: "Gli ordini:",
+    enteredArrested: "{shipment} nel piano dalla chiusura",
+    enteredRetaken: "{shipment} integrato nella ristampa delle {at}",
+    enteredRetakenOffPlan: "{shipment} fuori piano, integrato nella ristampa delle {at}",
+    enteredRearrested: "{shipment} richiuso dopo la riapertura",
+    enteredRearrestedOffPlan: "{shipment} richiuso dopo la riapertura (ricevuto fuori piano)",
+    enteredUnknown: "{shipment} entrato nel piano, senza traccia del modo",
+    revised: "{shipment} rivisto: {lines}",
+    modifiedDuringReopen: "{shipment} modificato durante la riapertura: {lines}",
+    linesChanged: "{shipment} modificato: {lines}",
+    lineChange: "{product} {before} → {after}",
+    withdrawn: "{shipment} annullato dopo la chiusura — sempre prodotto",
+    leftAfterWithdrawal: "{shipment} annullato, uscito dal piano alla nuova chiusura",
+    otherChange: "e {count} altra modifica",
+    otherChanges: "e {count} altre modifiche",
+    shipmentRank: "{reference} (spedizione {rank})",
+    shipmentUnknown: "Un ordine ritirato",
+    resupplyLaunched: "Rifornimento {site} lanciato",
+    resupplyEntered: "Rifornimento {site} entrato nel piano",
+    resupplyLeft: "Rifornimento {site} uscito dal piano",
+    resupplyNamed: "{site} ({name})",
+    resupplyWithoutSite: "senza punto noto",
+    toCheckHeading: "Da verificare:",
+    toCheckLine: "{shipment} uscito dal piano, motivo presso il commercio",
+    signature: "La Folie Coffee — Laboratorio",
+    footer:
+      "Questa e-mail parte quando il team rinvia il dossier aggiornato. Per non riceverla più, " +
+      "chieda al team di toglierla dai destinatari (Produzione › Impostazioni).",
+  },
   "staff.support-requested": {
     kicker: "Richiesta di assistenza",
     subject: "Richiesta di contatto — {contact} · {purpose}",

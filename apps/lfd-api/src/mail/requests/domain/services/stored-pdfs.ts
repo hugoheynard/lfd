@@ -6,8 +6,11 @@ export const STORED_PDF_FIELD = "pdfStored";
 /** Le champ que le gabarit lit, rempli au moment de l'envoi. */
 const PDF_CONTENT_FIELD = "pdfBase64";
 
-/** Les stockages d'où le bloc sait relire une pièce (2026-11-06 : un seul). */
-export const MAIL_ATTACHMENT_STORES = ["customer-documents"] as const;
+/**
+ * Les stockages d'où le bloc sait relire une pièce : celui des pièces d'un
+ * client, et celui du fournil (le dossier du jour rangé par version).
+ */
+export const MAIL_ATTACHMENT_STORES = ["customer-documents", "production-documents"] as const;
 
 export type MailAttachmentStoreName = (typeof MAIL_ATTACHMENT_STORES)[number];
 

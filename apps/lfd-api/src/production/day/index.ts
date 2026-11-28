@@ -79,6 +79,8 @@ export { KnownArticles } from "./domain/ports/known-articles.reader.js";
 export { PlanVersionListing } from "./domain/ports/plan-version-listing.js";
 /** Ce qui a changé d'une version du plan à une autre, expliqué (la comparaison des versions). */
 export { PlanVersionComparison } from "./domain/ports/plan-version-comparison.js";
+/** Ce qui a changé depuis la version reçue, résumé pour l'e-mail (le réenvoi du dossier). */
+export { PlanVersionSummaries } from "./domain/ports/plan-version-summaries.js";
 
 /**
  * ## Ce qu'on écrit

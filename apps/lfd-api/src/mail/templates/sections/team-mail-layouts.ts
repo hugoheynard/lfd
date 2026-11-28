@@ -19,6 +19,7 @@ export const TEAM_MAIL_LAYOUTS: Readonly<
     | "staff.access-suspended"
     | "staff.access-restored"
     | "staff.production-dossier"
+    | "staff.production-dossier-updated"
     | "staff.support-requested"
     | "staff.customer-request"
     | "staff.link-payment-received"
@@ -139,6 +140,54 @@ export const TEAM_MAIL_LAYOUTS: Readonly<
             resupplyMany: "Plusieurs réassorts",
             replacesPrevious: "Dossier complété",
           }),
+          ...texts("signature"),
+        ],
+      },
+      { id: "footer", texts: texts("footer") },
+    ],
+  },
+  // Comme le dossier : l'objet est le titre. Le corps énumère des lignes
+  // composées par le gabarit, dans l'ordre de l'écran des versions.
+  "staff.production-dossier-updated": {
+    subject: [],
+    header: KICKER,
+    sections: [
+      { id: "title", texts: texts("subject") },
+      {
+        id: "body",
+        texts: [
+          ...variants({ greeting: "Prénom connu", greetingWithoutName: "Prénom inconnu" }),
+          ...variants({
+            intro: "Une version avait été reçue",
+            introNothingReceived: "Aucune version reçue",
+          }),
+          ...variants({
+            productionHeading: "La production change",
+            productionUnchanged: "La production ne change pas",
+          }),
+          ...texts("productionLine", "changesHeading"),
+          ...variants({
+            enteredArrested: "Entrée à l'arrêt",
+            enteredRetaken: "Entrée par un retirage",
+            enteredRetakenOffPlan: "Hors plan, entrée par un retirage",
+            enteredRearrested: "Refigée après réouverture",
+            enteredRearrestedOffPlan: "Refigée après réouverture, reçue hors plan",
+            enteredUnknown: "Entrée sans trace",
+            revised: "Révisée",
+            modifiedDuringReopen: "Modifiée pendant la réouverture",
+            linesChanged: "Lignes changées",
+            withdrawn: "Annulée après l'arrêt",
+            leftAfterWithdrawal: "Annulée, sortie au nouvel arrêt",
+          }),
+          ...texts("lineChange"),
+          ...variants({ otherChange: "Un autre changement", otherChanges: "D'autres changements" }),
+          ...texts("shipmentRank", "shipmentUnknown"),
+          ...variants({
+            resupplyLaunched: "Réassort lancé",
+            resupplyEntered: "Réassort entré",
+            resupplyLeft: "Réassort sorti",
+          }),
+          ...texts("resupplyNamed", "resupplyWithoutSite", "toCheckHeading", "toCheckLine"),
           ...texts("signature"),
         ],
       },

@@ -22,6 +22,7 @@ export const TEAM_CASE_TABLES: Pick<
   | "staff.access-suspended"
   | "staff.access-restored"
   | "staff.production-dossier"
+  | "staff.production-dossier-updated"
   | "staff.support-requested"
   | "staff.customer-request"
   | "staff.link-payment-received"
@@ -88,6 +89,31 @@ export const TEAM_CASE_TABLES: Pick<
     axes: [
       { id: "completed", values: YES_NO, of: (data) => yesNo(data.completed) },
       { id: "resupplies", values: YES_NO, of: (data) => yesNo(data.resupplyCount > 0) },
+      { id: "firstName", values: PRESENCE, of: (data) => presence(data.firstName) },
+    ],
+  },
+  "staff.production-dossier-updated": {
+    cases: [
+      specimenCase("staff.production-dossier-updated", "Version dépassée, changements expliqués"),
+      variantCase(
+        "staff.production-dossier-updated",
+        "nothingReceived",
+        "Aucune version reçue, sans prénom, compte inchangé",
+        (data) => ({
+          ...data,
+          firstName: "",
+          received: false,
+          sinceVersion: 1,
+          production: [],
+          changes: [],
+          otherChanges: 0,
+          resupplies: [],
+          toCheck: [],
+        }),
+      ),
+    ],
+    axes: [
+      { id: "received", values: YES_NO, of: (data) => yesNo(data.received) },
       { id: "firstName", values: PRESENCE, of: (data) => presence(data.firstName) },
     ],
   },

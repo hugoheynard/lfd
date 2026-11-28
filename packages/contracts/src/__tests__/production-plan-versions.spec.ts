@@ -1,4 +1,8 @@
-import { planVersionRangeQuerySchema } from "../production-plan-versions.js";
+import {
+  planVersionDossierResendPayloadSchema,
+  planVersionParamSchema,
+  planVersionRangeQuerySchema,
+} from "../production-plan-versions.js";
 
 /** La forme de `?from=&to=` sur la comparaison des versions du plan. */
 describe("planVersionRangeQuerySchema", () => {
@@ -19,5 +23,34 @@ describe("planVersionRangeQuerySchema", () => {
     ["négatif", { from: "-1", to: "2" }],
   ])("refuse une plage mal formée (%s)", (_case, raw) => {
     expect(planVersionRangeQuerySchema.safeParse(raw).success).toBe(false);
+  });
+});
+
+/** Le corps du renvoi du dossier (lot H6) : une ligne, ou tous les dépassés. */
+describe("planVersionDossierResendPayloadSchema", () => {
+  it("lit une ligne visée, ou « tous les dépassés »", () => {
+    expect(
+      planVersionDossierResendPayloadSchema.parse({ target: "recipient", recipientId: " r-1 " }),
+    ).toEqual({ target: "recipient", recipientId: "r-1" });
+    expect(planVersionDossierResendPayloadSchema.parse({ target: "outdated" })).toEqual({
+      target: "outdated",
+    });
+  });
+
+  it.each([
+    ["sans cible", {}],
+    ["cible inconnue", { target: "all" }],
+    ["ligne sans identifiant", { target: "recipient" }],
+    ["identifiant vide", { target: "recipient", recipientId: "  " }],
+  ])("refuse un corps mal formé (%s)", (_case, raw) => {
+    expect(planVersionDossierResendPayloadSchema.safeParse(raw).success).toBe(false);
+  });
+});
+
+describe("planVersionParamSchema", () => {
+  it("lit un numéro de version dans le chemin, et refuse ce qui n'en est pas un", () => {
+    expect(planVersionParamSchema.parse("2")).toBe(2);
+    expect(planVersionParamSchema.safeParse("0").success).toBe(false);
+    expect(planVersionParamSchema.safeParse("v2").success).toBe(false);
   });
 });

@@ -35,10 +35,22 @@ export class PrismaDossierDispatchLog extends DossierDispatchLog {
     // Conditionnée en base : une issue posée ne se réécrit pas (cf. le port).
     await this.prisma.productionDossierDispatch.updateMany({
       where: { ...slot, outcome: "pending" },
-      data:
-        outcome.kind === "sent"
-          ? { outcome: "sent", providerId: outcome.providerId, settledAt: at }
-          : { outcome: "failed", failure: outcome.failure, settledAt: at },
+      data: settledData(outcome, at),
     });
+  }
+}
+
+/** La ligne réglée, selon l'issue. */
+function settledData(
+  outcome: DossierDispatchOutcome,
+  at: Date,
+): { outcome: string; providerId?: string | null; failure?: string; settledAt: Date } {
+  switch (outcome.kind) {
+    case "requested":
+      return { outcome: "requested", settledAt: at };
+    case "sent":
+      return { outcome: "sent", providerId: outcome.providerId, settledAt: at };
+    case "failed":
+      return { outcome: "failed", failure: outcome.failure, settledAt: at };
   }
 }

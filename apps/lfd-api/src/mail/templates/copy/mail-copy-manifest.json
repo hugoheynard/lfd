@@ -2673,6 +2673,315 @@
         "fr": "Cet e-mail part automatiquement à chaque arrêt du plan. Pour ne plus le recevoir, demandez à l'équipe de vous retirer des destinataires (Production › Réglages)."
       }
     },
+    "staff.production-dossier-updated": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Dossier de production"
+      },
+      "subject": {
+        "variables": [
+          "day"
+        ],
+        "required": [
+          "day"
+        ],
+        "fr": "Dossier de production mis à jour — plan du {day}"
+      },
+      "greeting": {
+        "variables": [
+          "firstName"
+        ],
+        "required": [
+          "firstName"
+        ],
+        "fr": "Bonjour {firstName},"
+      },
+      "greetingWithoutName": {
+        "variables": [],
+        "required": [],
+        "fr": "Bonjour,"
+      },
+      "intro": {
+        "variables": [
+          "day",
+          "since",
+          "version"
+        ],
+        "required": [
+          "day",
+          "since",
+          "version"
+        ],
+        "fr": "Le plan de production du {day} a changé depuis la version {since} que vous avez reçue. Voici la version {version}, en pièce jointe."
+      },
+      "introNothingReceived": {
+        "variables": [
+          "version",
+          "day",
+          "since"
+        ],
+        "required": [
+          "version",
+          "day",
+          "since"
+        ],
+        "fr": "Voici la version {version} du plan de production du {day}, en pièce jointe. Ce qui suit la compare à la version {since}, la première de la journée."
+      },
+      "productionHeading": {
+        "variables": [],
+        "required": [],
+        "fr": "Effet sur la production :"
+      },
+      "productionLine": {
+        "variables": [
+          "product",
+          "before",
+          "after",
+          "delta"
+        ],
+        "required": [
+          "product",
+          "before",
+          "after",
+          "delta"
+        ],
+        "fr": "{product} {before} → {after}, {delta}"
+      },
+      "productionUnchanged": {
+        "variables": [],
+        "required": [],
+        "fr": "Le compte à produire n'a pas changé."
+      },
+      "changesHeading": {
+        "variables": [],
+        "required": [],
+        "fr": "Les commandes :"
+      },
+      "enteredArrested": {
+        "variables": [
+          "shipment"
+        ],
+        "required": [
+          "shipment"
+        ],
+        "fr": "{shipment} au plan dès l'arrêt"
+      },
+      "enteredRetaken": {
+        "variables": [
+          "shipment",
+          "at"
+        ],
+        "required": [
+          "shipment",
+          "at"
+        ],
+        "fr": "{shipment} intégrée au retirage de {at}"
+      },
+      "enteredRetakenOffPlan": {
+        "variables": [
+          "shipment",
+          "at"
+        ],
+        "required": [
+          "shipment",
+          "at"
+        ],
+        "fr": "{shipment} hors plan, intégrée au retirage de {at}"
+      },
+      "enteredRearrested": {
+        "variables": [
+          "shipment"
+        ],
+        "required": [
+          "shipment"
+        ],
+        "fr": "{shipment} refigée après réouverture"
+      },
+      "enteredRearrestedOffPlan": {
+        "variables": [
+          "shipment"
+        ],
+        "required": [
+          "shipment"
+        ],
+        "fr": "{shipment} refigée après réouverture (reçue hors plan)"
+      },
+      "enteredUnknown": {
+        "variables": [
+          "shipment"
+        ],
+        "required": [
+          "shipment"
+        ],
+        "fr": "{shipment} entrée au plan, sans trace de la façon"
+      },
+      "revised": {
+        "variables": [
+          "shipment",
+          "lines"
+        ],
+        "required": [
+          "shipment",
+          "lines"
+        ],
+        "fr": "{shipment} révisée : {lines}"
+      },
+      "modifiedDuringReopen": {
+        "variables": [
+          "shipment",
+          "lines"
+        ],
+        "required": [
+          "shipment",
+          "lines"
+        ],
+        "fr": "{shipment} modifiée pendant la réouverture : {lines}"
+      },
+      "linesChanged": {
+        "variables": [
+          "shipment",
+          "lines"
+        ],
+        "required": [
+          "shipment",
+          "lines"
+        ],
+        "fr": "{shipment} changée : {lines}"
+      },
+      "lineChange": {
+        "variables": [
+          "product",
+          "before",
+          "after"
+        ],
+        "required": [
+          "product",
+          "before",
+          "after"
+        ],
+        "fr": "{product} {before} → {after}"
+      },
+      "withdrawn": {
+        "variables": [
+          "shipment"
+        ],
+        "required": [
+          "shipment"
+        ],
+        "fr": "{shipment} annulée après l'arrêt — toujours produite"
+      },
+      "leftAfterWithdrawal": {
+        "variables": [
+          "shipment"
+        ],
+        "required": [
+          "shipment"
+        ],
+        "fr": "{shipment} annulée, sortie du plan au nouvel arrêt"
+      },
+      "otherChange": {
+        "variables": [
+          "count"
+        ],
+        "required": [
+          "count"
+        ],
+        "fr": "et {count} autre changement"
+      },
+      "otherChanges": {
+        "variables": [
+          "count"
+        ],
+        "required": [
+          "count"
+        ],
+        "fr": "et {count} autres changements"
+      },
+      "shipmentRank": {
+        "variables": [
+          "reference",
+          "rank"
+        ],
+        "required": [
+          "reference",
+          "rank"
+        ],
+        "fr": "{reference} (envoi {rank})"
+      },
+      "shipmentUnknown": {
+        "variables": [],
+        "required": [],
+        "fr": "Une commande retirée"
+      },
+      "resupplyLaunched": {
+        "variables": [
+          "site"
+        ],
+        "required": [
+          "site"
+        ],
+        "fr": "Réassort {site} lancé"
+      },
+      "resupplyEntered": {
+        "variables": [
+          "site"
+        ],
+        "required": [
+          "site"
+        ],
+        "fr": "Réassort {site} entré au plan"
+      },
+      "resupplyLeft": {
+        "variables": [
+          "site"
+        ],
+        "required": [
+          "site"
+        ],
+        "fr": "Réassort {site} sorti du plan"
+      },
+      "resupplyNamed": {
+        "variables": [
+          "site",
+          "name"
+        ],
+        "required": [
+          "site",
+          "name"
+        ],
+        "fr": "{site} ({name})"
+      },
+      "resupplyWithoutSite": {
+        "variables": [],
+        "required": [],
+        "fr": "sans point connu"
+      },
+      "toCheckHeading": {
+        "variables": [],
+        "required": [],
+        "fr": "À vérifier :"
+      },
+      "toCheckLine": {
+        "variables": [
+          "shipment"
+        ],
+        "required": [
+          "shipment"
+        ],
+        "fr": "{shipment} sortie du plan, raison au commerce"
+      },
+      "signature": {
+        "variables": [],
+        "required": [],
+        "fr": "La Folie Coffee — Fournil"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Cet e-mail part quand l'équipe renvoie le dossier mis à jour. Pour ne plus le recevoir, demandez à l'équipe de vous retirer des destinataires (Production › Réglages)."
+      }
+    },
     "staff.support-requested": {
       "kicker": {
         "variables": [],

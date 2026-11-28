@@ -159,6 +159,7 @@ export const MAIL_DATA_BLOCK_CARDS: { readonly [K in keyof B2bMails]: MailDataBl
   "staff.access-suspended": {},
   "staff.access-restored": {},
   "staff.production-dossier": {},
+  "staff.production-dossier-updated": {},
   "staff.support-requested": {},
   "staff.customer-request": {},
   "staff.link-payment-received": {},

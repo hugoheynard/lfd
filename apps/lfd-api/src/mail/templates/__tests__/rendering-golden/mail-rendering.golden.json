@@ -505,6 +505,23 @@
       "attachmentsSha256": "f88905defa564cbf9742a8fa0f52d1c7c120923ac504d8997e7f67fe0829dde6"
     }
   },
+  "staff.production-dossier-updated": {
+    "outdated": {
+      "subject": "Dossier de production mis à jour — plan du mercredi 7 octobre 2026",
+      "htmlSha256": "82b9a14d932bcdb3e2167ae1eef893f01032813b3161cb54d1253af8b15b4ea1",
+      "attachmentsSha256": "2089b7b2e57c9357e822697c34b15f8990209254ea8c9d4cde988b3789c04cb2"
+    },
+    "everyKind": {
+      "subject": "Dossier de production mis à jour — plan du mercredi 7 octobre 2026",
+      "htmlSha256": "c41a7b7ed5da27d0a6737bf85396872c54d5ba758c9fa99f23407d4ccd251c52",
+      "attachmentsSha256": "2089b7b2e57c9357e822697c34b15f8990209254ea8c9d4cde988b3789c04cb2"
+    },
+    "nothingReceived": {
+      "subject": "Dossier de production mis à jour — plan du mercredi 7 octobre 2026",
+      "htmlSha256": "30907ff65a80c8a2f00d15a052e3196219198e6a4df6f0804bbfea2df8432990",
+      "attachmentsSha256": "2089b7b2e57c9357e822697c34b15f8990209254ea8c9d4cde988b3789c04cb2"
+    }
+  },
   "staff.support-requested": {
     "only": {
       "subject": "Demande de contact — Jeanne Martin · Facturation",

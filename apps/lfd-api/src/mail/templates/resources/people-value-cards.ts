@@ -57,6 +57,14 @@ export const PEOPLE_VALUE_CARDS: Pick<
     label: "Moment de l'arrêt",
     description: "Le jour et l'heure où le plan de production a été arrêté, ou complété.",
     example: "mardi 6 octobre 2026 à 20:00",
+    senses: {
+      "staff.production-dossier": SAME_SENSE,
+      "staff.production-dossier-updated": {
+        label: "Heure du retirage",
+        description: "L'heure, à Paris, du retirage qui a fait entrer la commande au plan.",
+        example: "19 h 10",
+      },
+    },
   },
   date: {
     label: "Date d'effet des nouvelles CGV",
@@ -131,6 +139,7 @@ export const PEOPLE_VALUE_CARDS: Pick<
       "staff.access-suspended": RECIPIENT,
       "staff.access-restored": RECIPIENT,
       "staff.production-dossier": RECIPIENT,
+      "staff.production-dossier-updated": RECIPIENT,
     },
   },
   form: {
@@ -185,6 +194,15 @@ export const PEOPLE_VALUE_CARDS: Pick<
     description:
       "Ce sur quoi porte le geste du site quand il en a un — le numéro de la commande d'un problème signalé.",
     example: "EXEMPLE-0001",
+
+    senses: {
+      "customer.sub-account-gesture": SAME_SENSE,
+      "staff.production-dossier-updated": {
+        label: "Référence de la commande",
+        description: "Le numéro de la commande livrée en plusieurs envois.",
+        example: "EXEMPLE-0012",
+      },
+    },
   },
   resupplies: {
     label: "Nombre de réassorts",

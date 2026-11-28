@@ -104,6 +104,49 @@ export const TEAM_MAILS_EN: TeamMailsCopy = {
       "This email is sent automatically each time the plan is locked. To stop receiving it, " +
       "ask the team to remove you from the recipients (Production › Settings).",
   },
+  "staff.production-dossier-updated": {
+    kicker: "Production file",
+    subject: "Production file updated — plan for {day}",
+    greeting: "Hello {firstName},",
+    greetingWithoutName: "Hello,",
+    intro:
+      "The production plan for {day} has changed since version {since}, which you received. " +
+      "Here is version {version}, attached.",
+    introNothingReceived:
+      "Here is version {version} of the production plan for {day}, attached. " +
+      "What follows compares it with version {since}, the first of the day.",
+    productionHeading: "Effect on production:",
+    productionLine: "{product} {before} → {after}, {delta}",
+    productionUnchanged: "The production count has not changed.",
+    changesHeading: "Orders:",
+    enteredArrested: "{shipment} in the plan from the lock",
+    enteredRetaken: "{shipment} added by the reprint at {at}",
+    enteredRetakenOffPlan: "{shipment} off plan, added by the reprint at {at}",
+    enteredRearrested: "{shipment} locked again after reopening",
+    enteredRearrestedOffPlan: "{shipment} locked again after reopening (received off plan)",
+    enteredUnknown: "{shipment} entered the plan, with no trace of how",
+    revised: "{shipment} revised: {lines}",
+    modifiedDuringReopen: "{shipment} changed during the reopening: {lines}",
+    linesChanged: "{shipment} changed: {lines}",
+    lineChange: "{product} {before} → {after}",
+    withdrawn: "{shipment} cancelled after the lock — still produced",
+    leftAfterWithdrawal: "{shipment} cancelled, left the plan at the new lock",
+    otherChange: "and {count} other change",
+    otherChanges: "and {count} other changes",
+    shipmentRank: "{reference} (shipment {rank})",
+    shipmentUnknown: "A withdrawn order",
+    resupplyLaunched: "Restock {site} launched",
+    resupplyEntered: "Restock {site} entered the plan",
+    resupplyLeft: "Restock {site} left the plan",
+    resupplyNamed: "{site} ({name})",
+    resupplyWithoutSite: "with no known site",
+    toCheckHeading: "To check:",
+    toCheckLine: "{shipment} left the plan, reason with sales",
+    signature: "La Folie Coffee — Bakehouse",
+    footer:
+      "This email is sent when the team resends the updated file. To stop receiving it, " +
+      "ask the team to remove you from the recipients (Production › Settings).",
+  },
   "staff.support-requested": {
     kicker: "Support request",
     subject: "Contact request — {contact} · {purpose}",
