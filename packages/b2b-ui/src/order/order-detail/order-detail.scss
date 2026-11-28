@@ -448,6 +448,19 @@ fold-aside-layout {
     display: block;
   }
 
+  /* Un seul bloc à la fois : les colonnes tues gardaient leurs écarts, et
+     laissaient un vide au-dessus de celle qu'on regarde. (`.od` est le
+     conteneur interrogé : la règle vise son enfant, pas lui.) */
+  .od[data-pane-view] fold-aside-layout {
+    --fold-aside-layout-gap: 0;
+    --fold-aside-layout-gap-sm: 0;
+  }
+
+  /* Les montants en tête des infos : c'est ce qu'on vérifie d'abord. */
+  .od-amounts {
+    order: -1;
+  }
+
   .od[data-pane-view]:not([data-pane-view='composition']) .od-lines,
   .od[data-pane-view]:not([data-pane-view='info']) .od-side,
   .od[data-pane-view]:not([data-pane-view='progress']) .od-progress {

@@ -65,9 +65,14 @@
   min-width: 0;
   font-weight: 600;
   color: var(--fold-color-text);
+  /* Deux lignes avant de couper : sur un téléphone, les boutons de quantité
+     laissaient une douzaine de caractères, et « Baguette artisa… » ne
+     distinguait plus aucune baguette. */
+  display: -webkit-box;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 .pr-line2 {
   display: flex;

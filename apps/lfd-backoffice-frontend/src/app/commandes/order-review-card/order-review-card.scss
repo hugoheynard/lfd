@@ -5,6 +5,12 @@
   gap: var(--fold-space-sm);
 }
 
+/* La note prend la largeur de la carte : alignée au début, elle n'en
+   gardait que sa largeur naturelle, une demi-carte au téléphone. */
+.body fold-textarea {
+  align-self: stretch;
+}
+
 .line {
   margin: 0;
 }
