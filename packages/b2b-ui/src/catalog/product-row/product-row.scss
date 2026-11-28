@@ -138,3 +138,40 @@
 .is-reserved {
   visibility: hidden;
 }
+
+/* Au téléphone, une initiale sans photo ne dit rien que le nom ne dise déjà,
+   et prend la largeur qui manque au nom (Hugo, 2026-11-28) : la vignette
+   s'efface quand elle n'a pas d'image. Une vraie photo reste, et le cœur des
+   favoris aussi, qui vit dans la vignette côté boutique. Le nom et le prix
+   s'affinent et passent d'un cran plus petits, les gestes se serrent : la
+   rangée se lit d'un coup. */
+@media (max-width: 40rem) {
+  .pr-thumb:has(.pr-initial):not(:has(fold-toggle-icon)) {
+    display: none;
+  }
+
+  .pr-name {
+    font-size: var(--fold-text-sm);
+    font-weight: var(--fold-weight-medium);
+  }
+
+  .pr-price {
+    font-size: var(--fold-text-sm);
+  }
+
+  /* Les gestes, plus serrés : des boutons de 32 px, toujours au doigt, et une
+     case de quantité à la mesure de trois chiffres. */
+  .pr-actions {
+    --fold-button-min-height: 2rem;
+  }
+
+  /* Des boutons à l'icône seule : carrés, de la hauteur de la rangée. */
+  .pr-actions > button {
+    width: 2rem;
+    padding-inline: 0;
+  }
+
+  .pr-qty {
+    width: 3.25rem;
+  }
+}

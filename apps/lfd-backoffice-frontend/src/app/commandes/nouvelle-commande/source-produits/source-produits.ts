@@ -32,7 +32,6 @@ import {
 } from '@lfd/b2b-ui/catalog';
 import { formatCents, formatMillicents, formatOrderDate } from '@lfd/b2b-ui/order';
 
-import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
 import type { CartStore } from '../cart.store';
 import { HistoriqueCommandes } from '../historique-commandes/historique-commandes';
 import { shelfHintOf } from '../immediate-pickup';
@@ -51,6 +50,7 @@ import {
   SHELF_NAV_LABELS,
   shelfIdOf,
 } from '../catalog-shelf-filter';
+import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
 
 /**
  * Une ligne proposée : le produit tel que la rangée partagée le rend, plus la
@@ -239,27 +239,25 @@ export class SourceProduits {
   });
 
   /**
-   * L'écran est-il étroit ? La barre s'y replie en icônes — `collapsed` est une
-   * **entrée** du composant, pas du CSS : l'encapsulation de vue met ses
-   * paddings hors de portée d'une feuille d'app, donc le TypeScript doit savoir
-   * la largeur.
-   */
-  private readonly narrow = narrowViewport();
-  protected readonly collapsed = this.narrow;
-
-  /**
    * Les trois sources, en onglets ARIA (`fold-tabs`) et non en nav routée : on
-   * change de **vue sur la même page**, l'adresse ne bouge pas. Chacun porte une
-   * icône — c'est elle qui reste quand la barre se replie sur mobile.
+   * change de **vue sur la même page**, l'adresse ne bouge pas. Au téléphone,
+   * les trois libellés restent et les icônes s'effacent (Hugo, 2026-11-28) :
+   * c'est le mot qui dit la source, et les trois ne tenaient pas avec elles.
    *
    * Le catalogue ouvre le bal : c'est la source qui a toujours quelque chose à
    * montrer, y compris pour un compte qui n'a jamais rien commandé.
    */
-  protected readonly tabItems = computed<FoldTabItem[]>(() => [
-    { key: 'catalogue', label: 'Catalogue', icon: 'grid' },
-    { key: 'commande', label: 'Ses commandes', icon: 'receipt', badge: this.orders().length },
-    { key: 'habituels', label: 'Ses habitudes', icon: 'repeat', badge: this.habitLines().length },
-  ]);
+  protected readonly tabItems = computed<FoldTabItem[]>(() => {
+    const tabs: FoldTabItem[] = [
+      { key: 'catalogue', label: 'Catalogue', icon: 'grid' },
+      { key: 'commande', label: 'Ses commandes', icon: 'receipt', badge: this.orders().length },
+      { key: 'habituels', label: 'Ses habitudes', icon: 'repeat', badge: this.habitLines().length },
+    ];
+    return this.phone() ? tabs.map(({ icon: _icon, ...tab }) => tab) : tabs;
+  });
+
+  /** Le téléphone : les onglets sans icône, la recherche sans son compte. */
+  protected readonly phone = narrowViewport();
 
   /** Ce qui est déjà au panier pour ce SKU — la pastille de la rangée. */
   protected inCart(sku: string): number {

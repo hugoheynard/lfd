@@ -131,9 +131,10 @@
     }
   }
 
-  <!-- En tiroir seulement : l'en-tête de la page, qui porte ce bouton, est
-       hors de vue sous la feuille. -->
-  @if (offersDraft()) {
+  <!-- En tiroir de tablette seulement : l'en-tête de la page, qui porte ce
+       bouton, est hors de vue sous la feuille. Au téléphone, l'icône de
+       l'en-tête suffit (Hugo, 2026-11-28). -->
+  @if (offersDraft() && !handheld()) {
     <button
       foldButton
       emphasis="outline"
@@ -182,9 +183,11 @@
     <fold-select
       label="Commande portée par"
       [hint]="
-        'Elle appartient au compte ' +
-        companyName() +
-        ' ; cette personne en est l’interlocuteur, et la destinataire d’un éventuel lien de règlement.'
+        handheld()
+          ? ''
+          : 'Elle appartient au compte ' +
+            companyName() +
+            ' ; cette personne en est l’interlocuteur, et la destinataire d’un éventuel lien de règlement.'
       "
       [value]="buyer() ?? ''"
       (valueChange)="draft().buyerUserId.set($event)"
@@ -222,15 +225,31 @@
       </label>
     }
 
-    <label class="pan-field">
-      <span class="pan-label">Note</span>
-      <textarea
-        rows="2"
-        placeholder="Ce que l'atelier doit savoir."
-        [value]="note()"
-        (input)="draft().note.set($any($event.target).value)"
-      ></textarea>
-    </label>
+    <!-- Au téléphone, la note s'ouvre sur un geste (Hugo, 2026-11-28) ; une
+         note déjà écrite reste ouverte. -->
+    @if (handheld() && !noteOpen() && note() === '') {
+      <button
+        foldButton
+        emphasis="soft"
+        intent="neutral"
+        size="sm"
+        icon="plus"
+        class="pan-note-open"
+        (click)="noteOpen.set(true)"
+      >
+        Ajouter une note
+      </button>
+    } @else {
+      <label class="pan-field">
+        <span class="pan-label">Note</span>
+        <textarea
+          rows="2"
+          placeholder="Ce que l'atelier doit savoir."
+          [value]="note()"
+          (input)="draft().note.set($any($event.target).value)"
+        ></textarea>
+      </label>
+    }
 
     @if (payerIsInHouse()) {
       <fold-callout variant="info" data-in-house-payer>

@@ -232,7 +232,17 @@ export class PanierCommande {
   );
 
   /** La phrase « calculés à la validation » — sans objet dès que l'estimation est là. */
-  protected readonly later = computed(() => (this.amounts() === null ? this.TOTALS_LATER : null));
+  /** La même chose en une ligne, pour le téléphone (Hugo, 2026-11-28). */
+  protected readonly TOTALS_LATER_SHORT = 'Prix du catalogue jusqu’au choix du retrait.';
+  protected readonly later = computed(() =>
+    this.amounts() === null
+      ? this.handheld()
+        ? this.TOTALS_LATER_SHORT
+        : this.TOTALS_LATER
+      : null,
+  );
+  /** La note du téléphone, ouverte sur un geste. */
+  protected readonly noteOpen = signal(false);
 
   /** Les lignes au prix de l'estimation, prix barré compris, quand elle est là. */
   protected readonly shownLines = computed(() =>
@@ -406,7 +416,7 @@ export class PanierCommande {
   readonly view = signal<PanierView>('settings');
 
   /** Sous cette largeur, le tiroir est trop étroit pour deux colonnes. */
-  private readonly handheld = narrowViewport(SPLIT_MIN_MEDIA);
+  protected readonly handheld = narrowViewport(SPLIT_MIN_MEDIA);
 
   /**
    * Réglages et lignes côte à côte, sans bascule : dans le tiroir (sans

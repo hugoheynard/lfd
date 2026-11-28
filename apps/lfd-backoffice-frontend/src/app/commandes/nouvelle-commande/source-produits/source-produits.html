@@ -1,3 +1,6 @@
+<!-- Les trois libellés restent écrits, téléphone compris (Hugo, 2026-11-28) :
+     repliés en icônes, « Ses commandes » et « Ses habitudes » ne se
+     distinguaient plus d'un reçu et de deux flèches. -->
 <!-- La barre vit dans le slot `tabNav` du layout, les panneaux dans son contenu :
      c'est la paire par référence (`#t="foldTabs"`) qui les recoud, et elle
      autorise justement de les séparer. -->
@@ -10,7 +13,6 @@
     justify="stretch"
     background="transparent"
     [tabs]="tabItems()"
-    [collapsed]="collapsed()"
     [activeKey]="kind()"
     (activeKeyChange)="onTab($event)"
   />
@@ -20,7 +22,7 @@
       class="src-search"
       size="sm"
       [(query)]="search"
-      [count]="kind() === 'catalogue' ? matching().length : habitLines().length"
+      [count]="phone() ? null : kind() === 'catalogue' ? matching().length : habitLines().length"
     />
   }
 

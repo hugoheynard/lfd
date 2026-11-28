@@ -22,26 +22,66 @@
         [label]="back().label"
       />
       <div class="nc-titles">
-        <h1 class="nc-title">Nouvelle commande — {{ companyName() }}</h1>
-        <button
-          foldButton
-          emphasis="outline"
-          intent="neutral"
-          [disabled]="savingDraft()"
-          (click)="onSaveDraft()"
-        >
-          {{ savingDraft() ? 'Enregistrement…' : 'Enregistrer le brouillon' }}
-        </button>
+        <!-- Au téléphone (Hugo, 2026-11-28) : « Nouvelle commande » en petit
+             au-dessus, le nom du compte sur une ligne, et le brouillon en
+             icône — le titre et son bouton prenaient quatre lignes. -->
+        @if (phone()) {
+          <h1 class="nc-title nc-title--phone">
+            <span class="nc-eyebrow">Nouvelle commande</span>
+            <span class="nc-company">{{ companyName() }}</span>
+          </h1>
+          <button
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            icon="save"
+            [loading]="savingDraft()"
+            aria-label="Enregistrer le brouillon"
+            title="Enregistrer le brouillon"
+            (click)="onSaveDraft()"
+          ></button>
+        } @else {
+          <h1 class="nc-title">Nouvelle commande — {{ companyName() }}</h1>
+          <button
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            [disabled]="savingDraft()"
+            (click)="onSaveDraft()"
+          >
+            {{ savingDraft() ? 'Enregistrement…' : 'Enregistrer le brouillon' }}
+          </button>
+        }
       </div>
     </header>
 
     @if (resumedAt(); as at) {
       <fold-callout variant="accent">
-        <strong>Brouillon repris.</strong> Saisie mise de côté le {{ at }}. Les prix ont été
-        rafraîchis au catalogue du jour.
-        <button foldButton emphasis="outline" intent="neutral" (click)="onDropDraft()">
-          Repartir de zéro
-        </button>
+        <!-- Au téléphone, la date seule (Hugo, 2026-11-28) ; ailleurs, la phrase
+             entière, qui dit aussi que les prix ont été rafraîchis. -->
+        @if (phone()) {
+          <strong>Brouillon repris</strong> du {{ at }}
+        } @else {
+          <strong>Brouillon repris.</strong> Saisie mise de côté le {{ at }}. Les prix ont été
+          rafraîchis au catalogue du jour.
+        }
+        <!-- Un bouton à l'icône seule, à droite de l'encadré (Hugo, 2026-11-28) :
+             le libellé mangeait une ligne. La flèche circulaire, et non le
+             « reset » de fold, qui dessine une croix et se lirait « fermer ».
+             Son nom reste dans l'infobulle et pour les lecteurs d'écran. -->
+        <div actions>
+          <button
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            size="sm"
+            icon="reload"
+            aria-label="Repartir de zéro"
+            title="Repartir de zéro"
+            (click)="onDropDraft()"
+            data-drop-draft
+          ></button>
+        </div>
       </fold-callout>
     }
 

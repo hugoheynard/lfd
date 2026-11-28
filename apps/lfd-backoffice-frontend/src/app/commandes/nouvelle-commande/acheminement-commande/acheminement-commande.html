@@ -166,7 +166,11 @@
       (selectionChange)="onPickup($event)"
     />
     @if (pickup(); as chosen) {
-      <p class="ach-line">{{ chosen.ligne1 }}, {{ chosen.codePostal }} {{ chosen.ville }}</p>
+      <!-- Au téléphone, l'adresse d'un point qu'on connaît saute (Hugo,
+           2026-11-28) : la hauteur manque, et le nom suffit. -->
+      <p class="ach-line ach-pickup-address">
+        {{ chosen.ligne1 }}, {{ chosen.codePostal }} {{ chosen.ville }}
+      </p>
     }
   }
 

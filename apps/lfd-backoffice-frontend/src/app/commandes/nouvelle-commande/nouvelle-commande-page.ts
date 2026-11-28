@@ -317,6 +317,8 @@ export class NouvelleCommandePage {
    * (~490 px) le sert mieux.
    */
   protected readonly narrow = narrowViewport(CART_DRAWER_MEDIA);
+  /** Le téléphone : un titre d'une ligne et le brouillon en icône. */
+  protected readonly phone = narrowViewport();
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly company = signal<OrderEntryCustomer | null>(null);

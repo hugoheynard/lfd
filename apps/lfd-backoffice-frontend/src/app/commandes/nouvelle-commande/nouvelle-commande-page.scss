@@ -27,6 +27,26 @@
   font-size: var(--fold-text-xl);
 }
 
+/* Au téléphone : le geste en petit, le compte en gras sur une ligne. */
+.nc-title--phone {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.nc-eyebrow {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-medium);
+}
+
+.nc-company {
+  overflow: hidden;
+  font-size: var(--fold-text-lg);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .nc-columns {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(20rem, 1fr);
@@ -70,4 +90,22 @@
   padding: var(--fold-space-sm) 0;
   background: var(--fold-color-surface-card);
   border-top: 1px solid var(--fold-color-border);
+}
+
+/* Au téléphone, plus de cartes (Hugo, 2026-11-28) : la page ne garde qu'une
+   gouttière étroite, et le bloc central perd son cadre et ses marges — la
+   largeur va aux noms des articles. L'encadré du brouillon prend la largeur
+   lui aussi. */
+@media (max-width: 40rem) {
+  :host {
+    gap: var(--fold-space-md);
+    padding: var(--fold-space-md) var(--fold-space-sm);
+  }
+
+  .nc-col {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
 }

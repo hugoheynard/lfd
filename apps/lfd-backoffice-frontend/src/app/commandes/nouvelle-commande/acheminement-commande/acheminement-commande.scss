@@ -83,3 +83,10 @@
   gap: var(--fold-space-xs);
   min-width: 0;
 }
+
+/* Au téléphone, le nom du point suffit : son adresse saute (Hugo, 2026-11-28). */
+@media (max-width: 40rem) {
+  .ach-pickup-address {
+    display: none;
+  }
+}
